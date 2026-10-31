@@ -2884,22 +2884,45 @@
         });
       };
 
-      window.refreshFromSheet = function () {
+      function parseServerPayload_(raw) {
+        if (!raw) return null;
+        if (typeof raw === 'string') {
+          try {
+            return JSON.parse(raw);
+          } catch (e) {
+            return null;
+          }
+        }
+        return raw;
+      }
+
+      window.refreshFromSheet = function (isBackgroundWarmup) {
         var perfEl = document.getElementById('perfIndicator');
-        perfEl.textContent = '🔄 스프레드시트 [주간시간표] · [학급시간표] 동기화 중...';
+        var forceRefresh = !isBackgroundWarmup;
+        if (!isBackgroundWarmup || !state.data) {
+          perfEl.textContent = '🔄 스프레드시트 [주간시간표] · [학급시간표] 동기화 중...';
+        }
         if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run
-            .withSuccessHandler(function (freshData) {
+          var runner = google.script.run
+            .withSuccessHandler(function (res) {
+              var freshData = parseServerPayload_(res);
               if (freshData) {
                 applyLoadedData(freshData, true);
               }
             })
             .withFailureHandler(function (err) {
-              perfEl.textContent =
-                '⚠️ 동기화 실패: ' + (err && err.message ? err.message : err);
-            })
-            .getTimetableData(true);
-        } else {
+              if (!state.data) {
+                perfEl.textContent =
+                  '⚠️ 동기화 실패: ' + (err && err.message ? err.message : err);
+              }
+            });
+
+          if (typeof runner.getTimetableJsonString === 'function') {
+            runner.getTimetableJsonString(forceRefresh);
+          } else {
+            runner.getTimetableData(forceRefresh);
+          }
+        } else if (!state.data) {
           perfEl.textContent = '⚠️ Google Apps Script 웹앱 환경에서 실행해 주세요.';
         }
       };
@@ -2911,7 +2934,8 @@
         perfEl.textContent = '🔄 스프레드시트 연결 및 시트 파싱 중...';
         if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run
-            .withSuccessHandler(function (freshData) {
+            .withSuccessHandler(function (res) {
+              var freshData = parseServerPayload_(res);
               if (freshData) {
                 applyLoadedData(freshData, true);
               }
@@ -2951,28 +2975,31 @@
       function initApp() {
         state.todayDayIdx = detectTodayIndex();
 
-        // 이전 버전 로컬스토리지 캐시 즉시 삭제
-        try {
-          localStorage.removeItem('TIMETABLE_CACHE_DATA_V1');
-          localStorage.removeItem('TIMETABLE_REAL_SHEETS_CACHE_V2');
-        } catch (e) {}
-
-        // 1순위: doGet 서버 인라인 주입 실데이터
-        if (typeof SERVER_INLINE_RAW === 'object' && SERVER_INLINE_RAW !== null) {
-          applyLoadedData(SERVER_INLINE_RAW, true);
+        // 1순위: doGet 서버 캐시 인라인 주입 실데이터 (즉시 0ms 렌더링)
+        var inlineData = parseServerPayload_(SERVER_INLINE_RAW);
+        if (inlineData && typeof inlineData === 'object') {
+          applyLoadedData(inlineData, true);
         } else {
-          // 2순위: 브라우저에 캐싱된 실데이터 먼저 표시 후 서버에서 최신화
+          // 2순위: 서버 콜드 스타트 시 브라우저 로컬 캐시로 0ms 즉시 화면 표시 후 백그라운드 캐시 워밍업
           var cachedStr = null;
           try {
             cachedStr = localStorage.getItem(STORAGE_KEY);
           } catch (e) {}
 
+          var renderedFromLocal = false;
           if (cachedStr) {
             try {
-              applyLoadedData(JSON.parse(cachedStr), false);
+              var parsedLocal = JSON.parse(cachedStr);
+              if (parsedLocal && typeof parsedLocal === 'object') {
+                applyLoadedData(parsedLocal, false);
+                renderedFromLocal = true;
+              }
             } catch (err) {}
           }
-          window.refreshFromSheet();
+          if (!renderedFromLocal) {
+            renderEmptyGridTable_(['월', '화', '수', '목', '금'], 7);
+          }
+          window.refreshFromSheet(true);
         }
 
         var inputEl = document.getElementById('searchInput');
