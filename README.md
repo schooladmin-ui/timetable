@@ -10,7 +10,8 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **3단계 초고속 로딩 & 캐싱 아키텍처**:
   1. **멀티 청크 `CacheService` & 페이로드 60% 경량화 (`getCachedJsonFast_` / `putCachedJson_` / `compactStoreForTransport_`)**: 셀 객체의 빈 기본값(`r:""`, `m:0`, `cc:0`, `st:""`)과 중복 키를 제거하여 전송 용량을 약 60% 축소하고, 80KB 단위 멀티 청크 분할 저장으로 Apps Script 단일 키 100KB 제한을 완전히 우회하여 100% 서버 메모리 캐싱(6시간 유지)을 보장합니다. 캐시 적중 시 `JSON.parse`/`JSON.stringify` 없이 **~5ms** 만에 인라인 주입됩니다.
   2. **논블로킹(Non-Blocking) 콜드 스타트 & `localStorage` 0ms 즉시 렌더링**: 서버 캐시가 만료된 상태에서도 `doGet()`이 스프레드시트 I/O를 기다리지 않고 **즉시 HTML을 반환(< 50ms)** 하며, 브라우저는 `localStorage` 캐시 데이터로 **0ms 만에 화면을 먼저 표시**한 뒤 백그라운드(`getTimetableJsonString`)에서 비동기로 서버 캐시를 워밍업합니다.
-  3. **인메모리 초성·단축어 인덱스**: 브라우저 메모리에 한글 초성 및 단축어 인덱스를 구축하여 검색·탭 전환 시 서버 호출이 전혀 발생하지 않습니다.
+  3. **백그라운드 시트 변경 자동 감지 (Stale-While-Revalidate, `checkAndRefreshIfChanged`)**: 첫 화면을 캐시로 0ms 만에 즉시 표시한 직후 백그라운드에서 스프레드시트 데이터의 MD5 해시값(`computePayloadSignature_`)을 대조하여, 시트 수정(셀 편집·복사·교체 등)이 감지되면 화면을 자동으로 최신 시간표로 갱신합니다.
+  4. **인메모리 초성·단축어 인덱스**: 브라우저 메모리에 한글 초성 및 단축어 인덱스를 구축하여 검색·탭 전환 시 서버 호출이 전혀 발생하지 않습니다.
 - **초성 & 단축어 즉시 검색**:
   - 상단 중앙의 고가시성 검색창(단축키 `/`)에서 **교사 성명 초성**(예: `ㄱㄷㅈ`), **담당 과목 초성**(예: `ㅎㅅ`), **학급 단축 숫자**(예: `1-1`, `101`)만 입력해도 일치하는 시간표로 즉시 전환됩니다.
 
@@ -36,6 +37,9 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
   - **교사 시간표 모드**: 중복 없이 통합된 전 교사 버튼을 가나다순으로 표시합니다.
   - **공강 교사 찾기 모드**: 동일한 패널 위치에서 `월요일 ~ 금요일` 및 `1교시 ~ 7교시` 1행 필터 버튼을 제공하며, 선택 즉시 해당 교시에 수업이 없는 공강 교사 목록을 보여줍니다.
 - **양방향 크로스 링크**: 학급 시간표의 수업 셀을 클릭하면 해당 **교사 시간표**로, 교사 시간표의 수업 셀을 클릭하면 해당 **학급 시간표**로 즉시 이동합니다.
+- **돋보기 전체화면 확대 모달창 (`#timetableZoomModal`)**:
+  - 시간표 카드 상단 우측(학년도 행 우측, 스파클 아이콘 왼쪽)의 **돋보기 아이콘 버튼(`#btnOpenZoomModal`)**을 누르면 화면 전체 비율(`97vw × 94vh`)에 맞춰 시간표가 꽉 차게 보이는 확대 모달창이 열립니다.
+  - 모달창 상단 우측에는 **`📄 HWPX`**, **`📊 XLSX`**, **`🖨️ PDF`**, **`✕ 닫기`** 버튼이 배치되어 있으며, `Esc` 키 또는 바깥 배경 클릭으로도 즉시 닫을 수 있습니다.
 
 ### 4. 편집 가능한 문서 다운로드 (`HWPX` · `XLSX`) 및 `PDF` 인쇄
 외부 서버나 무거운 라이브러리 없이 브라우저 순수 JavaScript(Pure JS ZIP + XML 빌더)로 표준 문서를 즉시 생성합니다.
@@ -145,6 +149,21 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html script #1/#2 syntax OK`)
   - `index.html` 내 `HtmlService` 스크립틀릿 태그 개수 검증 완료 (`Scriptlet tag count in index.html: 1`)
+
+### [2026-11-01 02:27] 업데이트 이력 (Commit ID: `fa04484`)
+- **날짜 및 시간 (KST)**: `2026-11-01 02:27`
+- **커밋 ID (Commit Hash)**: `fa04484`
+- **수정 내용 (Modification Details)**:
+  - **상단 헤더 우측 돋보기 아이콘 버튼 및 전체화면 시간표 모달창 추가 (`index.html`)**:
+    - 시간표 카드 상단 우측(`2026학년도` 행 우측, 스파클 아이콘 왼쪽)에 녹색 테마(`#027046`) 돋보기 아이콘 버튼(`#btnOpenZoomModal`, `.eh-zoom-btn`) 추가
+    - 돋보기 버튼 클릭 시 화면에 시간표 표가 꽉 차게 확대 표시되는 모달창(`#timetableZoomModal`, `openTimetableModal`) 구현 및 모달 내부 셀 클릭 시 실시간 교사·학급 시간표 전환(`syncModalTimetableView_`) 연동
+    - 모달창 상단 우측에 **`📄 HWPX`**, **`📊 XLSX`**, **`🖨️ PDF`**, **`✕ 닫기`** 버튼 추가 (`Esc` 키 및 배경 클릭 닫기 지원, `@media print` 시 모달·돋보기 버튼 자동 숨김 처리)
+  - **스프레드시트 데이터 변경 즉시 반영을 위한 Stale-While-Revalidate 자동 감지 추가 (`Code.gs`, `index.html`)**:
+    - `onEdit(e)` / `onChange(e)` 캐시 즉시 무효화 더불어, 첫 화면 0ms 렌더링 직후 백그라운드에서 MD5 데이터 서명(`computePayloadSignature_`, `checkAndRefreshIfChanged`)을 대조하여 시트 데이터가 변경된 경우 자동으로 최신 데이터를 화면과 캐시에 즉시 반영하도록 고도화
+- **검증 결과 (Verification Results)**:
+  - `Code.gs` 및 `index.html` Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html script #1/#2 syntax OK`)
+  - `index.html` 내 `HtmlService` 스크립틀릿 태그 개수 검증 완료 (`Scriptlet tag count in index.html: 1`)
+
 
 
 
