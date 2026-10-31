@@ -1,0 +1,47 @@
+---
+description: Terminal-only fast verification and agent skill workflow (ask/apply/git-commit/scratchpad/impeccable)
+alwaysApply: true
+---
+
+# Agent Execution Rules: Terminal-Only Fast Verification
+
+에이전트 실행 규칙: 터미널 전용 고속 검증 (`AGENTS.md` / `GEMINI.md` / `.agents/rules/rules.md`)
+
+## 1. Browser & Scratchpad Policy
+- Do NOT launch Chrome, Scratchpad, or any browser for visual verification during standard code edits.
+- No automatic screenshots after editing. Trust HMR on the user's browser.
+- Exception only when user explicitly requests `/scratchpad`, `/action scratchpad`, or "scratchpad로 검증해줘".
+
+## 2. Terminal-Based Error Verification
+- After code changes, run quick static checks via terminal (no browser).
+- TypeScript: `npx tsc --noEmit` / Next.js: `npm run lint` / JS: `node --check <file>.js` / Python: `python -m py_compile <file>.py`
+- GAS / Apps Script (this project): syntax-check `Code.gs` and `index.html` inline scripts; Python helpers with `python -m py_compile`
+- Do not run heavy builds/dev servers/long tests unless requested. Do not loop endlessly on non-critical lint warnings.
+
+## 3. Workflow Optimization
+- Apply code changes + fast terminal verification, then stop.
+- Never auto `git commit` / `git push`. Wait for explicit `/git-commit`.
+
+## 4. Git Commit & Push (only on `/git-commit`)
+- Only when user sends `/git-commit`, `/action git-commit`, or explicit README-update-and-push request.
+- Append KST dated history to README bottom (Date/Time, Commit Hash, Modification Details), then commit (Korean message) and push.
+
+## 5. `/ask` Mode
+- No source code changes. Answer simply, or write a plan to `c:\Users\user\Desktop\appsscript\25-timetable\.plan\YYYY-MM-DD_HHmm_<topic>.md` (with KST date & time in the filename).
+- Never auto-execute the plan even if Auto-Approve is offered.
+
+## 6. `/scratchpad` Mode
+- Explicit exception to Rule 1. Use browser subagent for visual UI verification and report.
+
+## 7. `/apply` Mode
+- Immediately implement the latest plan file in `c:\Users\user\Desktop\appsscript\25-timetable\.plan\` without needing "반영해줘".
+- Then Rule 2 verification. No auto commit/push.
+
+## 8. `/impeccable` & `/impeccable-all`
+- `/impeccable`: design quality detect, PRODUCT.md/DESIGN.md context, refine work.
+- `/impeccable-all`: full 25-criteria scorecard → write plan to `.plan/YYYY-MM-DD_HHmm_impeccable_plan.md` and wait (no code changes).
+- User runs `/apply` to implement the plan.
+
+## Registered Skills (`.agents/skills/`)
+- `/ask`, `/apply`, `/git-commit`, `/scratchpad`, `/impeccable`, `/impeccable-all`
+

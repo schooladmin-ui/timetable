@@ -1,0 +1,11 @@
+{
+  "name": "25-timetable",
+  "primaryColors": {
+    "green": "#027046",
+    "blue": "#05014A",
+    "stoneGray": "#313339"
+  },
+  "wcagTarget": "AA",
+  "minFontSizePx": 12
+}
+
