@@ -189,10 +189,51 @@ function getTimetableData(forceRefresh) {
 }
 
 /**
- * 시트 수정 시 캐시 자동 무효화
+ * 시트 수정 시 캐시 자동 무효화 (셀 편집 및 시트 구조 변경 모두 대응)
  */
 function onEdit(e) {
   clearTimetableCache_();
+}
+
+function onChange(e) {
+  clearTimetableCache_();
+}
+
+/**
+ * 첫 화면을 캐시로 0ms 만에 즉시 표시한 직후, 백그라운드에서 스프레드시트 원본의 변경 여부를 검사하여
+ * 데이터가 1글자라도 변경되었을 때만 최신 JSON 문자열을 반환합니다. (Stale-While-Revalidate)
+ */
+function checkAndRefreshIfChanged(clientSig) {
+  var payload = buildTimetablePayloadFromRealSheets_();
+  if (!payload || !payload.ok) {
+    return { changed: false };
+  }
+  var serialized = JSON.stringify(payload);
+  putCachedJson_(serialized);
+
+  if (clientSig && payload.sig && clientSig === payload.sig) {
+    return { changed: false, v: payload.v };
+  }
+  return { changed: true, json: serialized };
+}
+
+function computePayloadSignature_(classes, teachers, meta) {
+  try {
+    var digest = Utilities.computeDigest(
+      Utilities.DigestAlgorithm.MD5,
+      JSON.stringify({ c: classes, t: teachers, m: meta }),
+      Utilities.Charset.UTF_8
+    );
+    var hex = '';
+    for (var i = 0; i < digest.length; i++) {
+      var b = digest[i];
+      var v = (b < 0 ? b + 256 : b).toString(16);
+      hex += v.length === 1 ? '0' + v : v;
+    }
+    return hex;
+  } catch (e) {
+    return '';
+  }
 }
 
 function updateVersionTimestamp_() {
@@ -316,9 +357,12 @@ function buildTimetablePayloadFromRealSheets_() {
   // 4. 네트워크 전송 및 캐시 용량 최소화를 위해 빈 속성/중복 속성 경량화 (~60% 용량 절감)
   compactStoreForTransport_(store);
 
+  var sig = computePayloadSignature_(store.classes, store.teachers, meta);
+
   return {
     ok: true,
     v: updateVersionTimestamp_(),
+    sig: sig,
     sheetNames: allSheetNames,
     foundSheets: {
       weekly: weeklySheet ? weeklySheet.getName() : null,
