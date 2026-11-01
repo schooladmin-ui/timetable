@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>초고속 학급·교사 시간표 검색</title>
+  <title>교사·학급 시간표 검색</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     /* ==========================================================================
@@ -82,7 +82,7 @@
 
     .control-row-search {
       display: flex;
-      justify-content: flex-start;
+      justify-content: center;
       align-items: center;
       width: 100%;
       gap: 10px;
@@ -137,7 +137,7 @@
       background: #FFFFFF;
       border: 2px solid var(--main-color);
       border-radius: var(--radius-lg);
-      padding: 0 12px;
+      padding: 6px 12px;
       height: 46px;
       gap: 6px;
       box-shadow: 0 2px 8px rgba(2, 112, 70, 0.08);
@@ -242,7 +242,7 @@
       background: #FFFFFF;
       border: 2px solid var(--main-color);
       border-radius: var(--radius-lg);
-      padding: 0 16px;
+      padding: 6px 16px;
       height: 46px;
       box-shadow: 0 2px 8px rgba(2, 112, 70, 0.08);
       transition: border-color 0.14s ease, box-shadow 0.14s ease;
@@ -491,6 +491,12 @@
       white-space: nowrap;
     }
 
+    .util-btn.chip-reset-btn {
+      height: 28px;
+      padding: 2px 10px;
+      font-size: 12px;
+    }
+
     .q-chip {
       border: 1px solid #D1D5DB;
       background: #FFFFFF;
@@ -499,7 +505,7 @@
       width: 100%;
       min-width: 0;
       border-radius: var(--radius-pill);
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
@@ -1282,7 +1288,7 @@
       color: var(--main-color-dark);
       border-radius: var(--radius-pill);
       padding: 3px 10px;
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
     }
@@ -1324,7 +1330,7 @@
     }
 
     .proj-file-sub {
-      font-size: 11.5px;
+      font-size: 12px;
       color: var(--ink-subtle);
     }
 
@@ -1412,7 +1418,7 @@
     }
 
     .proj-active-badge {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 800;
       padding: 1px 7px;
       border-radius: var(--radius-pill);
@@ -1478,6 +1484,11 @@
     }
 
     @media (max-width: 640px) {
+      .grade-row-chips,
+      .teacher-chips-wrap,
+      .ff-results {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
       .card-inner {
         padding: 18px 14px;
       }
@@ -1513,30 +1524,15 @@
        ======================================================================== -->
   <header class="control-bar-wrap">
     <div class="control-bar">
-      <!-- 1행: 좌측(교사명, *표시 토글) + 년도·학기 드롭다운 + 초고속 초성 & 단축어 즉시 검색창 -->
+      <!-- 1행: 좌측(교사명, *표시 토글) + 중앙 초고속 초성 & 단축어 즉시 검색창 + 우측 년도·학기 드롭다운 -->
       <div class="control-row-search">
         <div class="top-toggle-group">
-          <button type="button" class="util-btn top-toggle-btn" id="btnToggleSubTeacher" onclick="toggleShowTeacherInClass()" title="학급 시간표에서 담당 교사명 표시 전환">
+          <button type="button" class="util-btn top-toggle-btn" id="btnToggleSubTeacher" aria-pressed="false" onclick="toggleShowTeacherInClass()" title="학급 시간표에서 담당 교사명 표시 전환">
             👤 교사명
           </button>
-          <button type="button" class="util-btn top-toggle-btn active-opt" id="btnToggleMask" onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환">
+          <button type="button" class="util-btn top-toggle-btn active-opt" id="btnToggleMask" aria-pressed="true" onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환">
             🔒 *표시
           </button>
-        </div>
-
-        <div class="project-bar-group">
-          <div class="project-select-wrap" title="년도·학기 선택 (20XX-X주간시간표 + 20XX-X학급시간표 시트 세트)">
-            <span class="project-select-icon">📅</span>
-            <select
-              id="projectSelect"
-              class="project-select"
-              onchange="handleProjectSelectChange(this.value)"
-              aria-label="년도 및 학기 선택"
-            >
-              <option value="2025-2">2025년 2학기 (2025-2)</option>
-              <option value="__OPEN_MODAL__">➕ 학기(엑셀) 등록/관리...</option>
-            </select>
-          </div>
         </div>
 
         <div class="search-box-container">
@@ -1563,21 +1559,36 @@
           </div>
           <div id="autocompleteList" class="autocomplete-list"></div>
         </div>
+
+        <div class="project-bar-group">
+          <div class="project-select-wrap" title="년도·학기 선택 (20XX-X주간시간표 + 20XX-X학급시간표 시트 세트)">
+            <span class="project-select-icon">📅</span>
+            <select
+              id="projectSelect"
+              class="project-select"
+              onchange="handleProjectSelectChange(this.value)"
+              aria-label="년도 및 학기 선택"
+            >
+              <option value="2025-2">2025년 2학기 (2025-2)</option>
+              <option value="__OPEN_MODAL__">➕ 학기(엑셀) 등록/관리...</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- 2행: 좌측(교사 시간표 / 공강 교사 찾기 / 공유 공강 확인 / 학급 시간표) + 우측(동기화, HWPX, XLSX, PDF) -->
       <div class="control-row-actions">
         <div class="mode-tabs" role="tablist">
-          <button type="button" class="mode-tab active" id="tabTeacher" onclick="switchMode('teacher')">
+          <button type="button" class="mode-tab active" role="tab" aria-selected="true" id="tabTeacher" onclick="switchMode('teacher')">
             👨‍🏫 교사 시간표
           </button>
-          <button type="button" class="mode-tab" id="tabFree" onclick="switchMode('free')">
+          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabFree" onclick="switchMode('free')">
             ✨ 공강 교사 찾기
           </button>
-          <button type="button" class="mode-tab" id="tabSharedFree" onclick="switchMode('shared_free')">
+          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabSharedFree" onclick="switchMode('shared_free')">
             🤝 공유 공강 확인
           </button>
-          <button type="button" class="mode-tab" id="tabClass" onclick="switchMode('class')">
+          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabClass" onclick="switchMode('class')">
             🏫 학급 시간표
           </button>
         </div>
@@ -2381,7 +2392,7 @@
               '명:</span>';
             if (validSelected.length > 0) {
               html +=
-                '<button type="button" class="util-btn" style="padding:2px 8px;font-size:11px;" onclick="clearSharedFreeTeachers()">선택 초기화</button>';
+                '<button type="button" class="util-btn chip-reset-btn" onclick="clearSharedFreeTeachers()">선택 초기화</button>';
             }
             html += '</div>';
             html += '<div class="teacher-chips-wrap">';
@@ -2618,7 +2629,8 @@
         if (!targetObj) {
           state.currentKey = '';
           mainTitleEl.textContent = isClassMode ? '학급 시간표' : '주간 시간표';
-          affEl.textContent = '';
+          affEl.classList.remove('is-subject-sub');
+          affEl.textContent = meta.schoolName ? meta.schoolName : '';
           subRoleEl.textContent = '';
           renderEmptyGridTable_(days, maxP, pTimes, liveSlot);
           syncModalTimetableView_();
@@ -2968,7 +2980,7 @@
               item.type +
               '\', \'' +
               escapeSingleQuote_(item.key) +
-              '\')">' +
+              '\', true)">' +
               '<div><span class="ac-main">' +
               escapeHtml_(displayTitle) +
               '</span> <span class="ac-sub">' +
@@ -2987,19 +2999,37 @@
       }
 
       function syncModeTabsUI() {
-        document.getElementById('tabClass').classList.toggle('active', state.mode === 'class');
-        document.getElementById('tabTeacher').classList.toggle('active', state.mode === 'teacher');
-        document.getElementById('tabFree').classList.toggle('active', state.mode === 'free');
+        var tabClassEl = document.getElementById('tabClass');
+        var tabTeacherEl = document.getElementById('tabTeacher');
+        var tabFreeEl = document.getElementById('tabFree');
         var tabSharedFreeEl = document.getElementById('tabSharedFree');
+        var btnSubTeacherEl = document.getElementById('btnToggleSubTeacher');
+        var btnMaskEl = document.getElementById('btnToggleMask');
+
+        if (tabClassEl) {
+          tabClassEl.classList.toggle('active', state.mode === 'class');
+          tabClassEl.setAttribute('aria-selected', state.mode === 'class' ? 'true' : 'false');
+        }
+        if (tabTeacherEl) {
+          tabTeacherEl.classList.toggle('active', state.mode === 'teacher');
+          tabTeacherEl.setAttribute('aria-selected', state.mode === 'teacher' ? 'true' : 'false');
+        }
+        if (tabFreeEl) {
+          tabFreeEl.classList.toggle('active', state.mode === 'free');
+          tabFreeEl.setAttribute('aria-selected', state.mode === 'free' ? 'true' : 'false');
+        }
         if (tabSharedFreeEl) {
           tabSharedFreeEl.classList.toggle('active', state.mode === 'shared_free');
+          tabSharedFreeEl.setAttribute('aria-selected', state.mode === 'shared_free' ? 'true' : 'false');
         }
-        document
-          .getElementById('btnToggleSubTeacher')
-          .classList.toggle('active-opt', state.showTeacherInClass);
-        document
-          .getElementById('btnToggleMask')
-          .classList.toggle('active-opt', state.maskTeacherName);
+        if (btnSubTeacherEl) {
+          btnSubTeacherEl.classList.toggle('active-opt', state.showTeacherInClass);
+          btnSubTeacherEl.setAttribute('aria-pressed', state.showTeacherInClass ? 'true' : 'false');
+        }
+        if (btnMaskEl) {
+          btnMaskEl.classList.toggle('active-opt', state.maskTeacherName);
+          btnMaskEl.setAttribute('aria-pressed', state.maskTeacherName ? 'true' : 'false');
+        }
       }
 
       function escapeHtml_(str) {
@@ -3033,43 +3063,26 @@
         }
         state.acFiltered = [];
         state.acSelectedIdx = -1;
+        state.currentKey = '';
         setQuickChipsVisible_(true);
-        if (!state.currentKey && state.data) {
-          window.switchMode(state.mode);
-        }
+        renderTimetable();
       };
 
       window.switchMode = function (newMode) {
         state.mode = newMode;
         state.hideQuickChips = false;
-        if (state.data) {
-          if (newMode === 'class') {
-            var cKeys = getSortedClassKeys(state.data.classes);
-            if (!state.data.classes[state.currentKey]) {
-              state.currentKey = cKeys.length > 0 ? cKeys[0] : '';
-            }
-          } else if (newMode === 'teacher') {
-            var tKeys = getSortedTeacherKeys(state.data.teachers);
-            if (!state.data.teachers[state.currentKey]) {
-              state.currentKey = tKeys.length > 0 ? tKeys[0] : '';
-            }
-          } else if (newMode === 'free') {
-            var freeList = getFreeTeacherObjects_(state.data, state.freeDayIdx, state.freePeriodIdx);
-            var hasCurrentInFree = freeList.some(function (t) {
-              return t.key === state.currentKey;
-            });
-            if (!hasCurrentInFree) {
-              state.currentKey = freeList.length > 0 ? freeList[0].key : '';
-            }
-          }
-        }
+        state.currentKey = '';
         syncModeTabsUI();
         renderTimetable();
       };
 
-      window.selectTarget = function (type, key) {
-        state.mode = type;
-        state.currentKey = key;
+      window.selectTarget = function (type, key, forceSelect) {
+        if (!forceSelect && state.mode === type && state.currentKey === key) {
+          state.currentKey = '';
+        } else {
+          state.mode = type;
+          state.currentKey = key;
+        }
         document.getElementById('autocompleteList').classList.remove('open');
         syncModeTabsUI();
         renderTimetable();
@@ -3077,7 +3090,7 @@
 
       window.selectFreeTeacher = function (key) {
         state.mode = 'free';
-        state.currentKey = key;
+        state.currentKey = state.currentKey === key ? '' : key;
         syncModeTabsUI();
         renderTimetable();
       };
@@ -3120,15 +3133,7 @@
       window.setFreeFilter = function (dayIdx, periodIdx) {
         state.freeDayIdx = dayIdx;
         state.freePeriodIdx = periodIdx;
-        if (state.data) {
-          var freeList = getFreeTeacherObjects_(state.data, dayIdx, periodIdx);
-          var hasCurrent = freeList.some(function (t) {
-            return t.key === state.currentKey;
-          });
-          if (!hasCurrent) {
-            state.currentKey = freeList.length > 0 ? freeList[0].key : '';
-          }
-        }
+        state.currentKey = '';
         renderTimetable();
       };
 
@@ -6274,7 +6279,7 @@
         }
       };
 
-      function applyLoadedData(payload, saveToStorage) {
+      function applyLoadedData(payload, saveToStorage, preserveSelection) {
         normalizePayloadTeachers_(payload);
         state.data = payload;
         var initMeta = payload && payload.meta ? payload.meta : {};
@@ -6295,13 +6300,15 @@
         } else if (state.mode === 'teacher' && tKeys.length === 0 && cKeys.length > 0) {
           state.mode = 'class';
         }
-        if (state.mode === 'class') {
+        if (!preserveSelection) {
+          state.currentKey = '';
+        } else if (state.mode === 'class') {
           if (!state.currentKey || !payload.classes[state.currentKey]) {
-            state.currentKey = cKeys.length > 0 ? cKeys[0] : '';
+            state.currentKey = '';
           }
         } else if (state.mode === 'teacher') {
           if (!state.currentKey || !payload.teachers[state.currentKey]) {
-            state.currentKey = tKeys.length > 0 ? tKeys[0] : '';
+            state.currentKey = '';
           }
         } else if (state.mode === 'free') {
           var initFreeList = getFreeTeacherObjects_(payload, state.freeDayIdx, state.freePeriodIdx);
@@ -6309,7 +6316,7 @@
             return t.key === state.currentKey;
           });
           if (!hasInitFree) {
-            state.currentKey = initFreeList.length > 0 ? initFreeList[0].key : '';
+            state.currentKey = '';
           }
         }
         syncModeTabsUI();
@@ -6331,7 +6338,7 @@
             if (freshData) {
               state.sheetBackupData = freshData;
               syncSemesterSetsFromPayload_(freshData);
-              applyLoadedData(freshData, true);
+              applyLoadedData(freshData, true, true);
             }
           }
         });
@@ -6341,11 +6348,14 @@
       }
 
       function initApp() {
+        state.currentKey = '';
         state.todayDayIdx = detectTodayIndex();
         loadProjectsFromLocalStorage_();
         renderProjectSelectUI_();
 
-        var inlineData = parseServerPayload_(SERVER_INLINE_RAW);
+        var inlineData = parseServerPayload_(
+          typeof SERVER_INLINE_RAW !== 'undefined' ? SERVER_INLINE_RAW : null
+        );
         if (inlineData && typeof inlineData === 'object') {
           state.sheetBackupData = inlineData;
           syncSemesterSetsFromPayload_(inlineData);
@@ -6414,7 +6424,7 @@
             e.preventDefault();
             var chosen = state.acFiltered[state.acSelectedIdx] || state.acFiltered[0];
             if (chosen) {
-              window.selectTarget(chosen.type, chosen.key);
+              window.selectTarget(chosen.type, chosen.key, true);
               inputEl.blur();
             }
           } else if (e.key === 'Escape') {

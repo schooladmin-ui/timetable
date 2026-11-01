@@ -1,11 +1,131 @@
 {
-  "name": "25-timetable",
-  "primaryColors": {
-    "green": "#027046",
-    "blue": "#05014A",
-    "stoneGray": "#313339"
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-02T01:15:50+09:00",
+  "title": "Design System: 25-Timetable",
+  "extensions": {
+    "colorMeta": {
+      "brand-green": {
+        "role": "primary",
+        "displayName": "Emerald Green",
+        "canonical": "#027046",
+        "tonalRamp": ["#EAF6F0", "#B6E2CE", "#048C58", "#027046", "#015434"]
+      },
+      "brand-stone": {
+        "role": "neutral",
+        "displayName": "Stone Gray",
+        "canonical": "#313339",
+        "tonalRamp": ["#F4F6F8", "#D1D5DB", "#52525B", "#313339", "#111827"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display Title",
+        "purpose": "Main timetable card title (학급 시간표, 주간 시간표, 공유 공강 시간표)."
+      },
+      "headline": {
+        "displayName": "School Year & Semester Headline",
+        "purpose": "Top editorial school year and semester header."
+      },
+      "title": {
+        "displayName": "Cell Subject Title",
+        "purpose": "Subject name inside each timetable cell."
+      },
+      "body": {
+        "displayName": "Body & Controls",
+        "purpose": "Mode tabs, top row toggles, and table headers."
+      },
+      "label": {
+        "displayName": "Chip & Badge Label",
+        "purpose": "Quick selection chips, grade badges, and status pills (minimum 12px)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "control-elevation",
+        "value": "0 2px 8px rgba(2, 112, 70, 0.08)",
+        "purpose": "Subtle lift for top-row search bar, semester dropdown, and active toggles."
+      },
+      {
+        "name": "mode-tray-elevation",
+        "value": "0 3px 10px rgba(2, 112, 70, 0.12)",
+        "purpose": "Prominent framing for the 4 primary mode tabs."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-snappy",
+        "value": "0.14s ease",
+        "purpose": "Instant-feeling hover and active state transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      }
+    ]
   },
-  "wcagTarget": "AA",
-  "minFontSizePx": 12
+  "components": [
+    {
+      "name": "Mode Tab Button (Active)",
+      "kind": "nav",
+      "refersTo": "mode-tab-active",
+      "description": "High-visibility active mode tab inside the green-bordered mode tray.",
+      "html": "<button class=\"ds-mode-tab-active\">👨‍🏫 교사 시간표</button>",
+      "css": ".ds-mode-tab-active { height: 38px; padding: 0 15px; font-size: 14px; font-weight: 800; background: #027046; color: #FFFFFF; border: 1.5px solid #015434; border-radius: 8px; box-shadow: 0 3px 10px rgba(2, 112, 70, 0.28); cursor: pointer; }"
+    },
+    {
+      "name": "Mode Tab Button (Inactive)",
+      "kind": "nav",
+      "refersTo": "mode-tab-inactive",
+      "description": "Card-styled inactive mode tab with crisp mint border and hover lift.",
+      "html": "<button class=\"ds-mode-tab\">✨ 공강 교사 찾기</button>",
+      "css": ".ds-mode-tab { height: 38px; padding: 0 15px; font-size: 14px; font-weight: 800; background: #FFFFFF; color: #015434; border: 1.5px solid #B6E2CE; border-radius: 8px; box-shadow: 0 1px 3px rgba(2, 112, 70, 0.08); cursor: pointer; transition: all 0.14s ease; } .ds-mode-tab:hover { border-color: #027046; color: #027046; transform: translateY(-1px); }"
+    },
+    {
+      "name": "Top Row Toggle Button",
+      "kind": "button",
+      "refersTo": "top-toggle-btn",
+      "description": "46px full-height toggle button aligned with the semester dropdown and search input.",
+      "html": "<button class=\"ds-top-toggle\">🔒 *표시</button>",
+      "css": ".ds-top-toggle { height: 46px; padding: 0 14px; font-size: 14px; font-weight: 800; background: #EAF6F0; color: #015434; border: 2px solid #027046; border-radius: 12px; box-shadow: 0 2px 8px rgba(2, 112, 70, 0.1); cursor: pointer; }"
+    },
+    {
+      "name": "Quick Selection Chip",
+      "kind": "chip",
+      "refersTo": "quick-chip",
+      "description": "Pill-shaped class or teacher selection button inside the n×10 grid.",
+      "html": "<button class=\"ds-q-chip\">1학년 1반</button>",
+      "css": ".ds-q-chip { padding: 5px 10px; font-size: 12px; font-weight: 600; background: #FFFFFF; color: #313339; border: 1px solid #D1D5DB; border-radius: 999px; cursor: pointer; transition: all 0.12s ease; } .ds-q-chip:hover { border-color: #027046; background: #EAF6F0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Crisp Editorial Grid",
+    "overview": "학교 현장의 복잡한 시간표 데이터를 한눈에 판독할 수 있도록 에디토리얼 인쇄물의 명쾌한 타이포그래피 위계와 고대비 격자 시스템을 결합한 디자인 언어입니다.",
+    "keyCharacteristics": [
+      "Single Emerald Green (#027046) + Stone Gray (#313339) high-contrast editorial hierarchy",
+      "46px unified top control row with instant 0ms Chosung search",
+      "High-visibility 4-mode tab tray and n×10 fixed selection grid"
+    ],
+    "rules": [
+      {
+        "name": "The Single Brand Green Rule",
+        "body": "Use #027046 as the sole primary accent color and #313339 for structural borders and shared-free highlights.",
+        "section": "colors"
+      },
+      {
+        "name": "The 12px Typography Floor",
+        "body": "Never render any label, chip, or badge below 12px to guarantee legibility on classroom displays and prints.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do maintain 46px height across all 1st-row controls (.top-toggle-btn, .project-select-wrap, .search-input-wrap).",
+      "Do keep all text and chip labels at 12px or above."
+    ],
+    "donts": [
+      "Don't include hardcoded dummy timetable data.",
+      "Don't show search/control bars in @media print output."
+    ]
+  }
 }
-

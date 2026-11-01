@@ -24,7 +24,7 @@ function doGet(e) {
 
   return template
     .evaluate()
-    .setTitle('초고속 학급·교사 시간표 검색')
+    .setTitle('교사·학급 시간표 검색')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
