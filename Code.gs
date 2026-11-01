@@ -298,27 +298,67 @@ function buildTimetablePayloadFromRealSheets_() {
     );
   }
 
+  ensureDefaultSemesterSheetNames_(ss);
+
   var allSheets = ss.getSheets();
   var allSheetNames = allSheets.map(function (s) {
     return s.getName();
   });
 
-  var weeklySheet = findSheetByNameCandidates_(allSheets, allSheetNames, ['주간시간표', '주간 시간표', '교사시간표', '교사 시간표']);
-  var classSheet = findSheetByNameCandidates_(allSheets, allSheetNames, ['학급시간표', '학급 시간표', '반별시간표', '반별 시간표']);
+  var semesterSets = discoverSemesterSheetSets_(ss);
+  var props = PropertiesService.getScriptProperties();
+  var savedActivePrefix = props.getProperty(PROP_ACTIVE_PROJECT_KEY) || '';
+  var targetPrefix = normalizeSemesterPrefix_(savedActivePrefix || '2025-2');
+
+  var selectedSet = null;
+  for (var sIdx = 0; sIdx < semesterSets.length; sIdx++) {
+    if (semesterSets[sIdx].prefix === targetPrefix) {
+      selectedSet = semesterSets[sIdx];
+      break;
+    }
+  }
+  if (!selectedSet && semesterSets.length > 0) {
+    selectedSet =
+      semesterSets.filter(function (s) {
+        return s.prefix === '2025-2';
+      })[0] || semesterSets[0];
+    targetPrefix = selectedSet.prefix;
+  }
+
+  var weeklySheet = selectedSet ? selectedSet.weeklySheet : null;
+  var classSheet = selectedSet ? selectedSet.classSheet : null;
+
+  if (!weeklySheet && !classSheet) {
+    weeklySheet = findSheetByNameCandidates_(allSheets, allSheetNames, [
+      '2025-2주간시간표',
+      '주간시간표',
+      '주간 시간표'
+    ]);
+    classSheet = findSheetByNameCandidates_(allSheets, allSheetNames, [
+      '2025-2학급시간표',
+      '학급시간표',
+      '학급 시간표',
+      '반별시간표'
+    ]);
+  }
 
   if (!weeklySheet && !classSheet) {
     return buildEmptyErrorPayload_(
-      '스프레드시트에서 [주간시간표] 또는 [학급시간표] 시트를 찾을 수 없습니다. 현재 시트 목록: [' +
+      '스프레드시트에서 [20XX-X주간시간표] 또는 [20XX-X학급시간표] 시트를 찾을 수 없습니다. 현재 시트 목록: [' +
         allSheetNames.join(', ') +
         ']',
       allSheetNames
     );
   }
 
+  var prefixYearMatch = targetPrefix.match(/^(20\d{2})-([12])$/);
+  var defaultYearStr = (prefixYearMatch ? prefixYearMatch[1] : new Date().getFullYear()) + '학년도';
+  var defaultSemStr = prefixYearMatch ? prefixYearMatch[2] + '학기' : '시간표';
+
   var meta = {
     schoolName: '',
-    schoolYear: new Date().getFullYear() + '학년도',
-    semester: '시간표',
+    schoolYear: defaultYearStr,
+    semester: defaultSemStr,
     slogan: '',
     weekRange: '',
     periodTimes: ['', '', '', '', '', '', '']
@@ -341,6 +381,11 @@ function buildTimetablePayloadFromRealSheets_() {
     parseSheetAutoLayout_(weeklySheet, 'teacher', store, meta);
   }
 
+  if (prefixYearMatch) {
+    meta.schoolYear = prefixYearMatch[1] + '학년도';
+    meta.semester = prefixYearMatch[2] + '학기';
+  }
+
   // 3. 주간시간표 <-> 학급시간표 양방향 교차 매핑 (빠진 교사명/과목명/학급 시간표 상호 보완)
   crossEnrichTimetables_(store);
 
@@ -349,7 +394,11 @@ function buildTimetablePayloadFromRealSheets_() {
 
   if (classCount === 0 && teacherCount === 0) {
     return buildEmptyErrorPayload_(
-      '[주간시간표] 및 [학급시간표] 시트에서 유효한 시간표 데이터를 찾지 못했습니다. 시트 내 요일(월~금) 및 교시(1~7) 표 구조를 확인해 주세요.',
+      '[' +
+        (weeklySheet ? weeklySheet.getName() : targetPrefix + '주간시간표') +
+        '] 및 [' +
+        (classSheet ? classSheet.getName() : targetPrefix + '학급시간표') +
+        '] 시트에서 유효한 시간표 데이터를 찾지 못했습니다. 시트 내 요일(월~금) 및 교시(1~7) 표 구조를 확인해 주세요.',
       allSheetNames
     );
   }
@@ -359,10 +408,23 @@ function buildTimetablePayloadFromRealSheets_() {
 
   var sig = computePayloadSignature_(store.classes, store.teachers, meta);
 
+  var serializedSets = semesterSets.map(function (item) {
+    return {
+      id: item.prefix,
+      prefix: item.prefix,
+      name: item.name,
+      weeklySheetName: item.weeklySheetName,
+      classSheetName: item.classSheetName
+    };
+  });
+
   return {
     ok: true,
     v: updateVersionTimestamp_(),
     sig: sig,
+    activePrefix: targetPrefix,
+    projectName: formatSemesterDisplayName_(targetPrefix),
+    semesterSets: serializedSets,
     sheetNames: allSheetNames,
     foundSheets: {
       weekly: weeklySheet ? weeklySheet.getName() : null,
@@ -1546,21 +1608,45 @@ function parseTeacherCellContent_(rawText, defaultSubject) {
           subj = s;
         }
       } else {
-        var tokens = s.split(/\s+/);
-        if (tokens.length >= 2) {
-          var tc0 = tryExtractClassKeyStrict_(tokens[0]);
-          var tc1 = tryExtractClassKeyStrict_(tokens[tokens.length - 1]);
-          if (tc0) {
-            classKey = tc0;
-            subj = tokens.slice(1).join(' ');
-          } else if (tc1) {
-            classKey = tc1;
-            subj = tokens.slice(0, tokens.length - 1).join(' ');
+        var slashOrUnder = s.split(/[/_]/);
+        if (slashOrUnder.length === 2) {
+          var sc0 = tryExtractClassKeyStrict_(slashOrUnder[0].trim());
+          var sc1 = tryExtractClassKeyStrict_(slashOrUnder[1].trim());
+          if (sc0) {
+            classKey = sc0;
+            subj = slashOrUnder[1].trim();
+          } else if (sc1) {
+            subj = slashOrUnder[0].trim();
+            classKey = sc1;
+          }
+        }
+        if (!classKey && !subj) {
+          var mCompact = s.match(/^([1-6]\s*-\s*(?:[1-9]|1\d|2[0-5])|[1-6](?:0[1-9]|1\d|2[0-5]))\s*([가-힣A-Za-z].*)$/);
+          if (mCompact) {
+            var cComp = tryExtractClassKeyStrict_(mCompact[1]);
+            if (cComp) {
+              classKey = cComp;
+              subj = mCompact[2].trim();
+            }
+          }
+        }
+        if (!classKey && !subj) {
+          var tokens = s.split(/\s+/);
+          if (tokens.length >= 2) {
+            var tc0 = tryExtractClassKeyStrict_(tokens[0]);
+            var tc1 = tryExtractClassKeyStrict_(tokens[tokens.length - 1]);
+            if (tc0) {
+              classKey = tc0;
+              subj = tokens.slice(1).join(' ');
+            } else if (tc1) {
+              classKey = tc1;
+              subj = tokens.slice(0, tokens.length - 1).join(' ');
+            } else {
+              subj = s;
+            }
           } else {
             subj = s;
           }
-        } else {
-          subj = s;
         }
       }
     }
@@ -1857,4 +1943,281 @@ function createEmptyGrid_(periods, daysCount) {
     g.push(row);
   }
   return g;
+}
+
+/* ============================================================================
+   학기별 시트(탭) 세트 자동 인식 · 이름 변경 · 업로드 시트 생성 API
+   - 시트 명명 규칙: '20XX-X주간시간표', '20XX-X학급시간표' (교사시간표 명칭 미사용)
+   - 기존 '주간시간표', '학급시간표' 시트는 '2025-2주간시간표', '2025-2학급시간표'로 자동 변경
+   ============================================================================ */
+var PROP_ACTIVE_PROJECT_KEY = 'ACTIVE_TIMETABLE_SEMESTER_PREFIX_V2';
+
+/**
+ * 입력 문자열(예: '2026년 1학기', '2026-1', '2025-2주간시간표')을 '20XX-X' 접두어로 정규화
+ */
+function normalizeSemesterPrefix_(rawInput) {
+  var s = String(rawInput || '').trim();
+  if (!s || s === '__SHEET__') return '2025-2';
+  var m = s.match(/(20\d{2})\s*(?:년|학년도|[-_. ])\s*([12])\s*(?:학기)?/);
+  if (m) return m[1] + '-' + m[2];
+  var mCompact = s.match(/^(20\d{2})0?([12])$/);
+  if (mCompact) return mCompact[1] + '-' + mCompact[2];
+  var cleaned = s
+    .replace(/(?:주간\s*시간표|학급\s*시간표|반별\s*시간표)$/g, '')
+    .replace(/[-_.\s]+$/g, '')
+    .trim();
+  return cleaned || '2025-2';
+}
+
+function formatSemesterDisplayName_(prefix) {
+  var p = normalizeSemesterPrefix_(prefix);
+  var m = p.match(/^(20\d{2})-([12])$/);
+  if (m) {
+    return m[1] + '년 ' + m[2] + '학기';
+  }
+  return p;
+}
+
+/**
+ * 기존 스프레드시트에 '주간시간표', '학급시간표'로 저장되어 있는 시트명을
+ * '2025-2주간시간표', '2025-2학급시간표'로 자동 변경
+ */
+function ensureDefaultSemesterSheetNames_(ss) {
+  if (!ss) return;
+  try {
+    var targetWeeklyName = '2025-2주간시간표';
+    var targetClassName = '2025-2학급시간표';
+
+    if (!ss.getSheetByName(targetWeeklyName)) {
+      var legacyWeekly = ss.getSheetByName('주간시간표') || ss.getSheetByName('주간 시간표');
+      if (legacyWeekly) {
+        legacyWeekly.setName(targetWeeklyName);
+      }
+    }
+
+    if (!ss.getSheetByName(targetClassName)) {
+      var legacyClass =
+        ss.getSheetByName('학급시간표') ||
+        ss.getSheetByName('학급 시간표') ||
+        ss.getSheetByName('반별시간표');
+      if (legacyClass) {
+        legacyClass.setName(targetClassName);
+      }
+    }
+  } catch (e) {}
+}
+
+/**
+ * 스프레드시트 내 모든 '20XX-X주간시간표' 및 '20XX-X학급시간표' 시트 세트를 스캔하여 반환
+ */
+function discoverSemesterSheetSets_(ss) {
+  if (!ss) return [];
+  var sheets = ss.getSheets();
+  var map = {};
+  var order = [];
+
+  for (var i = 0; i < sheets.length; i++) {
+    var sh = sheets[i];
+    var sName = String(sh.getName() || '').trim();
+    if (!sName || sName.charAt(0) === '_') continue;
+
+    var m = sName.match(/^(.+?)[-_ ]?(주간\s*시간표|학급\s*시간표|반별\s*시간표)$/);
+    if (!m) continue;
+
+    var rawPrefix = String(m[1] || '').trim();
+    var roleText = String(m[2] || '').replace(/\s+/g, '');
+    var prefix = normalizeSemesterPrefix_(rawPrefix);
+
+    if (!map[prefix]) {
+      map[prefix] = {
+        prefix: prefix,
+        name: formatSemesterDisplayName_(prefix),
+        weeklySheet: null,
+        classSheet: null,
+        weeklySheetName: prefix + '주간시간표',
+        classSheetName: prefix + '학급시간표'
+      };
+      order.push(prefix);
+    }
+
+    if (roleText === '주간시간표') {
+      map[prefix].weeklySheet = sh;
+      map[prefix].weeklySheetName = sName;
+    } else if (roleText === '학급시간표' || roleText === '반별시간표') {
+      map[prefix].classSheet = sh;
+      map[prefix].classSheetName = sName;
+    }
+  }
+
+  order.sort(function (a, b) {
+    return b.localeCompare(a, 'ko');
+  });
+
+  return order.map(function (k) {
+    return map[k];
+  });
+}
+
+/**
+ * 2차원 셀 배열을 지정한 이름의 시트(탭)에 생성 또는 덮어쓰기로 기록
+ */
+function writeRowsToSheet_(ss, sheetName, rows) {
+  if (!ss || !sheetName || !Array.isArray(rows) || rows.length === 0) return null;
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  } else {
+    try {
+      sheet.showSheet();
+    } catch (e) {}
+    sheet.clearContents();
+  }
+
+  var maxCols = 1;
+  for (var r = 0; r < rows.length; r++) {
+    if (Array.isArray(rows[r]) && rows[r].length > maxCols) {
+      maxCols = rows[r].length;
+    }
+  }
+
+  var rect = [];
+  for (var i = 0; i < rows.length; i++) {
+    var srcRow = Array.isArray(rows[i]) ? rows[i] : [];
+    var newRow = [];
+    for (var c = 0; c < maxCols; c++) {
+      var v = srcRow[c];
+      newRow.push(v === undefined || v === null ? '' : String(v));
+    }
+    rect.push(newRow);
+  }
+
+  sheet.getRange(1, 1, rect.length, maxCols).setValues(rect);
+  return sheet;
+}
+
+/**
+ * 업로드된 주간시간표 + 학급시간표 2차원 배열 데이터를
+ * 스프레드시트에 '20XX-X주간시간표', '20XX-X학급시간표' 시트로 추가·저장하고 파싱 결과 반환
+ */
+function saveSemesterSheetsToSpreadsheet(requestJson) {
+  var req = typeof requestJson === 'string' ? JSON.parse(requestJson) : requestJson;
+  if (!req) {
+    throw new Error('업로드 데이터가 전달되지 않았습니다.');
+  }
+
+  var ss = getTargetSpreadsheet_();
+  if (!ss) {
+    throw new Error('연결된 구글 스프레드시트를 찾을 수 없습니다.');
+  }
+
+  ensureDefaultSemesterSheetNames_(ss);
+
+  var prefix = normalizeSemesterPrefix_(req.prefix || req.name || '2026-1');
+  var weeklySheetName = prefix + '주간시간표';
+  var classSheetName = prefix + '학급시간표';
+
+  if (Array.isArray(req.weeklyRows) && req.weeklyRows.length > 0) {
+    writeRowsToSheet_(ss, weeklySheetName, req.weeklyRows);
+  }
+  if (Array.isArray(req.classRows) && req.classRows.length > 0) {
+    writeRowsToSheet_(ss, classSheetName, req.classRows);
+  }
+
+  PropertiesService.getScriptProperties().setProperty(PROP_ACTIVE_PROJECT_KEY, prefix);
+  clearTimetableCache_();
+
+  var payload = buildTimetablePayloadFromRealSheets_();
+  var serialized = JSON.stringify(payload);
+  if (payload && payload.ok) {
+    putCachedJson_(serialized);
+  }
+  return serialized;
+}
+
+/**
+ * 상단 드롭다운 또는 프로젝트 목록에서 학기('20XX-X') 선택 시 해당 시트 세트를 읽어와 반환
+ */
+function switchActiveSemesterOnServer(prefixInput) {
+  var prefix = normalizeSemesterPrefix_(prefixInput || '2025-2');
+  PropertiesService.getScriptProperties().setProperty(PROP_ACTIVE_PROJECT_KEY, prefix);
+  clearTimetableCache_();
+
+  var payload = buildTimetablePayloadFromRealSheets_();
+  var serialized = JSON.stringify(payload);
+  if (payload && payload.ok) {
+    putCachedJson_(serialized);
+  }
+  return serialized;
+}
+
+/**
+ * 특정 학기의 '20XX-X주간시간표', '20XX-X학급시간표' 시트(탭)를 스프레드시트에서 삭제
+ */
+function deleteSemesterSheetsOnServer(prefixInput) {
+  var prefix = normalizeSemesterPrefix_(prefixInput);
+  var ss = getTargetSpreadsheet_();
+  if (!ss) {
+    throw new Error('연결된 구글 스프레드시트를 찾을 수 없습니다.');
+  }
+
+  ensureDefaultSemesterSheetNames_(ss);
+
+  var weeklyName = prefix + '주간시간표';
+  var className = prefix + '학급시간표';
+  var wSheet = ss.getSheetByName(weeklyName);
+  var cSheet = ss.getSheetByName(className);
+
+  if (wSheet && ss.getSheets().length > 1) {
+    ss.deleteSheet(wSheet);
+  }
+  if (cSheet && ss.getSheets().length > 1) {
+    ss.deleteSheet(cSheet);
+  }
+
+  var remainingSets = discoverSemesterSheetSets_(ss);
+  var nextPrefix = remainingSets.length > 0 ? remainingSets[0].prefix : '2025-2';
+  PropertiesService.getScriptProperties().setProperty(PROP_ACTIVE_PROJECT_KEY, nextPrefix);
+  clearTimetableCache_();
+
+  var payload = buildTimetablePayloadFromRealSheets_();
+  var serialized = JSON.stringify(payload);
+  if (payload && payload.ok) {
+    putCachedJson_(serialized);
+  }
+  return serialized;
+}
+
+/**
+ * 스프레드시트에 존재하는 학기별 시트 세트 목록 및 활성 학기 반환
+ */
+function getServerProjectsBundle() {
+  var ss = getTargetSpreadsheet_();
+  if (!ss) {
+    return JSON.stringify({ ok: false, activeProjectId: '2025-2', semesterSets: [] });
+  }
+  ensureDefaultSemesterSheetNames_(ss);
+  var sets = discoverSemesterSheetSets_(ss).map(function (item) {
+    return {
+      id: item.prefix,
+      prefix: item.prefix,
+      name: item.name,
+      weeklySheetName: item.weeklySheetName,
+      classSheetName: item.classSheetName
+    };
+  });
+  var props = PropertiesService.getScriptProperties();
+  var activeId = normalizeSemesterPrefix_(props.getProperty(PROP_ACTIVE_PROJECT_KEY) || '2025-2');
+  return JSON.stringify({
+    ok: true,
+    activeProjectId: activeId,
+    semesterSets: sets
+  });
+}
+
+function setActiveProjectOnServer(projectId) {
+  return switchActiveSemesterOnServer(projectId);
+}
+
+function deleteProjectOnServer(projectId) {
+  return deleteSemesterSheetsOnServer(projectId);
 }

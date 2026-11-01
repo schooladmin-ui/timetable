@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>초고속 학급·교사 시간표 검색</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     /* ==========================================================================
        1. Design Tokens & Reset (단일 메인 테마 컬러: 녹색 #027046)
@@ -71,7 +72,7 @@
     }
 
     .control-bar {
-      max-width: 1020px;
+      max-width: 1080px;
       margin: 0 auto;
       padding: 14px 20px 10px;
       display: flex;
@@ -84,6 +85,96 @@
       justify-content: center;
       align-items: center;
       width: 100%;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .project-bar-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .project-select-wrap {
+      display: inline-flex;
+      align-items: center;
+      background: #FFFFFF;
+      border: 2px solid var(--main-color);
+      border-radius: var(--radius-lg);
+      padding: 0 12px;
+      height: 46px;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(2, 112, 70, 0.08);
+      transition: border-color 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .project-select-wrap:focus-within {
+      border-color: var(--main-color-dark);
+      box-shadow: 0 0 0 4px var(--main-focus-ring);
+    }
+
+    .project-select-icon {
+      font-size: 15px;
+      user-select: none;
+    }
+
+    .project-select {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: var(--font-sans);
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--main-color-dark);
+      cursor: pointer;
+      padding: 4px 2px;
+      min-width: 140px;
+      max-width: 220px;
+    }
+
+    .project-bar-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .project-select-wrap {
+      display: inline-flex;
+      align-items: center;
+      background: #FFFFFF;
+      border: 2px solid var(--main-color);
+      border-radius: var(--radius-lg);
+      padding: 0 12px;
+      height: 46px;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(2, 112, 70, 0.08);
+      transition: border-color 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .project-select-wrap:focus-within {
+      border-color: var(--main-color-dark);
+      box-shadow: 0 0 0 4px var(--main-focus-ring);
+    }
+
+    .project-select-icon {
+      font-size: 15px;
+      user-select: none;
+    }
+
+    .project-select {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: var(--font-sans);
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--main-color-dark);
+      cursor: pointer;
+      padding: 4px 2px;
+      min-width: 140px;
+      max-width: 220px;
     }
 
     .control-row-actions {
@@ -126,8 +217,9 @@
 
     .search-box-container {
       position: relative;
-      width: 100%;
-      max-width: 680px;
+      flex: 1;
+      min-width: 240px;
+      max-width: 620px;
     }
 
     .search-input-wrap {
@@ -308,7 +400,7 @@
     }
 
     .quick-chips-bar {
-      max-width: 1020px;
+      max-width: 1080px;
       margin: 0 auto;
       padding: 6px 20px 12px;
       overflow-x: hidden;
@@ -318,7 +410,7 @@
       display: none !important;
     }
 
-    /* 학년별 3×n 그리드 배열 (가로 스크롤바 없음) */
+    /* 학년별 n×10 그리드 배열 (가로 스크롤바 없음) */
     .class-grade-grid {
       display: flex;
       flex-direction: column;
@@ -328,7 +420,7 @@
 
     .grade-chip-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       width: 100%;
     }
@@ -340,25 +432,37 @@
       background: var(--main-tint-bg);
       border: 1px solid var(--main-tint-border);
       border-radius: var(--radius-sm);
-      padding: 4px 8px;
+      padding: 5px 8px;
       white-space: nowrap;
       flex-shrink: 0;
-      min-width: 48px;
+      min-width: 52px;
       text-align: center;
     }
 
     .grade-row-chips {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(66px, 1fr));
+      grid-template-columns: repeat(10, minmax(0, 1fr));
       gap: 5px;
       flex: 1;
       min-width: 0;
     }
 
-    .teacher-chips-wrap {
+    .teacher-chips-section {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .teacher-chips-header {
+      display: flex;
       align-items: center;
+      gap: 6px;
+    }
+
+    .teacher-chips-wrap {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
       gap: 5px;
       width: 100%;
     }
@@ -375,12 +479,17 @@
       border: 1px solid #D1D5DB;
       background: #FFFFFF;
       color: var(--ink-secondary);
-      padding: 4px 10px;
+      padding: 5px 4px;
+      width: 100%;
+      min-width: 0;
       border-radius: var(--radius-pill);
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
       transition: all 0.12s ease;
     }
 
@@ -520,7 +629,8 @@
     .eh-right-meta-top {
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: flex-end;
+      margin-left: auto;
     }
 
     .eh-zoom-btn {
@@ -549,21 +659,11 @@
       transform: translateY(0);
     }
 
-    .sparkle-duo {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-    }
-
-    .sparkle-overlap {
-      margin-left: -4px;
-    }
-
     .eh-bottom-row {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       justify-content: space-between;
-      padding: 12px 0 12px;
+      padding: 12px 0;
       border-bottom: 2px solid var(--brand-stone);
       gap: 16px;
     }
@@ -577,27 +677,40 @@
     }
 
     .eh-affiliation-box {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 12px;
       text-align: right;
-      line-height: 1.45;
+      line-height: 1.1;
     }
 
     .eh-school-class {
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--main-color);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .eh-school-class.is-subject-sub {
+      font-size: 26px;
+      font-weight: 700;
       color: var(--brand-stone);
-      letter-spacing: -0.02em;
     }
 
     .eh-teacher-homeroom {
-      font-size: 16px;
+      font-size: 34px;
       font-weight: 800;
       color: var(--main-color);
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
     }
 
     .eh-teacher-homeroom .divider {
       color: var(--ink-subtle);
-      margin: 0 5px;
+      margin: 0 6px;
       font-weight: 400;
     }
 
@@ -867,12 +980,14 @@
     }
 
     .ff-results {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
       gap: 5px;
+      width: 100%;
     }
 
     .ff-empty-msg {
+      grid-column: 1 / -1;
       font-size: 13px;
       color: var(--ink-subtle);
     }
@@ -1047,6 +1162,263 @@
       margin-top: 5px;
     }
 
+    /* ==========================================================================
+       7. 프로젝트(학기별 엑셀 세트) 업로드 및 관리 모달
+       ========================================================================== */
+    .proj-modal-dialog {
+      width: min(95vw, 720px);
+      max-height: 90vh;
+      background: #FFFFFF;
+      border: 2px solid var(--brand-stone);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.38);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .proj-modal-body {
+      padding: 20px 24px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background: var(--bg-page);
+    }
+
+    .proj-section-card {
+      background: #FFFFFF;
+      border: 1px solid #D1D5DB;
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .proj-section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ink-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .proj-section-desc {
+      font-size: 12.5px;
+      color: var(--ink-subtle);
+      line-height: 1.45;
+    }
+
+    .proj-name-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .proj-field-label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--ink-secondary);
+    }
+
+    .proj-name-input {
+      height: 40px;
+      padding: 0 12px;
+      border: 1.5px solid #9CA3AF;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink-primary);
+      outline: none;
+    }
+
+    .proj-name-input:focus {
+      border-color: var(--main-color);
+      box-shadow: 0 0 0 3px var(--main-focus-ring);
+    }
+
+    .proj-preset-chips {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .proj-preset-chip {
+      border: 1px solid var(--main-tint-border);
+      background: var(--main-tint-bg);
+      color: var(--main-color-dark);
+      border-radius: var(--radius-pill);
+      padding: 3px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .proj-preset-chip:hover {
+      background: var(--main-color);
+      color: #FFFFFF;
+      border-color: var(--main-color);
+    }
+
+    .proj-files-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+    }
+
+    .proj-file-box {
+      border: 1.5px dashed var(--main-color);
+      background: #F9FAFB;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+
+    .proj-file-box:hover,
+    .proj-file-box.has-file {
+      background: var(--main-tint-bg);
+      border-style: solid;
+    }
+
+    .proj-file-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--main-color-dark);
+    }
+
+    .proj-file-sub {
+      font-size: 11.5px;
+      color: var(--ink-subtle);
+    }
+
+    .proj-file-chosen {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      word-break: break-all;
+      margin-top: 2px;
+    }
+
+    .proj-submit-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .proj-status-msg {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--main-color-dark);
+    }
+
+    .proj-status-msg.is-error {
+      color: #B91C1C;
+    }
+
+    .proj-save-btn {
+      height: 40px;
+      padding: 0 18px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--main-color);
+      color: #FFFFFF;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.14s ease;
+    }
+
+    .proj-save-btn:hover {
+      background: var(--main-color-dark);
+    }
+
+    .proj-list-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .proj-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #E5E7EB;
+      border-radius: var(--radius-md);
+      background: #F9FAFB;
+      flex-wrap: wrap;
+    }
+
+    .proj-item-row.active-proj {
+      border-color: var(--main-color);
+      background: var(--main-tint-bg);
+    }
+
+    .proj-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .proj-item-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .proj-active-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 1px 7px;
+      border-radius: var(--radius-pill);
+      background: var(--main-color);
+      color: #FFFFFF;
+    }
+
+    .proj-item-meta {
+      font-size: 12px;
+      color: var(--ink-subtle);
+    }
+
+    .proj-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .proj-del-btn {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: var(--radius-md);
+      border: 1px solid #FCA5A5;
+      background: #FEF2F2;
+      color: #B91C1C;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .proj-del-btn:hover {
+      background: #FEE2E2;
+    }
+
     @media print {
       body {
         background: #FFFFFF;
@@ -1088,7 +1460,10 @@
       }
       .eh-school-class,
       .eh-teacher-homeroom {
-        font-size: 13px;
+        font-size: 22px;
+      }
+      .eh-school-class.is-subject-sub {
+        font-size: 18px;
       }
       .tt-table col.col-period {
         width: 58px;
@@ -1109,8 +1484,23 @@
        ======================================================================== -->
   <header class="control-bar-wrap">
     <div class="control-bar">
-      <!-- 1행: 가운데 정렬된 고가시성 초성 & 단축어 즉시 검색창 -->
+      <!-- 1행: 좌측 년도·학기(프로젝트) 드롭다운 + 중앙 초고속 초성 & 단축어 즉시 검색창 -->
       <div class="control-row-search">
+        <div class="project-bar-group">
+          <div class="project-select-wrap" title="년도·학기 선택 (20XX-X주간시간표 + 20XX-X학급시간표 시트 세트)">
+            <span class="project-select-icon">📅</span>
+            <select
+              id="projectSelect"
+              class="project-select"
+              onchange="handleProjectSelectChange(this.value)"
+              aria-label="년도 및 학기 선택"
+            >
+              <option value="2025-2">2025년 2학기 (2025-2)</option>
+              <option value="__OPEN_MODAL__">➕ 학기(엑셀) 등록/관리...</option>
+            </select>
+          </div>
+        </div>
+
         <div class="search-box-container">
           <div class="search-input-wrap">
             <span class="search-icon">🔍</span>
@@ -1137,7 +1527,7 @@
         </div>
       </div>
 
-      <!-- 2행: 좌측(학급 시간표 / 교사 시간표 / 공강 교사 찾기) + 우측(교사명, *표시, 동기화, HWPX, XLSX, PDF) -->
+      <!-- 2행: 좌측(학급 시간표 / 교사 시간표 / 공강 교사 찾기) + 우측(엑셀등록, 교사명, *표시, 동기화, HWPX, XLSX, PDF) -->
       <div class="control-row-actions">
         <div class="mode-tabs" role="tablist">
           <button type="button" class="mode-tab active" id="tabClass" onclick="switchMode('class')">
@@ -1152,10 +1542,13 @@
         </div>
 
         <div class="utility-btns">
+          <button type="button" class="util-btn" onclick="openProjectModal()" title="교사 시간표 + 주간 시간표 엑셀(.xls, .xlsx) 세트 업로드 및 학기 프로젝트 관리">
+            📂 학기 엑셀 등록
+          </button>
           <button type="button" class="util-btn" id="btnToggleSubTeacher" onclick="toggleShowTeacherInClass()" title="학급 시간표에서 담당 교사명 표시 전환">
             👤 교사명
           </button>
-          <button type="button" class="util-btn" id="btnToggleMask" onclick="toggleMaskTeacherName()" title="교사 성명 마지막 글자 * 마스킹 전환">
+          <button type="button" class="util-btn active-opt" id="btnToggleMask" onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환">
             🔒 *표시
           </button>
           <button type="button" class="util-btn" onclick="refreshFromSheet()" title="스프레드시트 주간시간표·학급시간표 최신 데이터 동기화">
@@ -1186,7 +1579,7 @@
     <section id="sheetSetupPanel" class="sheet-setup-panel">
       <div class="setup-title" id="setupTitle">📌 스프레드시트 연결 확인</div>
       <div class="setup-desc" id="setupDesc">
-        스프레드시트의 <strong>[주간시간표]</strong> 시트와 <strong>[학급시간표]</strong> 시트 데이터를 불러옵니다.
+        스프레드시트의 <strong>[2025-2주간시간표]</strong> 시트와 <strong>[2025-2학급시간표]</strong> 시트 데이터를 불러옵니다.
       </div>
       <div class="setup-form-row">
         <input
@@ -1198,6 +1591,9 @@
         />
         <button type="button" class="setup-submit-btn" onclick="connectSpreadsheetUrl()">
           시트 연결 및 불러오기
+        </button>
+        <button type="button" class="setup-submit-btn" style="background:var(--brand-stone)" onclick="openProjectModal()">
+          📂 엑셀(.xls/.xlsx) 세트 업로드
         </button>
       </div>
     </section>
@@ -1229,14 +1625,6 @@
                   <line x1="8" y1="11" x2="14" y2="11"></line>
                 </svg>
               </button>
-              <span class="sparkle-duo" aria-hidden="true">
-                <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
-                  <path id="sparklePrimaryPath" d="M18 3C18 11.2843 11.2843 18 3 18C11.2843 18 18 24.7157 18 33C18 24.7157 24.7157 18 33 18C24.7157 18 18 11.2843 18 3Z" fill="#027046" stroke="#313339" stroke-width="2" stroke-linejoin="round"/>
-                </svg>
-                <svg width="30" height="30" viewBox="0 0 36 36" fill="none" class="sparkle-overlap">
-                  <path id="sparkleSecondaryPath" d="M18 3C18 11.2843 11.2843 18 3 18C11.2843 18 18 24.7157 18 33C18 24.7157 24.7157 18 33 18C24.7157 18 18 11.2843 18 3Z" fill="#EAF6F0" stroke="#027046" stroke-width="2" stroke-linejoin="round"/>
-                </svg>
-              </span>
             </div>
           </div>
 
@@ -1325,6 +1713,120 @@
     </div>
   </div>
 
+  <!-- ========================================================================
+       년도·학기 프로젝트(교사 시간표 + 주간 시간표 엑셀 세트) 업로드 및 관리 모달
+       ======================================================================== -->
+  <div
+    class="tt-modal-backdrop"
+    id="projectManagerModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="projModalTitle"
+    onclick="handleProjectModalBackdropClick(event)"
+  >
+    <div class="proj-modal-dialog">
+      <header class="tt-modal-header">
+        <div class="tt-modal-title-group">
+          <span class="tt-modal-year-badge">시트 세트 관리</span>
+          <h2 class="tt-modal-main-title" id="projModalTitle">📅 년도·학기 시간표 시트 추가 및 관리</h2>
+        </div>
+        <div class="tt-modal-actions">
+          <button type="button" class="tt-modal-close-btn" onclick="closeProjectModal()" title="창 닫기 (Esc)">
+            ✕ 닫기
+          </button>
+        </div>
+      </header>
+      <div class="proj-modal-body">
+        <section class="proj-section-card">
+          <div class="proj-section-title">
+            <span>➕ 새 학기 시트 추가 (20XX-X주간시간표 + 20XX-X학급시간표 세트)</span>
+          </div>
+          <div class="proj-section-desc">
+            <strong>주간시간표</strong>와 <strong>학급시간표</strong> 엑셀 파일(<code>.xls</code>, <code>.xlsx</code>)을 업로드하면 구글 스프레드시트에 <strong><code>20XX-X주간시간표</code></strong>, <strong><code>20XX-X학급시간표</code></strong> 이름으로 시트(탭)가 추가·저장됩니다.
+          </div>
+
+          <div class="proj-name-row">
+            <label class="proj-field-label" for="projNameInput">년도·학기 선택 (시트명 자동 생성 규칙: <code>20XX-X주간시간표</code>, <code>20XX-X학급시간표</code>)</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <select id="projYearSelect" class="proj-name-input" style="width:125px; cursor:pointer;" onchange="syncProjectNameFromSelects()">
+                <option value="2025년">2025년</option>
+                <option value="2026년" selected>2026년</option>
+                <option value="2027년">2027년</option>
+                <option value="2028년">2028년</option>
+              </select>
+              <select id="projSemSelect" class="proj-name-input" style="width:115px; cursor:pointer;" onchange="syncProjectNameFromSelects()">
+                <option value="1학기" selected>1학기</option>
+                <option value="2학기">2학기</option>
+              </select>
+              <input
+                type="text"
+                id="projNameInput"
+                class="proj-name-input"
+                style="flex:1; min-width:180px;"
+                value="2026-1"
+                placeholder="예: 2025-2, 2026-1"
+                oninput="updateSheetNamePreview_()"
+                autocomplete="off"
+              />
+            </div>
+            <div class="proj-preset-chips">
+              <span class="chip-label">빠른 선택:</span>
+              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2025-1')">2025-1 (2025년 1학기)</button>
+              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2025-2')">2025-2 (2025년 2학기)</button>
+              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2026-1')">2026-1 (2026년 1학기)</button>
+              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2026-2')">2026-2 (2026년 2학기)</button>
+            </div>
+            <div class="proj-file-sub" id="sheetNamePreview" style="font-weight:700; color:var(--main-color-dark); margin-top:2px;">
+              📌 생성될 스프레드시트 시트명: <strong>[2026-1주간시간표]</strong> · <strong>[2026-1학급시간표]</strong>
+            </div>
+          </div>
+
+          <div class="proj-files-grid">
+            <label class="proj-file-box" id="boxWeeklyFile" for="fileWeeklyInput">
+              <span class="proj-file-title">📅 [파일 1] 주간시간표 (.xls / .xlsx)</span>
+              <span class="proj-file-sub" id="subWeeklySheetLabel">스프레드시트 [2026-1주간시간표] 시트로 저장</span>
+              <span class="proj-file-chosen" id="labelWeeklyFile">선택된 파일 없음</span>
+              <input
+                type="file"
+                id="fileWeeklyInput"
+                accept=".xls,.xlsx,.csv"
+                style="display:none"
+                onchange="handleProjectFileSelected('weekly', this)"
+              />
+            </label>
+
+            <label class="proj-file-box" id="boxClassFile" for="fileClassInput">
+              <span class="proj-file-title">🏫 [파일 2] 학급시간표 (.xls / .xlsx)</span>
+              <span class="proj-file-sub" id="subClassSheetLabel">스프레드시트 [2026-1학급시간표] 시트로 저장</span>
+              <span class="proj-file-chosen" id="labelClassFile">선택된 파일 없음</span>
+              <input
+                type="file"
+                id="fileClassInput"
+                accept=".xls,.xlsx,.csv"
+                style="display:none"
+                onchange="handleProjectFileSelected('class', this)"
+              />
+            </label>
+          </div>
+
+          <div class="proj-submit-row">
+            <span class="proj-status-msg" id="projUploadStatus"></span>
+            <button type="button" class="proj-save-btn" id="btnSaveProjectSet" onclick="saveAndLoadUploadedProject()">
+              💾 스프레드시트에 시트 추가 및 불러오기
+            </button>
+          </div>
+        </section>
+
+        <section class="proj-section-card">
+          <div class="proj-section-title">
+            <span>📁 스프레드시트 내 학기별 시트 목록</span>
+          </div>
+          <div class="proj-list-wrap" id="savedProjectsList"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <script>
     var SERVER_INLINE_RAW = <?!= typeof initialJson !== 'undefined' ? initialJson : 'null' ?>;
   </script>
@@ -1334,6 +1836,7 @@
       'use strict';
 
       var STORAGE_KEY = 'TIMETABLE_REAL_SHEETS_CACHE_V3';
+      var PROJECTS_STORAGE_KEY = 'TIMETABLE_PROJECTS_STORAGE_V1';
       var CHO_LIST = [
         'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ',
         'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
@@ -1341,11 +1844,18 @@
 
       var state = {
         data: null,
+        sheetBackupData: null,
+        projects: [],
+        activeProjectId: '2025-2',
+        pendingFiles: {
+          weekly: null,
+          classFile: null
+        },
         theme: 'green',
         mode: 'class',
         currentKey: '',
         showTeacherInClass: false,
-        maskTeacherName: false,
+        maskTeacherName: true,
         todayDayIdx: 0,
         freeDayIdx: 0,
         freePeriodIdx: 0,
@@ -1373,11 +1883,10 @@
         var n = String(name || '').trim();
         if (!n) return '';
         if (forceFull || !state.maskTeacherName) return n;
-        if (n.charAt(n.length - 1) === '*') return n;
         if (n.length >= 2) {
-          return n.slice(0, n.length - 1) + '*';
+          return '*' + n.slice(1, n.length - 1) + '*';
         }
-        return n;
+        return '*';
       }
 
       function splitSubjectBracket(subj) {
@@ -1509,6 +2018,7 @@
             type: 'class',
             key: c.key,
             title: c.label,
+            homeroom: c.homeroom || '',
             sub: c.homeroom ? '담임 ' + c.homeroom : '학급 시간표',
             blob: searchBlob
           });
@@ -1651,6 +2161,35 @@
       }
 
       /**
+       * 현재 메뉴(mode)에서 실제로 선택된 유효 대상(학급 또는 교사) 객체만 반환
+       * 선택된 대상이 없거나 공강 교사가 없는 경우 이전 시간표로 폴백하지 않고 null 반환
+       */
+      function getActiveTargetObject_(data) {
+        if (!data) return null;
+        if (state.mode === 'class') {
+          return state.currentKey && data.classes && data.classes[state.currentKey]
+            ? data.classes[state.currentKey]
+            : null;
+        }
+        if (state.mode === 'teacher') {
+          return state.currentKey && data.teachers && data.teachers[state.currentKey]
+            ? data.teachers[state.currentKey]
+            : null;
+        }
+        if (state.mode === 'free') {
+          if (!state.currentKey || !data.teachers || !data.teachers[state.currentKey]) {
+            return null;
+          }
+          var freeList = getFreeTeacherObjects_(data, state.freeDayIdx, state.freePeriodIdx);
+          var isFree = freeList.some(function (t) {
+            return t.key === state.currentKey;
+          });
+          return isFree ? data.teachers[state.currentKey] : null;
+        }
+        return null;
+      }
+
+      /**
        * 상단 통합 버튼 패널 렌더링
        * - 학급 시간표 모드: 학년별 3×n 그리드
        * - 교사 시간표 모드: 전체 교사 1인 1버튼
@@ -1706,23 +2245,30 @@
         } else if (state.mode === 'teacher') {
           var tKeys = getSortedTeacherKeys(data.teachers);
           if (tKeys.length > 0) {
-            html += '<div class="teacher-chips-wrap">';
+            html += '<div class="teacher-chips-section">';
+            html += '<div class="teacher-chips-header">';
             html += '<span class="chip-label">👨‍🏫 교사 (' + tKeys.length + '):</span>';
+            html += '</div>';
+            html += '<div class="teacher-chips-wrap">';
             for (var j = 0; j < tKeys.length; j++) {
               var tk = tKeys[j];
               var tObj = data.teachers[tk];
               var activeT = state.currentKey === tk ? ' active' : '';
+              var tBtnLabel =
+                formatTeacherName(tObj.name, false) +
+                (tObj.subjectMain ? ' (' + tObj.subjectMain + ')' : '');
               html +=
                 '<button type="button" class="q-chip' +
                 activeT +
+                '" title="' +
+                escapeHtml_(tBtnLabel) +
                 '" onclick="selectTarget(\'teacher\', \'' +
                 escapeSingleQuote_(tk) +
                 '\')">' +
-                escapeHtml_(formatTeacherName(tObj.name, false)) +
-                (tObj.subjectMain ? ' (' + escapeHtml_(tObj.subjectMain) + ')' : '') +
+                escapeHtml_(tBtnLabel) +
                 '</button>';
             }
-            html += '</div>';
+            html += '</div></div>';
           }
         } else if (state.mode === 'free') {
           var days = data.days || ['월', '화', '수', '목', '금'];
@@ -1773,14 +2319,18 @@
             for (var f = 0; f < freeTeachers.length; f++) {
               var ft = freeTeachers[f];
               var activeFree = state.currentKey === ft.key ? ' active' : '';
+              var fBtnLabel =
+                formatTeacherName(ft.name, false) +
+                (ft.subjectMain ? ' (' + ft.subjectMain + ')' : '');
               html +=
                 '<button type="button" class="q-chip' +
                 activeFree +
+                '" title="' +
+                escapeHtml_(fBtnLabel) +
                 '" onclick="selectFreeTeacher(\'' +
                 escapeSingleQuote_(ft.key) +
-                '\')">✨ ' +
-                escapeHtml_(formatTeacherName(ft.name, false)) +
-                (ft.subjectMain ? ' (' + escapeHtml_(ft.subjectMain) + ')' : '') +
+                '\')">' +
+                escapeHtml_(fBtnLabel) +
                 '</button>';
             }
           }
@@ -1842,37 +2392,52 @@
         }
 
         var isClassMode = state.mode === 'class';
-        var targetObj = null;
-
-        if (isClassMode) {
-          targetObj = data.classes[state.currentKey] || (cKeys.length > 0 ? data.classes[cKeys[0]] : null);
-        } else {
-          targetObj = data.teachers[state.currentKey] || (tKeys.length > 0 ? data.teachers[tKeys[0]] : null);
-        }
+        var targetObj = getActiveTargetObject_(data);
 
         var days = data.days || ['월', '화', '수', '목', '금'];
         var maxP = data.maxPeriod || 7;
         var pTimes = meta.periodTimes || [];
-
-        if (!targetObj) {
-          document.getElementById('headerMainTitle').textContent = '시간표';
-          document.getElementById('headerAffiliation').textContent = '';
-          document.getElementById('headerSubRole').textContent = '';
-          renderEmptyGridTable_(days, maxP);
-          return;
-        }
-
-        state.currentKey = targetObj.key;
+        var liveSlot = detectCurrentScheduleSlot_(pTimes, maxP);
 
         var mainTitleEl = document.getElementById('headerMainTitle');
         var affEl = document.getElementById('headerAffiliation');
         var subRoleEl = document.getElementById('headerSubRole');
+
+        if (!targetObj) {
+          state.currentKey = '';
+          mainTitleEl.textContent = isClassMode
+            ? meta.semester && meta.semester !== '시간표'
+              ? meta.semester + ' 시간표'
+              : '학급 시간표'
+            : '주간 시간표';
+          affEl.textContent = '';
+          subRoleEl.textContent = '';
+          renderEmptyGridTable_(days, maxP, pTimes, liveSlot);
+          syncModalTimetableView_();
+          renderQuickChips();
+
+          var elapsedEmpty = (performance.now() - t0).toFixed(2);
+          document.getElementById('perfIndicator').textContent =
+            '⚡ 초고속 렌더링 완료 (' +
+            elapsedEmpty +
+            'ms · 학급 ' +
+            cKeys.length +
+            '개 / 교사 ' +
+            tKeys.length +
+            '명)';
+          document.getElementById('versionIndicator').textContent =
+            '시트 동기화 버전: ' + (data.v || '-');
+          return;
+        }
+
+        state.currentKey = targetObj.key;
 
         if (isClassMode) {
           mainTitleEl.textContent =
             meta.semester && meta.semester !== '시간표'
               ? meta.semester + ' 시간표'
               : '학급 시간표';
+          affEl.classList.remove('is-subject-sub');
           affEl.textContent =
             (meta.schoolName ? meta.schoolName + ' ' : '') + targetObj.label;
           if (targetObj.homeroom) {
@@ -1884,6 +2449,7 @@
           }
         } else {
           mainTitleEl.textContent = '주간 시간표';
+          affEl.classList.add('is-subject-sub');
           affEl.textContent =
             (meta.schoolName ? meta.schoolName + ' ' : '') +
             (targetObj.subjectMain ? targetObj.subjectMain : '');
@@ -1892,8 +2458,6 @@
             escapeHtml_(formatTeacherName(targetObj.name, false)) +
             (targetObj.homeroomOf ? ' (' + escapeHtml_(targetObj.homeroomOf) + ' 담임)' : '');
         }
-
-        var liveSlot = detectCurrentScheduleSlot_(pTimes, maxP);
 
         var theadHtml = '<tr><th class="th-period-corner">교시</th>';
         for (var d = 0; d < days.length; d++) {
@@ -1946,7 +2510,7 @@
                 '\')" onkeydown="handleCellKey(event, \'teacher\', \'' +
                 escapeSingleQuote_(cell.t) +
                 '\')" title="' +
-                escapeHtml_(cell.t) +
+                escapeHtml_(formatTeacherName(cell.t, false)) +
                 ' 교사 시간표로 이동"';
             } else if (!isClassMode && cell.c && data.classes[cell.c]) {
               cellClasses.push('clickable');
@@ -2090,26 +2654,47 @@
         }
       };
 
-      function renderEmptyGridTable_(days, maxP) {
+      function renderEmptyGridTable_(days, maxP, pTimes, liveSlot) {
         var theadHtml = '<tr><th class="th-period-corner">교시</th>';
         for (var d = 0; d < days.length; d++) {
+          var todayThCls = liveSlot && d === liveSlot.dayIdx ? ' class="th-today"' : '';
           var rawDay = String(days[d] || '');
           var dayLabel = rawDay.indexOf('요일') !== -1 ? rawDay : rawDay + '요일';
-          theadHtml += '<th>' + dayLabel + '</th>';
+          theadHtml += '<th' + todayThCls + '>' + dayLabel + '</th>';
         }
         theadHtml += '</tr>';
         document.getElementById('ttThead').innerHTML = theadHtml;
 
         var tbodyHtml = '';
         for (var p = 0; p < maxP; p++) {
-          tbodyHtml += '<tr><td class="td-period"><div class="period-num">' + (p + 1) + '교시</div></td>';
+          var pTimeStr = pTimes && pTimes[p] ? pTimes[p] : '';
+          var isCurrentPeriod = liveSlot && liveSlot.dayIdx !== -1 && p === liveSlot.periodIdx;
+          tbodyHtml +=
+            '<tr><td class="td-period' +
+            (isCurrentPeriod ? ' is-current-period' : '') +
+            '"><div class="period-num">' +
+            (p + 1) +
+            '교시</div>' +
+            (pTimeStr ? '<div class="period-time">' + escapeHtml_(pTimeStr) + '</div>' : '') +
+            '</td>';
           for (var c = 0; c < 5; c++) {
-            tbodyHtml += '<td class="td-cell"><span class="cell-empty-dash">—</span></td>';
+            var isCurrentSlot =
+              liveSlot && c === liveSlot.dayIdx && p === liveSlot.periodIdx;
+            tbodyHtml +=
+              '<td class="td-cell' +
+              (isCurrentSlot ? ' is-current-slot' : '') +
+              '"><span class="cell-empty-dash">—</span></td>';
           }
           tbodyHtml += '</tr>';
           if (p === 3 && maxP > 4) {
+            var lunchCls =
+              liveSlot && liveSlot.dayIdx !== -1 && liveSlot.isLunch
+                ? ' class="tr-lunch is-current-lunch"'
+                : ' class="tr-lunch"';
             tbodyHtml +=
-              '<tr class="tr-lunch">' +
+              '<tr' +
+              lunchCls +
+              '>' +
               '<td class="td-period td-lunch-period"><div class="period-num">점심</div></td>' +
               '<td class="td-cell td-lunch-cell" colspan="5">점심 시간</td>' +
               '</tr>';
@@ -2140,6 +2725,8 @@
         state.acSelectedIdx = matches.length > 0 ? 0 : -1;
 
         if (matches.length === 0) {
+          state.currentKey = '';
+          renderTimetable();
           listEl.innerHTML =
             '<div class="ac-item"><span class="ac-sub">일치하는 학급이나 교사가 없습니다.</span></div>';
           listEl.classList.add('open');
@@ -2163,6 +2750,14 @@
             var selCls = i === state.acSelectedIdx ? ' selected' : '';
             var badgeCls = item.type === 'class' ? 'class-b' : 'teacher-b';
             var badgeLabel = item.type === 'class' ? '학급' : '교사';
+            var displayTitle =
+              item.type === 'teacher' ? formatTeacherName(item.title, false) : item.title;
+            var displaySub =
+              item.type === 'class'
+                ? item.homeroom
+                  ? '담임 ' + formatTeacherName(item.homeroom, false)
+                  : '학급 시간표'
+                : item.sub;
             return (
               '<div class="ac-item' +
               selCls +
@@ -2172,9 +2767,9 @@
               escapeSingleQuote_(item.key) +
               '\')">' +
               '<div><span class="ac-main">' +
-              escapeHtml_(item.title) +
+              escapeHtml_(displayTitle) +
               '</span> <span class="ac-sub">' +
-              escapeHtml_(item.sub) +
+              escapeHtml_(displaySub) +
               '</span></div>' +
               '<span class="ac-badge ' +
               badgeCls +
@@ -2195,6 +2790,9 @@
         document
           .getElementById('btnToggleSubTeacher')
           .classList.toggle('active-opt', state.showTeacherInClass);
+        document
+          .getElementById('btnToggleMask')
+          .classList.toggle('active-opt', state.maskTeacherName);
       }
 
       function escapeHtml_(str) {
@@ -2229,6 +2827,9 @@
         state.acFiltered = [];
         state.acSelectedIdx = -1;
         setQuickChipsVisible_(true);
+        if (!state.currentKey && state.data) {
+          window.switchMode(state.mode);
+        }
       };
 
       window.switchMode = function (newMode) {
@@ -2237,21 +2838,21 @@
         if (state.data) {
           if (newMode === 'class') {
             var cKeys = getSortedClassKeys(state.data.classes);
-            if (!state.data.classes[state.currentKey] && cKeys.length > 0) {
-              state.currentKey = cKeys[0];
+            if (!state.data.classes[state.currentKey]) {
+              state.currentKey = cKeys.length > 0 ? cKeys[0] : '';
             }
           } else if (newMode === 'teacher') {
             var tKeys = getSortedTeacherKeys(state.data.teachers);
-            if (!state.data.teachers[state.currentKey] && tKeys.length > 0) {
-              state.currentKey = tKeys[0];
+            if (!state.data.teachers[state.currentKey]) {
+              state.currentKey = tKeys.length > 0 ? tKeys[0] : '';
             }
           } else if (newMode === 'free') {
             var freeList = getFreeTeacherObjects_(state.data, state.freeDayIdx, state.freePeriodIdx);
             var hasCurrentInFree = freeList.some(function (t) {
               return t.key === state.currentKey;
             });
-            if (!hasCurrentInFree && freeList.length > 0) {
-              state.currentKey = freeList[0].key;
+            if (!hasCurrentInFree) {
+              state.currentKey = freeList.length > 0 ? freeList[0].key : '';
             }
           }
         }
@@ -2282,9 +2883,10 @@
 
       window.toggleMaskTeacherName = function () {
         state.maskTeacherName = !state.maskTeacherName;
-        document
-          .getElementById('btnToggleMask')
-          .classList.toggle('active-opt', state.maskTeacherName);
+        syncModeTabsUI();
+        if (state.acFiltered && state.acFiltered.length > 0) {
+          renderAutocompleteItems();
+        }
         renderTimetable();
       };
 
@@ -2296,8 +2898,8 @@
           var hasCurrent = freeList.some(function (t) {
             return t.key === state.currentKey;
           });
-          if (!hasCurrent && freeList.length > 0) {
-            state.currentKey = freeList[0].key;
+          if (!hasCurrent) {
+            state.currentKey = freeList.length > 0 ? freeList[0].key : '';
           }
         }
         renderTimetable();
@@ -2471,11 +3073,7 @@
         var data = state.data;
         if (!data) return null;
         var isClassMode = state.mode === 'class';
-        var cKeys = getSortedClassKeys(data.classes);
-        var tKeys = getSortedTeacherKeys(data.teachers);
-        var targetObj = isClassMode
-          ? data.classes[state.currentKey] || (cKeys.length > 0 ? data.classes[cKeys[0]] : null)
-          : data.teachers[state.currentKey] || (tKeys.length > 0 ? data.teachers[tKeys[0]] : null);
+        var targetObj = getActiveTargetObject_(data);
         if (!targetObj) return null;
 
         var meta = data.meta || {};
@@ -2543,7 +3141,7 @@
           });
         }
 
-        var fileTag = isClassMode ? targetObj.label : targetObj.name + '_교사';
+        var fileTag = isClassMode ? targetObj.label : formatTeacherName(targetObj.name, false) + '_교사';
         fileTag = String(fileTag || '시간표').replace(/[\\/:*?"<>|\s]+/g, '_');
 
         return {
@@ -3207,17 +3805,2172 @@
         return raw;
       }
 
+      /* ========================================================================
+         학기별 스프레드시트 시트(20XX-X주간시간표 · 20XX-X학급시간표) 관리 및 엑셀 파서 엔진
+         ======================================================================== */
+      function normalizeClientSemesterPrefix_(rawInput) {
+        var s = String(rawInput || '').trim();
+        if (!s || s === '__SHEET__') return '2025-2';
+        var m = s.match(/(20\d{2})\s*(?:년|학년도|[-_. ])\s*([12])\s*(?:학기)?/);
+        if (m) return m[1] + '-' + m[2];
+        var mCompact = s.match(/^(20\d{2})0?([12])$/);
+        if (mCompact) return mCompact[1] + '-' + mCompact[2];
+        var cleaned = s
+          .replace(/(?:주간\s*시간표|학급\s*시간표|반별\s*시간표)$/g, '')
+          .replace(/[-_.\s]+$/g, '')
+          .trim();
+        return cleaned || '2025-2';
+      }
+
+      function formatClientSemesterDisplayName_(prefix) {
+        var p = normalizeClientSemesterPrefix_(prefix);
+        var m = p.match(/^(20\d{2})-([12])$/);
+        if (m) {
+          return m[1] + '년 ' + m[2] + '학기 (' + p + ')';
+        }
+        return p;
+      }
+
+      window.updateSheetNamePreview_ = function () {
+        var nameInput = document.getElementById('projNameInput');
+        var rawVal = nameInput ? nameInput.value : '2026-1';
+        var prefix = normalizeClientSemesterPrefix_(rawVal);
+        var wSheetName = prefix + '주간시간표';
+        var cSheetName = prefix + '학급시간표';
+
+        var previewEl = document.getElementById('sheetNamePreview');
+        if (previewEl) {
+          previewEl.innerHTML =
+            '📌 생성될 스프레드시트 시트명: <strong>[' +
+            escapeHtml_(wSheetName) +
+            ']</strong> · <strong>[' +
+            escapeHtml_(cSheetName) +
+            ']</strong>';
+        }
+        var subW = document.getElementById('subWeeklySheetLabel');
+        if (subW) {
+          subW.textContent = '스프레드시트 [' + wSheetName + '] 시트로 저장';
+        }
+        var subC = document.getElementById('subClassSheetLabel');
+        if (subC) {
+          subC.textContent = '스프레드시트 [' + cSheetName + '] 시트로 저장';
+        }
+      };
+
+      function ensureDefault2025_2InProjects_() {
+        var has2025_2 = state.projects.some(function (p) {
+          return p.id === '2025-2';
+        });
+        if (!has2025_2) {
+          state.projects.push({
+            id: '2025-2',
+            prefix: '2025-2',
+            name: '2025년 2학기',
+            weeklySheetName: '2025-2주간시간표',
+            classSheetName: '2025-2학급시간표',
+            classCount: 0,
+            teacherCount: 0,
+            payload: null
+          });
+        }
+      }
+
+      function loadProjectsFromLocalStorage_() {
+        try {
+          var raw = localStorage.getItem(PROJECTS_STORAGE_KEY);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.projects)) {
+              state.projects = parsed.projects.map(function (p) {
+                var pref = normalizeClientSemesterPrefix_(p.prefix || p.id || p.name);
+                return {
+                  id: pref,
+                  prefix: pref,
+                  name: p.name || formatClientSemesterDisplayName_(pref),
+                  weeklySheetName: p.weeklySheetName || pref + '주간시간표',
+                  classSheetName: p.classSheetName || pref + '학급시간표',
+                  weeklyFileName: p.weeklyFileName || '',
+                  classFileName: p.classFileName || '',
+                  updatedAt: p.updatedAt || '',
+                  classCount: p.classCount || 0,
+                  teacherCount: p.teacherCount || 0,
+                  payload: p.payload || null
+                };
+              });
+            }
+            if (parsed && parsed.activeProjectId) {
+              state.activeProjectId = normalizeClientSemesterPrefix_(parsed.activeProjectId);
+            }
+          }
+        } catch (e) {}
+        ensureDefault2025_2InProjects_();
+      }
+
+      function saveProjectsToLocalStorage_() {
+        try {
+          localStorage.setItem(
+            PROJECTS_STORAGE_KEY,
+            JSON.stringify({
+              activeProjectId: state.activeProjectId,
+              projects: state.projects
+            })
+          );
+        } catch (e) {}
+      }
+
+      function syncSemesterSetsFromPayload_(payload) {
+        if (!payload || typeof payload !== 'object') return;
+        var activePref = normalizeClientSemesterPrefix_(payload.activePrefix || state.activeProjectId || '2025-2');
+        state.activeProjectId = activePref;
+
+        if (Array.isArray(payload.semesterSets)) {
+          payload.semesterSets.forEach(function (sset) {
+            var pref = normalizeClientSemesterPrefix_(sset.prefix || sset.id);
+            var existing = null;
+            for (var i = 0; i < state.projects.length; i++) {
+              if (state.projects[i].id === pref) {
+                existing = state.projects[i];
+                break;
+              }
+            }
+            if (!existing) {
+              state.projects.push({
+                id: pref,
+                prefix: pref,
+                name: sset.name || pref,
+                weeklySheetName: sset.weeklySheetName || pref + '주간시간표',
+                classSheetName: sset.classSheetName || pref + '학급시간표',
+                classCount: 0,
+                teacherCount: 0,
+                payload: null
+              });
+            } else {
+              existing.weeklySheetName = sset.weeklySheetName || pref + '주간시간표';
+              existing.classSheetName = sset.classSheetName || pref + '학급시간표';
+            }
+          });
+        }
+
+        ensureDefault2025_2InProjects_();
+
+        for (var j = 0; j < state.projects.length; j++) {
+          if (state.projects[j].id === activePref) {
+            state.projects[j].payload = payload;
+            state.projects[j].classCount = Object.keys(payload.classes || {}).length;
+            state.projects[j].teacherCount = Object.keys(payload.teachers || {}).length;
+            if (payload.foundSheets) {
+              if (payload.foundSheets.weekly) state.projects[j].weeklySheetName = payload.foundSheets.weekly;
+              if (payload.foundSheets.classSheet) state.projects[j].classSheetName = payload.foundSheets.classSheet;
+            }
+            break;
+          }
+        }
+
+        state.projects.sort(function (a, b) {
+          return String(b.id || '').localeCompare(String(a.id || ''), 'ko');
+        });
+
+        saveProjectsToLocalStorage_();
+        renderProjectSelectUI_();
+        renderSavedProjectsList_();
+      }
+
+      function syncProjectsFromServerInBackground_() {
+        if (typeof google === 'undefined' || !google.script || !google.script.run) return;
+        var runner = google.script.run.withSuccessHandler(function (resStr) {
+          var bundle = parseServerPayload_(resStr);
+          if (!bundle || !bundle.ok) return;
+
+          if (Array.isArray(bundle.semesterSets)) {
+            bundle.semesterSets.forEach(function (sset) {
+              var pref = normalizeClientSemesterPrefix_(sset.prefix || sset.id);
+              var exists = state.projects.some(function (p) {
+                return p.id === pref;
+              });
+              if (!exists) {
+                state.projects.push({
+                  id: pref,
+                  prefix: pref,
+                  name: sset.name || pref,
+                  weeklySheetName: sset.weeklySheetName || pref + '주간시간표',
+                  classSheetName: sset.classSheetName || pref + '학급시간표',
+                  classCount: 0,
+                  teacherCount: 0,
+                  payload: null
+                });
+              }
+            });
+          }
+          ensureDefault2025_2InProjects_();
+          state.projects.sort(function (a, b) {
+            return String(b.id || '').localeCompare(String(a.id || ''), 'ko');
+          });
+          saveProjectsToLocalStorage_();
+          renderProjectSelectUI_();
+          renderSavedProjectsList_();
+        });
+        if (typeof runner.getServerProjectsBundle === 'function') {
+          runner.getServerProjectsBundle();
+        }
+      }
+
+      function renderProjectSelectUI_() {
+        var selectEl = document.getElementById('projectSelect');
+        if (!selectEl) return;
+
+        ensureDefault2025_2InProjects_();
+
+        var html = '';
+        for (var i = 0; i < state.projects.length; i++) {
+          var p = state.projects[i];
+          var optLabel = formatClientSemesterDisplayName_(p.id);
+          html +=
+            '<option value="' +
+            escapeHtml_(p.id) +
+            '">' +
+            escapeHtml_(optLabel) +
+            '</option>';
+        }
+        html += '<option value="__OPEN_MODAL__">➕ 학기(엑셀) 등록/관리...</option>';
+        selectEl.innerHTML = html;
+
+        var hasActiveInList = state.projects.some(function (p) {
+          return p.id === state.activeProjectId;
+        });
+        selectEl.value = hasActiveInList ? state.activeProjectId : '2025-2';
+      }
+
+      function renderSavedProjectsList_() {
+        var listEl = document.getElementById('savedProjectsList');
+        if (!listEl) return;
+
+        ensureDefault2025_2InProjects_();
+
+        var html = '';
+        for (var i = 0; i < state.projects.length; i++) {
+          var p = state.projects[i];
+          var isAct = state.activeProjectId === p.id;
+          var wSheet = p.weeklySheetName || p.id + '주간시간표';
+          var cSheet = p.classSheetName || p.id + '학급시간표';
+          var countMeta =
+            p.classCount || p.teacherCount
+              ? ' · 학급 ' + (p.classCount || 0) + '개 / 교사 ' + (p.teacherCount || 0) + '명'
+              : '';
+
+          html +=
+            '<div class="proj-item-row' +
+            (isAct ? ' active-proj' : '') +
+            '">' +
+            '<div class="proj-item-info">' +
+            '<div class="proj-item-name">' +
+            '<span>📅 ' +
+            escapeHtml_(formatClientSemesterDisplayName_(p.id)) +
+            '</span>' +
+            (isAct ? '<span class="proj-active-badge">현재 선택됨</span>' : '') +
+            '</div>' +
+            '<div class="proj-item-meta">' +
+            '시트: <strong>[' +
+            escapeHtml_(wSheet) +
+            ']</strong> · <strong>[' +
+            escapeHtml_(cSheet) +
+            ']</strong>' +
+            escapeHtml_(countMeta) +
+            '</div>' +
+            '</div>' +
+            '<div class="proj-item-actions">' +
+            '<button type="button" class="util-btn' +
+            (isAct ? ' active-opt' : '') +
+            '" onclick="selectSavedProject(\'' +
+            escapeSingleQuote_(p.id) +
+            '\')">' +
+            (isAct ? '✓ 사용 중' : '불러오기') +
+            '</button>' +
+            (state.projects.length > 1
+              ? '<button type="button" class="proj-del-btn" onclick="deleteSavedProject(\'' +
+                escapeSingleQuote_(p.id) +
+                '\')">삭제</button>'
+              : '') +
+            '</div>' +
+            '</div>';
+        }
+
+        listEl.innerHTML = html;
+      }
+
+      window.handleProjectSelectChange = function (val) {
+        if (val === '__OPEN_MODAL__') {
+          renderProjectSelectUI_();
+          window.openProjectModal();
+          return;
+        }
+        window.selectSavedProject(val);
+      };
+
+      window.openProjectModal = function () {
+        var statusEl = document.getElementById('projUploadStatus');
+        if (statusEl) {
+          statusEl.textContent = '';
+          statusEl.classList.remove('is-error');
+        }
+        window.updateSheetNamePreview_();
+        renderSavedProjectsList_();
+        var modal = document.getElementById('projectManagerModal');
+        if (modal) {
+          modal.classList.add('open');
+          document.body.style.overflow = 'hidden';
+        }
+      };
+
+      window.closeProjectModal = function () {
+        var modal = document.getElementById('projectManagerModal');
+        if (modal) {
+          modal.classList.remove('open');
+          document.body.style.overflow = '';
+        }
+      };
+
+      window.handleProjectModalBackdropClick = function (e) {
+        if (e.target && e.target.id === 'projectManagerModal') {
+          window.closeProjectModal();
+        }
+      };
+
+      window.syncProjectNameFromSelects = function () {
+        var yEl = document.getElementById('projYearSelect');
+        var sEl = document.getElementById('projSemSelect');
+        var nameInput = document.getElementById('projNameInput');
+        if (yEl && sEl && nameInput) {
+          var yNum = String(yEl.value || '').replace(/\D+/g, '') || '2026';
+          var sNum = String(sEl.value || '').replace(/\D+/g, '') || '1';
+          nameInput.value = yNum + '-' + sNum;
+          window.updateSheetNamePreview_();
+        }
+      };
+
+      window.fillPresetProjectName = function (presetStr) {
+        var prefix = normalizeClientSemesterPrefix_(presetStr);
+        var nameInput = document.getElementById('projNameInput');
+        if (nameInput) {
+          nameInput.value = prefix;
+        }
+        var m = prefix.match(/^(20\d{2})-([12])$/);
+        if (m) {
+          var yEl = document.getElementById('projYearSelect');
+          var sEl = document.getElementById('projSemSelect');
+          if (yEl) yEl.value = m[1] + '년';
+          if (sEl) sEl.value = m[2] + '학기';
+        }
+        window.updateSheetNamePreview_();
+      };
+
+      window.handleProjectFileSelected = function (slotType, inputEl) {
+        var file = inputEl && inputEl.files && inputEl.files[0] ? inputEl.files[0] : null;
+        if (slotType === 'weekly') {
+          state.pendingFiles.weekly = file;
+          var lblW = document.getElementById('labelWeeklyFile');
+          var boxW = document.getElementById('boxWeeklyFile');
+          if (lblW) lblW.textContent = file ? '✅ ' + file.name : '선택된 파일 없음';
+          if (boxW) boxW.classList.toggle('has-file', Boolean(file));
+        } else {
+          state.pendingFiles.classFile = file;
+          var lblC = document.getElementById('labelClassFile');
+          var boxC = document.getElementById('boxClassFile');
+          if (lblC) lblC.textContent = file ? '✅ ' + file.name : '선택된 파일 없음';
+          if (boxC) boxC.classList.toggle('has-file', Boolean(file));
+        }
+      };
+
+      window.selectSavedProject = function (projectId) {
+        var prefix = normalizeClientSemesterPrefix_(projectId || '2025-2');
+        state.activeProjectId = prefix;
+        saveProjectsToLocalStorage_();
+        renderProjectSelectUI_();
+        renderSavedProjectsList_();
+
+        var targetProj = null;
+        for (var i = 0; i < state.projects.length; i++) {
+          if (state.projects[i].id === prefix) {
+            targetProj = state.projects[i];
+            break;
+          }
+        }
+
+        if (targetProj && targetProj.payload) {
+          applyLoadedData(targetProj.payload, false);
+        }
+
+        var perfEl = document.getElementById('perfIndicator');
+        if (perfEl) {
+          perfEl.textContent = '🔄 스프레드시트 [' + prefix + '주간시간표] · [' + prefix + '학급시간표] 불러오는 중...';
+        }
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(function (resStr) {
+              var freshData = parseServerPayload_(resStr);
+              if (freshData && freshData.ok) {
+                state.sheetBackupData = freshData;
+                syncSemesterSetsFromPayload_(freshData);
+                applyLoadedData(freshData, true);
+              }
+            })
+            .switchActiveSemesterOnServer(prefix);
+        }
+        window.closeProjectModal();
+      };
+
+      window.deleteSavedProject = function (projectId) {
+        var prefix = normalizeClientSemesterPrefix_(projectId);
+        state.projects = state.projects.filter(function (p) {
+          return p.id !== prefix;
+        });
+        ensureDefault2025_2InProjects_();
+        if (state.activeProjectId === prefix) {
+          state.activeProjectId = state.projects.length > 0 ? state.projects[0].id : '2025-2';
+        }
+        saveProjectsToLocalStorage_();
+        renderProjectSelectUI_();
+        renderSavedProjectsList_();
+
+        var nextProj = state.projects.filter(function (p) {
+          return p.id === state.activeProjectId;
+        })[0];
+        if (nextProj && nextProj.payload) {
+          applyLoadedData(nextProj.payload, false);
+        }
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(function (resStr) {
+              var freshData = parseServerPayload_(resStr);
+              if (freshData && freshData.ok) {
+                state.sheetBackupData = freshData;
+                syncSemesterSetsFromPayload_(freshData);
+                applyLoadedData(freshData, true);
+              }
+            })
+            .deleteSemesterSheetsOnServer(prefix);
+        }
+      };
+
+      function readFileAsArrayBufferAsync_(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            resolve(e.target.result);
+          };
+          reader.onerror = function () {
+            reject(new Error('파일을 읽는 중 오류가 발생했습니다: ' + file.name));
+          };
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      /**
+       * HTML 테이블 형식의 .xls 파일(컴시간알리미 등)인지 판별 후 2차원 배열로 추출
+       */
+      function tryParseHtmlTableXls_(uint8, fileName) {
+        var startIdx = 0;
+        if (uint8.length >= 3 && uint8[0] === 0xef && uint8[1] === 0xbb && uint8[2] === 0xbf) {
+          startIdx = 3;
+        }
+        while (
+          startIdx < Math.min(uint8.length, 64) &&
+          (uint8[startIdx] === 0x20 ||
+            uint8[startIdx] === 0x09 ||
+            uint8[startIdx] === 0x0d ||
+            uint8[startIdx] === 0x0a)
+        ) {
+          startIdx++;
+        }
+        // ZIP(PK\x03\x04) 또는 OLE2(\xD0\xCF\x11\xE0) 바이너리는 HTML이 아님
+        if (
+          uint8.length >= 4 &&
+          ((uint8[0] === 0x50 && uint8[1] === 0x4b) || (uint8[0] === 0xd0 && uint8[1] === 0xcf))
+        ) {
+          return null;
+        }
+        if (uint8[startIdx] !== 0x3c) {
+          return null;
+        }
+
+        var text = new TextDecoder('utf-8').decode(uint8);
+        if (text.indexOf('\ufffd') !== -1 || /charset\s*=\s*(?:euc-kr|ks_c_5601|cp949)/i.test(text)) {
+          try {
+            text = new TextDecoder('euc-kr').decode(uint8);
+          } catch (e) {}
+        }
+        if (text.toLowerCase().indexOf('<table') === -1) {
+          return null;
+        }
+
+        var doc = new DOMParser().parseFromString(text, 'text/html');
+        var tables = doc.querySelectorAll('table');
+        if (!tables || tables.length === 0) return null;
+
+        var combinedRows = [];
+        for (var t = 0; t < tables.length; t++) {
+          var tbl = tables[t];
+          var caption = tbl.querySelector('caption');
+          if (caption && caption.textContent.trim()) {
+            combinedRows.push([caption.textContent.trim()]);
+          } else if (tbl.previousElementSibling && tbl.previousElementSibling.textContent.trim()) {
+            var prevTxt = tbl.previousElementSibling.textContent.trim();
+            if (prevTxt.length < 120) {
+              combinedRows.push([prevTxt]);
+            }
+          }
+
+          var trList = tbl.querySelectorAll('tr');
+          var grid = [];
+          for (var r = 0; r < trList.length; r++) {
+            if (!grid[r]) grid[r] = [];
+            var cells = trList[r].querySelectorAll('th, td');
+            var cCursor = 0;
+            for (var c = 0; c < cells.length; c++) {
+              while (grid[r][cCursor] !== undefined) {
+                cCursor++;
+              }
+              var cellEl = cells[c];
+              var rawHtml = cellEl.innerHTML
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/(?:p|div)>/gi, '\n');
+              var tmpDiv = document.createElement('div');
+              tmpDiv.innerHTML = rawHtml;
+              var cellText = (tmpDiv.textContent || '')
+                .replace(/\u00a0/g, ' ')
+                .split(/\r?\n/)
+                .map(function (line) {
+                  return line.trim();
+                })
+                .filter(Boolean)
+                .join('\n');
+
+              var rSpan = parseInt(cellEl.getAttribute('rowspan'), 10) || 1;
+              var cSpan = parseInt(cellEl.getAttribute('colspan'), 10) || 1;
+
+              for (var rs = 0; rs < rSpan; rs++) {
+                for (var cs = 0; cs < cSpan; cs++) {
+                  if (!grid[r + rs]) grid[r + rs] = [];
+                  grid[r + rs][cCursor + cs] = rs === 0 && cs === 0 ? cellText : '';
+                }
+              }
+              cCursor += cSpan;
+            }
+          }
+
+          for (var gr = 0; gr < grid.length; gr++) {
+            var rowArr = grid[gr] || [];
+            for (var gc = 0; gc < rowArr.length; gc++) {
+              if (rowArr[gc] === undefined) rowArr[gc] = '';
+            }
+            combinedRows.push(rowArr);
+          }
+          combinedRows.push(['']);
+        }
+
+        return [{ name: fileName.replace(/\.[^.]+$/, ''), rows: combinedRows }];
+      }
+
+      function readExcelFileToSheetsAsync_(file, roleHint) {
+        return readFileAsArrayBufferAsync_(file).then(function (buf) {
+          var uint8 = new Uint8Array(buf);
+
+          // 1순위: HTML 테이블 기반 .xls 파일(컴시간 등 EUC-KR/UTF-8 완벽 지원)
+          var htmlSheets = tryParseHtmlTableXls_(uint8, file.name);
+          if (htmlSheets && htmlSheets.length > 0) {
+            return htmlSheets.map(function (s) {
+              return {
+                name: s.name,
+                rows: s.rows,
+                fileName: file.name,
+                roleHint: roleHint
+              };
+            });
+          }
+
+          // 2순위: SheetJS (XLSX) 바이너리 .xls (BIFF8, CP949) 및 .xlsx 파싱
+          if (typeof XLSX !== 'undefined') {
+            var wb = XLSX.read(uint8, {
+              type: 'array',
+              codepage: 949,
+              cellText: true,
+              cellDates: false
+            });
+            var resultSheets = [];
+            (wb.SheetNames || []).forEach(function (sName) {
+              var ws = wb.Sheets[sName];
+              if (!ws) return;
+              var rows2d = XLSX.utils.sheet_to_json(ws, {
+                header: 1,
+                raw: false,
+                defval: ''
+              });
+              if (rows2d && rows2d.length > 0) {
+                resultSheets.push({
+                  name: sName,
+                  rows: rows2d,
+                  fileName: file.name,
+                  roleHint: roleHint
+                });
+              }
+            });
+            return resultSheets;
+          }
+
+          throw new Error('엑셀 파서 라이브러리를 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.');
+        });
+      }
+
+      /* ========================================================================
+         클라이언트 사이드 4-레이아웃 자동 판별 및 교차 매핑 파서 (Code.gs 호환)
+         ======================================================================== */
+      function parseDayCellClient_(val) {
+        var s = String(val || '').trim();
+        if (!s) return -1;
+        var m = s.match(/^([월화수목금])(?:요일)?$/);
+        return m ? ['월', '화', '수', '목', '금'].indexOf(m[1]) : -1;
+      }
+
+      function parsePeriodCellClient_(val) {
+        var s = String(val || '').trim();
+        if (!s) return null;
+        var circled = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+        for (var c = 0; c < circled.length; c++) {
+          if (s.indexOf(circled[c]) !== -1) {
+            var tMatch0 = s.match(/(\d{1,2}:\d{2})/);
+            return { period: c + 1, time: tMatch0 ? tMatch0[1] : '' };
+          }
+        }
+        var timeMatch = s.match(/(\d{1,2}:\d{2})/);
+        var clean = s
+          .replace(/\(\s*\d{1,2}:\d{2}[^)]*\)/g, '')
+          .replace(/\d{1,2}:\d{2}(\s*~\s*\d{1,2}:\d{2})?/g, '')
+          .trim();
+        var m = clean.match(/^(?:제\s*)?([1-9]|10)\s*(?:교시)?$/);
+        if (m) {
+          return {
+            period: parseInt(m[1], 10),
+            time: timeMatch ? timeMatch[1] : ''
+          };
+        }
+        return null;
+      }
+
+      function parseCombinedDayPeriodClient_(val) {
+        var s = String(val || '').trim();
+        if (!s) return null;
+        var m = s.match(/^([월화수목금])(?:요일)?\s*[-_(\s/]*([1-9]|10)\s*(?:교시)?\)?$/);
+        if (m) {
+          var dIdx = ['월', '화', '수', '목', '금'].indexOf(m[1]);
+          var pNum = parseInt(m[2], 10);
+          if (dIdx !== -1 && pNum >= 1 && pNum <= 10) {
+            return { dayIdx: dIdx, period: pNum };
+          }
+        }
+        return null;
+      }
+
+      function tryExtractClassKeyStrictClient_(raw) {
+        var s = String(raw || '').trim();
+        if (!s) return '';
+        var m1 = s.match(/^(?:제\s*)?([1-6])\s*(?:학년|[-.])\s*([1-9]|1\d|2[0-5])\s*(?:반)?$/);
+        if (m1) return parseInt(m1[1], 10) + '-' + parseInt(m1[2], 10);
+        var m2 = s.match(/^([1-6])(0[1-9]|1\d|2[0-5])\s*(?:반)?$/);
+        if (m2) return parseInt(m2[1], 10) + '-' + parseInt(m2[2], 10);
+        var mDate = s.match(/^([1-6])월\s*([1-9]|1\d|2[0-5])일$/);
+        if (mDate) return parseInt(mDate[1], 10) + '-' + parseInt(mDate[2], 10);
+        return '';
+      }
+
+      function tryExtractClassKeyFromTextClient_(blob) {
+        var s = String(blob || '');
+        var m1 = s.match(/(?:제\s*)?([1-6])\s*학년\s*([1-9]|1\d|2[0-5])\s*반/);
+        if (m1) return parseInt(m1[1], 10) + '-' + parseInt(m1[2], 10);
+        var m2 = s.match(/\b([1-6])\s*-\s*([1-9]|1\d|2[0-5])\s*(?:반)?\b/);
+        if (m2) return parseInt(m2[1], 10) + '-' + parseInt(m2[2], 10);
+        return '';
+      }
+
+      function normalizeClassKeyClient_(raw) {
+        var strict = tryExtractClassKeyStrictClient_(raw);
+        if (strict) return strict;
+        var fromText = tryExtractClassKeyFromTextClient_(raw);
+        if (fromText) return fromText;
+        return String(raw || '').trim();
+      }
+
+      function isIgnoredEntityNameClient_(name) {
+        var n = String(name || '').replace(/\s+/g, '');
+        if (!n) return true;
+        if (/^\d+$/.test(n)) return true;
+        var ignoreList = [
+          '교시', '요일', '합계', '계', '총계', '시수', '성명',
+          '교사', '교사명', '이름', '학급', '구분', '비고', '번호', '연번'
+        ];
+        return ignoreList.indexOf(n) !== -1;
+      }
+
+      function isActivityBracketClient_(bracketStr) {
+        var kw = [
+          '동아리', '학급회의', '봉사', '자율', '진로', '활동',
+          '선택', '이동', '보강', '합반', '강당', '체육관', '실'
+        ];
+        for (var i = 0; i < kw.length; i++) {
+          if (bracketStr.indexOf(kw[i]) !== -1) return true;
+        }
+        return false;
+      }
+
+      function isChangcheSubjectClient_(subj) {
+        var s = String(subj || '');
+        return (
+          s.indexOf('창체') !== -1 ||
+          s.indexOf('창의적체험') !== -1 ||
+          s.indexOf('자율') !== -1 ||
+          s === '동아리' ||
+          s === '봉사'
+        );
+      }
+
+      function createEmptyGridClient_(periods, daysCount) {
+        var g = [];
+        for (var p = 0; p < periods; p++) {
+          var row = [];
+          for (var d = 0; d < daysCount; d++) {
+            row.push(null);
+          }
+          g.push(row);
+        }
+        return g;
+      }
+
+      function ensureGridRowSizeClient_(grid, requiredRows) {
+        while (grid.length < requiredRows) {
+          grid.push([null, null, null, null, null]);
+        }
+      }
+
+      function ensureClassEntityClient_(store, classKey, homeroom) {
+        var cleanHr = parseClientTeacherName_(homeroom, '').name;
+        if (!store.classes[classKey]) {
+          var parts = classKey.split('-');
+          var isNum = parts.length === 2 && /^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]);
+          store.classes[classKey] = {
+            key: classKey,
+            label: isNum ? parts[0] + '학년 ' + parts[1] + '반' : classKey,
+            grade: isNum ? parseInt(parts[0], 10) : 99,
+            classNo: isNum ? parseInt(parts[1], 10) : 99,
+            homeroom: cleanHr || '',
+            grid: createEmptyGridClient_(store.maxPeriod, 5)
+          };
+        } else if (cleanHr && !store.classes[classKey].homeroom) {
+          store.classes[classKey].homeroom = cleanHr;
+        }
+        return store.classes[classKey];
+      }
+
+      function ensureTeacherEntityClient_(store, teacherName, subjectMain, homeroomClass) {
+        var cleaned = parseClientTeacherName_(teacherName, subjectMain);
+        var key = cleaned.name;
+        var subj = cleaned.subject;
+        if (!key || isIgnoredEntityNameClient_(key)) return null;
+
+        if (!store.teachers[key]) {
+          store.teachers[key] = {
+            key: key,
+            name: key,
+            subjectMain: subj || '',
+            homeroomOf: homeroomClass || '',
+            grid: createEmptyGridClient_(store.maxPeriod, 5)
+          };
+        } else {
+          if (subj && !store.teachers[key].subjectMain) {
+            store.teachers[key].subjectMain = subj;
+          }
+          if (homeroomClass && !store.teachers[key].homeroomOf) {
+            store.teachers[key].homeroomOf = homeroomClass;
+          }
+        }
+        return store.teachers[key];
+      }
+
+      function parseClassCellContentClient_(rawText) {
+        var text = String(rawText || '').trim();
+        var status = '';
+        var isMoving = 0;
+
+        var stMatch = text.match(/^\[(보강|교체|이동)\]\s*/);
+        if (stMatch) {
+          status = stMatch[1];
+          text = text.slice(stMatch[0].length).trim();
+        }
+        if (text.indexOf('[이동수업]') !== -1) {
+          isMoving = 1;
+          text = text.replace(/\[이동수업\]/g, '').trim();
+        }
+
+        var lines = text
+          .split(/\r?\n/)
+          .map(function (l) {
+            return l.trim();
+          })
+          .filter(Boolean);
+
+        var subj = '';
+        var teacher = '';
+        var room = '';
+
+        if (lines.length >= 2) {
+          subj = lines[0];
+          var line2 = lines[1];
+          if (/^\([^)]+\)$/.test(line2) && isActivityBracketClient_(line2)) {
+            subj = subj + ' ' + line2;
+            if (lines[2]) teacher = lines[2];
+          } else {
+            teacher = line2.replace(/^[(\[]|[)\]]$/g, '').trim();
+            if (lines[2]) room = lines[2];
+          }
+        } else if (lines.length === 1) {
+          var single = lines[0];
+          var mBracket = single.match(/^(.*?)\s*\(([^)]+)\)$/);
+          if (mBracket) {
+            var inner = mBracket[2].trim();
+            if (isActivityBracketClient_('(' + inner + ')')) {
+              subj = mBracket[1].trim() + ' (' + inner + ')';
+            } else {
+              subj = mBracket[1].trim();
+              teacher = inner;
+            }
+          } else if (single.indexOf('/') !== -1) {
+            var slashParts = single.split('/');
+            subj = slashParts[0].trim();
+            teacher = slashParts[1].trim();
+          } else {
+            subj = single;
+          }
+        }
+
+        if (teacher) {
+          teacher = parseClientTeacherName_(teacher, '').name;
+        }
+
+        return {
+          s: subj,
+          t: teacher,
+          c: '',
+          r: room,
+          m: isMoving,
+          cc: isChangcheSubjectClient_(subj) ? 1 : 0,
+          st: status
+        };
+      }
+
+      function parseTeacherCellContentClient_(rawText, defaultSubject) {
+        var text = String(rawText || '').trim();
+        var status = '';
+        var isMoving = 0;
+
+        var stMatch = text.match(/^\[(보강|교체|이동)\]\s*/);
+        if (stMatch) {
+          status = stMatch[1];
+          text = text.slice(stMatch[0].length).trim();
+        }
+
+        var lines = text
+          .split(/\r?\n/)
+          .map(function (l) {
+            return l.trim();
+          })
+          .filter(Boolean);
+
+        var classKey = '';
+        var subj = '';
+        var room = '';
+
+        if (lines.length >= 2) {
+          var c1 = tryExtractClassKeyStrictClient_(lines[0]);
+          var c2 = tryExtractClassKeyStrictClient_(lines[1]);
+          if (c1) {
+            classKey = c1;
+            subj = lines[1];
+          } else if (c2) {
+            subj = lines[0];
+            classKey = c2;
+          } else {
+            subj = lines[0];
+            room = lines[1];
+          }
+        } else if (lines.length === 1) {
+          var s = lines[0];
+          var cOnly = tryExtractClassKeyStrictClient_(s);
+          if (cOnly) {
+            classKey = cOnly;
+            subj = defaultSubject || '';
+          } else {
+            var m1 = s.match(/^([^\s(]+)\s*\(([^)]+)\)$/);
+            if (m1) {
+              var leftC = tryExtractClassKeyStrictClient_(m1[1]);
+              var rightC = tryExtractClassKeyStrictClient_(m1[2]);
+              if (leftC) {
+                classKey = leftC;
+                subj = m1[2].trim();
+              } else if (rightC) {
+                subj = m1[1].trim();
+                classKey = rightC;
+              } else {
+                subj = s;
+              }
+            } else {
+              var slashOrUnder = s.split(/[/_]/);
+              if (slashOrUnder.length === 2) {
+                var sc0 = tryExtractClassKeyStrictClient_(slashOrUnder[0].trim());
+                var sc1 = tryExtractClassKeyStrictClient_(slashOrUnder[1].trim());
+                if (sc0) {
+                  classKey = sc0;
+                  subj = slashOrUnder[1].trim();
+                } else if (sc1) {
+                  subj = slashOrUnder[0].trim();
+                  classKey = sc1;
+                }
+              }
+              if (!classKey && !subj) {
+                var mCompact = s.match(
+                  /^([1-6]\s*-\s*(?:[1-9]|1\d|2[0-5])|[1-6](?:0[1-9]|1\d|2[0-5]))\s*([가-힣A-Za-z].*)$/
+                );
+                if (mCompact) {
+                  var cComp = tryExtractClassKeyStrictClient_(mCompact[1]);
+                  if (cComp) {
+                    classKey = cComp;
+                    subj = mCompact[2].trim();
+                  }
+                }
+              }
+              if (!classKey && !subj) {
+                var tokens = s.split(/\s+/);
+                if (tokens.length >= 2) {
+                  var tc0 = tryExtractClassKeyStrictClient_(tokens[0]);
+                  var tc1 = tryExtractClassKeyStrictClient_(tokens[tokens.length - 1]);
+                  if (tc0) {
+                    classKey = tc0;
+                    subj = tokens.slice(1).join(' ');
+                  } else if (tc1) {
+                    classKey = tc1;
+                    subj = tokens.slice(0, tokens.length - 1).join(' ');
+                  } else {
+                    subj = s;
+                  }
+                } else {
+                  subj = s;
+                }
+              }
+            }
+          }
+        }
+
+        return {
+          s: subj,
+          c: classKey,
+          r: room,
+          m: isMoving,
+          cc: isChangcheSubjectClient_(subj) ? 1 : 0,
+          st: status
+        };
+      }
+
+      /**
+       * 업로드된 시트의 내용(헤더 및 셀 내부 패턴)을 분석하여 'class'(학급 기준)인지 'teacher'(교사 기준)인지 자동 판별
+       */
+      function detectClientSheetRole_(rows, sheetName, fileName, roleHint) {
+        var sName = String(sheetName || '').replace(/\s+/g, '');
+        var fName = String(fileName || '').replace(/\s+/g, '');
+        if (sName.indexOf('학급') !== -1 || sName.indexOf('반별') !== -1) return 'class';
+        if (sName.indexOf('교사') !== -1 || sName.indexOf('선생님') !== -1) return 'teacher';
+
+        var cellClassHits = 0;
+        var cellTotalNonEmpty = 0;
+        var firstColClassHits = 0;
+        var firstColTeacherHits = 0;
+
+        var maxR = Math.min(rows.length, 60);
+        for (var r = 1; r < maxR; r++) {
+          var row = rows[r] || [];
+          var col0 = String(row[0] || '').trim();
+          var col1 = String(row[1] || '').trim();
+          var leftSample = col0 && !/^\d+$/.test(col0) ? col0 : col1;
+          if (leftSample && parseDayCellClient_(leftSample) === -1 && !parsePeriodCellClient_(leftSample)) {
+            if (tryExtractClassKeyStrictClient_(leftSample)) {
+              firstColClassHits++;
+            } else {
+              var cl = parseClientTeacherName_(leftSample, '');
+              if (/^[가-힣]{2,4}$/.test(cl.name) && !isIgnoredEntityNameClient_(cl.name)) {
+                firstColTeacherHits++;
+              }
+            }
+          }
+
+          for (var c = 2; c < Math.min(row.length, 40); c++) {
+            var val = String(row[c] || '').trim();
+            if (!val || val === '-' || val === '—') continue;
+            if (parseDayCellClient_(val) !== -1 || parsePeriodCellClient_(val)) continue;
+            cellTotalNonEmpty++;
+            var parsedT = parseTeacherCellContentClient_(val, '');
+            if (parsedT.c) {
+              cellClassHits++;
+            }
+          }
+        }
+
+        if (firstColClassHits >= 3 && firstColClassHits > firstColTeacherHits * 2 && cellClassHits < cellTotalNonEmpty * 0.15) {
+          return 'class';
+        }
+        if (firstColTeacherHits >= 3 && cellClassHits >= 5) {
+          return 'teacher';
+        }
+        if (cellTotalNonEmpty >= 10 && cellClassHits / cellTotalNonEmpty >= 0.25) {
+          return 'teacher';
+        }
+        if (fName.indexOf('학급') !== -1 || fName.indexOf('반별') !== -1) return 'class';
+        if (fName.indexOf('교사') !== -1) return 'teacher';
+        return roleHint === 'teacher' ? 'teacher' : 'class';
+      }
+
+      function extractMetaFromTopRowsClient_(rows, meta) {
+        var maxScan = Math.min(8, rows.length);
+        for (var r = 0; r < maxScan; r++) {
+          var row = rows[r] || [];
+          for (var c = 0; c < Math.min(15, row.length); c++) {
+            var txt = String(row[c] || '').trim();
+            if (!txt) continue;
+            var yearMatch = txt.match(/(20\d{2}\s*학년도)/);
+            if (yearMatch) meta.schoolYear = yearMatch[1].replace(/\s+/g, '');
+            var semMatch = txt.match(/([12]\s*학기\s*시간표|[12]\s*학기)/);
+            if (semMatch) meta.semester = semMatch[1].replace(/\s*시간표$/, '').trim();
+            var schoolMatch = txt.match(/([가-힣A-Za-z]+(?:초등학교|중학교|고등학교|학교))/);
+            if (schoolMatch && !meta.schoolName) meta.schoolName = schoolMatch[1];
+          }
+        }
+      }
+
+      function assignSlotToStoreClient_(identity, pIdx, dayIdx, rawText, role, store) {
+        var clean = String(rawText || '').trim();
+        if (!clean || clean === '-' || clean === '—' || clean === '공강') return;
+
+        if (role === 'class' || identity.isClassInWeekly) {
+          var cEntity = ensureClassEntityClient_(store, identity.key, identity.homeroom || '');
+          var parsedC = parseClassCellContentClient_(clean);
+          if (!parsedC.s) return;
+
+          if (parsedC.t) store.hasTeacherInClassCells = true;
+          ensureGridRowSizeClient_(cEntity.grid, pIdx + 1);
+          cEntity.grid[pIdx][dayIdx] = {
+            s: parsedC.s,
+            t: parsedC.t,
+            c: identity.key,
+            r: parsedC.r,
+            m: parsedC.m,
+            cc: parsedC.cc,
+            st: parsedC.st
+          };
+
+          if (parsedC.t) {
+            var subjForT = !isChangcheSubjectClient_(parsedC.s)
+              ? parsedC.s.replace(/\s*\(.*\)/, '')
+              : '';
+            var tEnt = ensureTeacherEntityClient_(store, parsedC.t, subjForT, '');
+            if (tEnt) {
+              cEntity.grid[pIdx][dayIdx].t = tEnt.key;
+              ensureGridRowSizeClient_(tEnt.grid, pIdx + 1);
+              if (!tEnt.grid[pIdx][dayIdx]) {
+                tEnt.grid[pIdx][dayIdx] = {
+                  s: parsedC.s,
+                  t: tEnt.key,
+                  c: identity.key,
+                  r: parsedC.r,
+                  m: parsedC.m,
+                  cc: parsedC.cc,
+                  st: parsedC.st
+                };
+              }
+            }
+          }
+        } else {
+          var tEntity = ensureTeacherEntityClient_(
+            store,
+            identity.key,
+            identity.subject || '',
+            identity.homeroomClass || ''
+          );
+          if (!tEntity) return;
+          var parsedT = parseTeacherCellContentClient_(clean, tEntity.subjectMain);
+          if (!parsedT.s && !parsedT.c) return;
+
+          ensureGridRowSizeClient_(tEntity.grid, pIdx + 1);
+          tEntity.grid[pIdx][dayIdx] = {
+            s: parsedT.s || tEntity.subjectMain || parsedT.c,
+            t: tEntity.key,
+            c: parsedT.c,
+            r: parsedT.r,
+            m: parsedT.m,
+            cc: parsedT.cc,
+            st: parsedT.st
+          };
+        }
+      }
+
+      function appendSecondLineToSlotClient_(entity, pIdx, dayIdx, secondLineText, role, store) {
+        if (!entity) return;
+        ensureGridRowSizeClient_(entity.grid, pIdx + 1);
+        var existing = entity.grid[pIdx][dayIdx];
+        var combinedRaw = existing
+          ? (existing.c && role === 'teacher' && existing.s === existing.c
+              ? existing.c
+              : existing.s || existing.c || '') +
+            '\n' +
+            secondLineText
+          : secondLineText;
+
+        if (role === 'class') {
+          var parsed = parseClassCellContentClient_(combinedRaw);
+          if (parsed.t) store.hasTeacherInClassCells = true;
+          entity.grid[pIdx][dayIdx] = {
+            s: parsed.s,
+            t: parsed.t,
+            c: entity.key,
+            r: parsed.r,
+            m: parsed.m,
+            cc: parsed.cc,
+            st: parsed.st
+          };
+          if (parsed.t) {
+            var subjForT = !isChangcheSubjectClient_(parsed.s)
+              ? parsed.s.replace(/\s*\(.*\)/, '')
+              : '';
+            var tEnt = ensureTeacherEntityClient_(store, parsed.t, subjForT, '');
+            if (tEnt) {
+              entity.grid[pIdx][dayIdx].t = tEnt.key;
+              ensureGridRowSizeClient_(tEnt.grid, pIdx + 1);
+              if (!tEnt.grid[pIdx][dayIdx]) {
+                tEnt.grid[pIdx][dayIdx] = {
+                  s: parsed.s,
+                  t: tEnt.key,
+                  c: entity.key,
+                  r: parsed.r,
+                  m: parsed.m,
+                  cc: parsed.cc,
+                  st: parsed.st
+                };
+              }
+            }
+          }
+        } else {
+          var parsedT = parseTeacherCellContentClient_(combinedRaw, entity.subjectMain || '');
+          entity.grid[pIdx][dayIdx] = {
+            s: parsedT.s || entity.subjectMain || parsedT.c,
+            t: entity.key,
+            c: parsedT.c,
+            r: parsedT.r,
+            m: parsedT.m,
+            cc: parsedT.cc,
+            st: parsedT.st
+          };
+        }
+      }
+
+      function extractRowIdentityClient_(row, firstScheduleCol, leftHeaders, role) {
+        var gradeVal = '';
+        var classNoVal = '';
+        var classKey = '';
+        var teacherName = '';
+        var subjectName = '';
+        var homeroomName = '';
+        var unknownTokens = [];
+
+        for (var c = 0; c < Math.min(firstScheduleCol, row.length); c++) {
+          var val = String(row[c] || '').trim();
+          if (!val || val === '-' || val === '—') continue;
+          var h = leftHeaders[c] || '';
+
+          if (h.indexOf('학년') !== -1 && h.indexOf('반') === -1 && /^\d+$/.test(val)) {
+            gradeVal = val;
+            continue;
+          }
+          if ((h === '반' || h.indexOf('반번호') !== -1) && /^\d+$/.test(val)) {
+            classNoVal = val;
+            continue;
+          }
+          if (h.indexOf('학급') !== -1 || h.indexOf('학년반') !== -1) {
+            var ck = normalizeClassKeyClient_(val);
+            if (ck) classKey = ck;
+            continue;
+          }
+          if (h.indexOf('담임') !== -1) {
+            homeroomName = val;
+            continue;
+          }
+          if (
+            h.indexOf('교사') !== -1 ||
+            h.indexOf('성명') !== -1 ||
+            h.indexOf('이름') !== -1 ||
+            h.indexOf('선생님') !== -1
+          ) {
+            teacherName = val;
+            continue;
+          }
+          if (h.indexOf('과목') !== -1 || h.indexOf('교과') !== -1 || h.indexOf('전공') !== -1) {
+            subjectName = val;
+            continue;
+          }
+
+          var maybeClass = tryExtractClassKeyStrictClient_(val);
+          if (maybeClass) {
+            if (!classKey) classKey = maybeClass;
+          } else if (!/^\d+$/.test(val)) {
+            unknownTokens.push(val);
+          }
+        }
+
+        if (!classKey && gradeVal && classNoVal) {
+          classKey = gradeVal + '-' + classNoVal;
+        }
+
+        if (role === 'class') {
+          if (!classKey && unknownTokens.length > 0) {
+            classKey = normalizeClassKeyClient_(unknownTokens[0]);
+          }
+          if (!homeroomName && unknownTokens.length > 0) {
+            homeroomName = unknownTokens[unknownTokens.length - 1];
+            if (homeroomName === classKey) homeroomName = '';
+          }
+          return {
+            key: classKey,
+            homeroom: parseClientTeacherName_(homeroomName, '').name,
+            subject: subjectName
+          };
+        } else {
+          if (!teacherName && unknownTokens.length > 0) {
+            teacherName = unknownTokens[0];
+            if (unknownTokens.length > 1 && !subjectName) {
+              subjectName = unknownTokens[1];
+            }
+          }
+          var cleanedT = parseClientTeacherName_(teacherName, subjectName);
+          if (isIgnoredEntityNameClient_(cleanedT.name)) {
+            return { key: '' };
+          }
+          return {
+            key: cleanedT.name,
+            subject: cleanedT.subject,
+            homeroomClass: classKey
+          };
+        }
+      }
+
+      function tryParseHorizontalMatrixClient_(rows, role, store, meta) {
+        var maxScanRow = Math.min(12, rows.length);
+        var colMap = null;
+        var headerEndRow = -1;
+        var firstScheduleCol = 9999;
+
+        for (var r = 0; r < maxScanRow; r++) {
+          var row = rows[r] || [];
+          var tempMap = {};
+          var matchCount = 0;
+          var minCol = 9999;
+          for (var c = 0; c < row.length; c++) {
+            var dp = parseCombinedDayPeriodClient_(row[c]);
+            if (dp) {
+              tempMap[c] = dp;
+              matchCount++;
+              if (c < minCol) minCol = c;
+              if (dp.period > store.maxPeriod) store.maxPeriod = dp.period;
+            }
+          }
+          if (matchCount >= 10) {
+            colMap = tempMap;
+            headerEndRow = r;
+            firstScheduleCol = minCol;
+            break;
+          }
+        }
+
+        if (!colMap) {
+          for (var rP = 1; rP < maxScanRow; rP++) {
+            var rowP = rows[rP] || [];
+            var pCells = [];
+            for (var c2 = 0; c2 < rowP.length; c2++) {
+              var pInfo = parsePeriodCellClient_(rowP[c2]);
+              if (pInfo) pCells.push({ col: c2, period: pInfo.period, time: pInfo.time });
+            }
+            if (pCells.length >= 10) {
+              var rD = rP - 1;
+              var hasDayAbove = false;
+              for (var checkR = rP - 1; checkR >= Math.max(0, rP - 3); checkR--) {
+                var dayCnt = 0;
+                var checkRow = rows[checkR] || [];
+                for (var cd = 0; cd < checkRow.length; cd++) {
+                  if (parseDayCellClient_(checkRow[cd]) !== -1) dayCnt++;
+                }
+                if (dayCnt >= 3) {
+                  rD = checkR;
+                  hasDayAbove = true;
+                  break;
+                }
+              }
+
+              var tempMap2 = {};
+              var minCol2 = pCells[0].col;
+              var currentDay = -1;
+              var prevPeriod = 99;
+              var rowDay = rows[rD] || [];
+
+              for (var c3 = minCol2; c3 < rowP.length; c3++) {
+                if (hasDayAbove) {
+                  var dCand = parseDayCellClient_(rowDay[c3]);
+                  if (dCand !== -1) currentDay = dCand;
+                }
+                var pObj = parsePeriodCellClient_(rowP[c3]);
+                if (pObj) {
+                  if (!hasDayAbove) {
+                    if (pObj.period <= prevPeriod) currentDay++;
+                  } else if (currentDay === -1) {
+                    currentDay = 0;
+                  }
+                  prevPeriod = pObj.period;
+                  if (currentDay >= 0 && currentDay <= 4) {
+                    tempMap2[c3] = { dayIdx: currentDay, period: pObj.period };
+                    if (pObj.time && !meta.periodTimes[pObj.period - 1]) {
+                      meta.periodTimes[pObj.period - 1] = pObj.time;
+                    }
+                    if (pObj.period > store.maxPeriod) store.maxPeriod = pObj.period;
+                  }
+                }
+              }
+
+              if (Object.keys(tempMap2).length >= 10) {
+                colMap = tempMap2;
+                headerEndRow = rP;
+                firstScheduleCol = minCol2;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!colMap) return false;
+
+        var leftHeaders = [];
+        for (var lc = 0; lc < firstScheduleCol; lc++) {
+          var hTxt = '';
+          for (var hr = 0; hr <= headerEndRow; hr++) {
+            var hRow = rows[hr] || [];
+            hTxt += ' ' + String(hRow[lc] || '').replace(/\s+/g, '');
+          }
+          leftHeaders.push(hTxt.trim());
+        }
+
+        var prevEntity = null;
+        for (var rowIdx = headerEndRow + 1; rowIdx < rows.length; rowIdx++) {
+          var dRow = rows[rowIdx] || [];
+          var leftIdentity = extractRowIdentityClient_(dRow, firstScheduleCol, leftHeaders, role);
+          var hasScheduleCell = false;
+          for (var sc in colMap) {
+            if (String(dRow[sc] || '').trim() !== '') {
+              hasScheduleCell = true;
+              break;
+            }
+          }
+          if (!leftIdentity.key && !hasScheduleCell) continue;
+
+          if ((!leftIdentity.key || (prevEntity && prevEntity.key === leftIdentity.key)) && prevEntity && hasScheduleCell) {
+            for (var sc2 in colMap) {
+              var subVal = String(dRow[sc2] || '').trim();
+              if (!subVal) continue;
+              var slot = colMap[sc2];
+              appendSecondLineToSlotClient_(prevEntity, slot.period - 1, slot.dayIdx, subVal, role, store);
+            }
+            continue;
+          }
+
+          if (!leftIdentity.key) continue;
+
+          prevEntity =
+            role === 'class'
+              ? ensureClassEntityClient_(store, leftIdentity.key, leftIdentity.homeroom)
+              : ensureTeacherEntityClient_(store, leftIdentity.key, leftIdentity.subject, leftIdentity.homeroomClass);
+
+          for (var colStr in colMap) {
+            var col = parseInt(colStr, 10);
+            var slotInfo = colMap[colStr];
+            var cellTxt = String(dRow[col] || '').trim();
+            if (!cellTxt) continue;
+            assignSlotToStoreClient_(leftIdentity, slotInfo.period - 1, slotInfo.dayIdx, cellTxt, role, store);
+          }
+        }
+        return true;
+      }
+
+      function tryParseVerticalMatrixClient_(rows, role, store, meta) {
+        var maxScanCol = Math.min(5, rows[0] ? rows[0].length : 0);
+        var rowMap = null;
+        var scheduleStartRow = 9999;
+        var lastHeaderCol = -1;
+
+        for (var c = 0; c < maxScanCol; c++) {
+          var tempRowMap = {};
+          var cnt = 0;
+          var minRow = 9999;
+          for (var r = 0; r < rows.length; r++) {
+            var dp = parseCombinedDayPeriodClient_((rows[r] || [])[c]);
+            if (dp) {
+              tempRowMap[r] = dp;
+              cnt++;
+              if (r < minRow) minRow = r;
+              if (dp.period > store.maxPeriod) store.maxPeriod = dp.period;
+            }
+          }
+          if (cnt >= 10) {
+            rowMap = tempRowMap;
+            scheduleStartRow = minRow;
+            lastHeaderCol = c;
+            break;
+          }
+        }
+
+        if (!rowMap) {
+          for (var cP = 1; cP < maxScanCol; cP++) {
+            var pRows = [];
+            for (var r2 = 0; r2 < rows.length; r2++) {
+              var pObj = parsePeriodCellClient_((rows[r2] || [])[cP]);
+              if (pObj) pRows.push({ row: r2, period: pObj.period, time: pObj.time });
+            }
+            if (pRows.length >= 10) {
+              var cD = cP - 1;
+              var tempRowMap2 = {};
+              var minRow2 = pRows[0].row;
+              var currDay = -1;
+              var prevP = 99;
+              var hasAnyDayInCol = false;
+              for (var rr = 0; rr < rows.length; rr++) {
+                if (parseDayCellClient_((rows[rr] || [])[cD]) !== -1) {
+                  hasAnyDayInCol = true;
+                  break;
+                }
+              }
+
+              for (var r3 = minRow2; r3 < rows.length; r3++) {
+                var dCand = parseDayCellClient_((rows[r3] || [])[cD]);
+                if (dCand !== -1) currDay = dCand;
+                var pObj2 = parsePeriodCellClient_((rows[r3] || [])[cP]);
+                if (pObj2) {
+                  if (dCand === -1 && pObj2.period <= prevP && currDay !== -1 && !hasAnyDayInCol) {
+                    currDay++;
+                  }
+                  if (currDay === -1) currDay = 0;
+                  prevP = pObj2.period;
+                  if (currDay >= 0 && currDay <= 4) {
+                    tempRowMap2[r3] = { dayIdx: currDay, period: pObj2.period };
+                    if (pObj2.time && !meta.periodTimes[pObj2.period - 1]) {
+                      meta.periodTimes[pObj2.period - 1] = pObj2.time;
+                    }
+                    if (pObj2.period > store.maxPeriod) store.maxPeriod = pObj2.period;
+                  }
+                }
+              }
+              if (Object.keys(tempRowMap2).length >= 10) {
+                rowMap = tempRowMap2;
+                scheduleStartRow = minRow2;
+                lastHeaderCol = cP;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!rowMap || scheduleStartRow === 0) return false;
+
+        var entityHeaderRow = scheduleStartRow - 1;
+        var subHeaderRow = -1;
+        if (scheduleStartRow >= 2) {
+          var r1 = rows[scheduleStartRow - 1] || [];
+          var r2 = rows[scheduleStartRow - 2] || [];
+          var cnt1 = 0;
+          var cnt2 = 0;
+          for (var k1 = lastHeaderCol + 1; k1 < r1.length; k1++) {
+            if (String(r1[k1] || '').trim()) cnt1++;
+          }
+          for (var k2 = lastHeaderCol + 1; k2 < r2.length; k2++) {
+            if (String(r2[k2] || '').trim()) cnt2++;
+          }
+          if (cnt2 >= cnt1 && cnt2 > 0) {
+            entityHeaderRow = scheduleStartRow - 2;
+            subHeaderRow = scheduleStartRow - 1;
+          } else {
+            entityHeaderRow = scheduleStartRow - 1;
+            subHeaderRow = scheduleStartRow - 2;
+          }
+        }
+
+        var hdrRow = rows[entityHeaderRow] || [];
+        var subRow = subHeaderRow >= 0 ? rows[subHeaderRow] || [] : [];
+        for (var col = lastHeaderCol + 1; col < hdrRow.length; col++) {
+          var rawHeader = String(hdrRow[col] || '').trim();
+          var rawSub = String(subRow[col] || '').trim();
+          if (!rawHeader || isIgnoredEntityNameClient_(rawHeader)) continue;
+
+          var identity = null;
+          if (role === 'class') {
+            var ck = tryExtractClassKeyStrictClient_(rawHeader) || normalizeClassKeyClient_(rawHeader);
+            var rawHr = rawSub && !tryExtractClassKeyStrictClient_(rawSub) ? rawSub : '';
+            identity = {
+              key: ck,
+              homeroom: parseClientTeacherName_(rawHr, '').name
+            };
+          } else {
+            var ckInT = tryExtractClassKeyStrictClient_(rawHeader);
+            if (ckInT && !rawSub) {
+              identity = { key: ckInT, isClassInWeekly: true };
+            } else {
+              var clH = parseClientTeacherName_(rawHeader, rawSub);
+              if (!isIgnoredEntityNameClient_(clH.name)) {
+                identity = { key: clH.name, subject: clH.subject };
+              }
+            }
+          }
+          if (!identity || !identity.key) continue;
+
+          for (var rIdx in rowMap) {
+            var rNum = parseInt(rIdx, 10);
+            var slotInfo = rowMap[rIdx];
+            var cellTxt = String((rows[rNum] || [])[col] || '').trim();
+            if (rNum + 1 < rows.length && !rowMap[rNum + 1]) {
+              var nextRow = rows[rNum + 1] || [];
+              if (parseDayCellClient_(nextRow[0]) === -1 && !parsePeriodCellClient_(nextRow[lastHeaderCol])) {
+                var subCellTxt = String(nextRow[col] || '').trim();
+                if (subCellTxt) {
+                  cellTxt = cellTxt ? cellTxt + '\n' + subCellTxt : subCellTxt;
+                }
+              }
+            }
+            if (cellTxt) {
+              assignSlotToStoreClient_(identity, slotInfo.period - 1, slotInfo.dayIdx, cellTxt, role, store);
+            }
+          }
+        }
+        return true;
+      }
+
+      function extractBlockIdentityClient_(headerBlob, role, sheetName, blockNum, totalBlocks) {
+        var blob = String(headerBlob || '').trim();
+        var homeroomMatch = blob.match(/담임\s*[:|｜\-]?\s*([가-힣A-Za-z*]{2,10})/);
+        var teacherMatch = blob.match(/(?:교사|선생님|성명)\s*[:|｜\-]?\s*([가-힣A-Za-z*]{2,10}(?:\([^)]+\))?)/);
+        var classKey = tryExtractClassKeyFromTextClient_(blob);
+
+        if (role === 'class') {
+          var key = classKey || (totalBlocks === 1 ? sheetName : '학급-' + blockNum);
+          return {
+            key: key,
+            homeroom: homeroomMatch ? parseClientTeacherName_(homeroomMatch[1], '').name : ''
+          };
+        } else {
+          var tKey = teacherMatch ? teacherMatch[1].trim() : '';
+          if (!tKey && homeroomMatch) tKey = homeroomMatch[1].trim();
+          if (!tKey) {
+            var tokens = blob.split(/[|｜\s/]+/);
+            for (var i = 0; i < tokens.length; i++) {
+              var tk = tokens[i].trim();
+              var tkClean = parseClientTeacherName_(tk, '').name;
+              if (/^[가-힣]{2,4}\*?$/.test(tkClean) && !isIgnoredEntityNameClient_(tkClean)) {
+                tKey = tk;
+                break;
+              }
+            }
+          }
+          if (!tKey && classKey) {
+            return {
+              key: classKey,
+              isClassInWeekly: true,
+              homeroom: homeroomMatch ? parseClientTeacherName_(homeroomMatch[1], '').name : ''
+            };
+          }
+          var cleanedBlockT = parseClientTeacherName_(tKey, '');
+          return {
+            key: cleanedBlockT.name || (totalBlocks === 1 ? sheetName : '교사-' + blockNum),
+            subject: cleanedBlockT.subject,
+            homeroomClass: classKey || ''
+          };
+        }
+      }
+
+      function tryParseFiveDayBlocksClient_(rows, role, store, meta, sheetName) {
+        var blocks = [];
+        for (var r = 0; r < rows.length; r++) {
+          var row = rows[r] || [];
+          var c = 0;
+          while (c < row.length) {
+            if (parseDayCellClient_(row[c]) === 0) {
+              var dayCols = [c];
+              var nextExpectedDay = 1;
+              for (
+                var scanC = c + 1;
+                scanC < Math.min(row.length, c + 12) && nextExpectedDay <= 4;
+                scanC++
+              ) {
+                var dIdx = parseDayCellClient_(row[scanC]);
+                if (dIdx === nextExpectedDay) {
+                  dayCols.push(scanC);
+                  nextExpectedDay++;
+                } else if (dIdx === 0) {
+                  break;
+                }
+              }
+              if (dayCols.length === 5) {
+                var periodCol = c - 1;
+                var validPeriodsBelow = 0;
+                for (var checkR = r + 1; checkR < Math.min(rows.length, r + 16); checkR++) {
+                  var cRow = rows[checkR] || [];
+                  for (var pc = Math.max(0, c - 2); pc <= c - 1; pc++) {
+                    if (parsePeriodCellClient_(cRow[pc])) {
+                      periodCol = pc;
+                      validPeriodsBelow++;
+                      break;
+                    }
+                  }
+                }
+                if (validPeriodsBelow >= 3) {
+                  blocks.push({
+                    headerRow: r,
+                    periodCol: periodCol,
+                    dayCols: dayCols
+                  });
+                  c = dayCols[4] + 1;
+                  continue;
+                }
+              }
+            }
+            c++;
+          }
+        }
+
+        if (blocks.length === 0) return false;
+
+        for (var b = 0; b < blocks.length; b++) {
+          var blk = blocks[b];
+          var minCol = Math.max(0, blk.periodCol);
+          var maxCol = blk.dayCols[4];
+
+          var blockTexts = [];
+          for (var tr = Math.max(0, blk.headerRow - 4); tr <= blk.headerRow; tr++) {
+            var tRow = rows[tr] || [];
+            for (var tc = minCol; tc <= maxCol; tc++) {
+              if (tr === blk.headerRow && tc >= blk.dayCols[0]) continue;
+              var tVal = String(tRow[tc] || '').trim();
+              if (tVal) blockTexts.push(tVal);
+            }
+          }
+
+          var identity = extractBlockIdentityClient_(
+            blockTexts.join(' | '),
+            role,
+            sheetName,
+            b + 1,
+            blocks.length
+          );
+
+          var lastPeriodIdx = -1;
+          var lastPeriodRow = -1;
+          for (var pr = blk.headerRow + 1; pr < Math.min(rows.length, blk.headerRow + 20); pr++) {
+            var pRow = rows[pr] || [];
+            if (
+              parseDayCellClient_(pRow[blk.dayCols[0]]) === 0 &&
+              parseDayCellClient_(pRow[blk.dayCols[1]]) === 1
+            ) {
+              break;
+            }
+
+            var rawPeriodCell = blk.periodCol >= 0 ? String(pRow[blk.periodCol] || '').trim() : '';
+            var pInfo = parsePeriodCellClient_(rawPeriodCell);
+
+            if (pInfo) {
+              lastPeriodIdx = pInfo.period - 1;
+              lastPeriodRow = pr;
+              if (pInfo.period > store.maxPeriod) store.maxPeriod = pInfo.period;
+              if (pInfo.time && !meta.periodTimes[lastPeriodIdx]) {
+                meta.periodTimes[lastPeriodIdx] = pInfo.time;
+              }
+              for (var d = 0; d < 5; d++) {
+                var cellVal = String(pRow[blk.dayCols[d]] || '').trim();
+                if (cellVal) {
+                  assignSlotToStoreClient_(identity, lastPeriodIdx, d, cellVal, role, store);
+                }
+              }
+            } else if (lastPeriodIdx !== -1 && pr === lastPeriodRow + 1) {
+              var timeMatch = rawPeriodCell.match(/(\d{1,2}:\d{2})/);
+              if (timeMatch && !meta.periodTimes[lastPeriodIdx]) {
+                meta.periodTimes[lastPeriodIdx] = timeMatch[1];
+              }
+              var targetEntity =
+                role === 'class' || identity.isClassInWeekly
+                  ? store.classes[identity.key]
+                  : store.teachers[identity.key];
+              if (targetEntity) {
+                for (var d2 = 0; d2 < 5; d2++) {
+                  var subText = String(pRow[blk.dayCols[d2]] || '').trim();
+                  if (subText) {
+                    appendSecondLineToSlotClient_(
+                      targetEntity,
+                      lastPeriodIdx,
+                      d2,
+                      subText,
+                      role === 'class' || identity.isClassInWeekly ? 'class' : 'teacher',
+                      store
+                    );
+                  }
+                }
+              }
+            } else if (lastPeriodIdx !== -1 && pr > lastPeriodRow + 1) {
+              lastPeriodIdx = -1;
+            }
+          }
+        }
+        return true;
+      }
+
+      function findColIndexClient_(headers, candidates) {
+        for (var i = 0; i < candidates.length; i++) {
+          var idx = headers.indexOf(candidates[i]);
+          if (idx !== -1) return idx;
+        }
+        for (var j = 0; j < headers.length; j++) {
+          for (var k = 0; k < candidates.length; k++) {
+            if (headers[j].indexOf(candidates[k]) !== -1) return j;
+          }
+        }
+        return -1;
+      }
+
+      function tryParseFlatRowTableClient_(rows, store) {
+        var headerRowIdx = -1;
+        var colIdx = null;
+        for (var r = 0; r < Math.min(10, rows.length); r++) {
+          var headers = (rows[r] || []).map(function (h) {
+            return String(h || '').replace(/\s+/g, '');
+          });
+          var dCol = findColIndexClient_(headers, ['요일', 'day']);
+          var pCol = findColIndexClient_(headers, ['교시', '교시번호', 'period']);
+          if (dCol !== -1 && pCol !== -1) {
+            headerRowIdx = r;
+            colIdx = {
+              day: dCol,
+              period: pCol,
+              classKey: findColIndexClient_(headers, ['학급', '학년반', '반', '교실']),
+              grade: findColIndexClient_(headers, ['학년']),
+              classNo: findColIndexClient_(headers, ['반번호', '분반']),
+              subject: findColIndexClient_(headers, ['과목', '교과', '과목명']),
+              teacher: findColIndexClient_(headers, ['교사', '담당교사', '선생님', '성명', '이름']),
+              homeroom: findColIndexClient_(headers, ['담임', '담임교사']),
+              room: findColIndexClient_(headers, ['장소', '특별실', '강의실']),
+              status: findColIndexClient_(headers, ['상태', '비고', '보강', '변경'])
+            };
+            break;
+          }
+        }
+        if (headerRowIdx === -1 || !colIdx) return false;
+
+        for (var i = headerRowIdx + 1; i < rows.length; i++) {
+          var row = rows[i] || [];
+          var dIdx = parseDayCellClient_(row[colIdx.day]);
+          var pObj = parsePeriodCellClient_(row[colIdx.period]);
+          if (dIdx === -1 || !pObj) continue;
+          if (pObj.period > store.maxPeriod) store.maxPeriod = pObj.period;
+          var pIdx = pObj.period - 1;
+
+          var cKey = '';
+          if (colIdx.classKey !== -1 && row[colIdx.classKey]) {
+            cKey = normalizeClassKeyClient_(row[colIdx.classKey]);
+          } else if (colIdx.grade !== -1 && colIdx.classNo !== -1 && row[colIdx.grade] && row[colIdx.classNo]) {
+            cKey = normalizeClassKeyClient_(row[colIdx.grade] + '-' + row[colIdx.classNo]);
+          }
+
+          var subj = colIdx.subject !== -1 ? String(row[colIdx.subject] || '').trim() : '';
+          var tRaw = colIdx.teacher !== -1 ? String(row[colIdx.teacher] || '').trim() : '';
+          var hrRaw = colIdx.homeroom !== -1 ? String(row[colIdx.homeroom] || '').trim() : '';
+          var room = colIdx.room !== -1 ? String(row[colIdx.room] || '').trim() : '';
+          var stRaw = colIdx.status !== -1 ? String(row[colIdx.status] || '').trim() : '';
+          var isCc = isChangcheSubjectClient_(subj) ? 1 : 0;
+
+          var tCleaned = parseClientTeacherName_(tRaw, '');
+          var tName = tCleaned.name;
+          var hrName = parseClientTeacherName_(hrRaw, '').name;
+
+          if (cKey) {
+            var cEntity = ensureClassEntityClient_(store, cKey, hrName);
+            ensureGridRowSizeClient_(cEntity.grid, pIdx + 1);
+            if (subj || tName) {
+              if (tName) store.hasTeacherInClassCells = true;
+              cEntity.grid[pIdx][dIdx] = {
+                s: subj || cKey,
+                t: tName,
+                c: cKey,
+                r: room,
+                m: 0,
+                cc: isCc,
+                st: stRaw
+              };
+            }
+          }
+          if (tName && tName !== '-' && tName !== '—') {
+            var tEntity = ensureTeacherEntityClient_(store, tName, subj || tCleaned.subject, '');
+            if (tEntity && (subj || cKey)) {
+              ensureGridRowSizeClient_(tEntity.grid, pIdx + 1);
+              tEntity.grid[pIdx][dIdx] = {
+                s: subj,
+                t: tEntity.key,
+                c: cKey,
+                r: room,
+                m: 0,
+                cc: isCc,
+                st: stRaw
+              };
+            }
+          }
+        }
+        return true;
+      }
+
+      function parseSheetAutoLayoutClient_(rows, role, store, meta, sheetName) {
+        if (!rows || rows.length === 0) return;
+        extractMetaFromTopRowsClient_(rows, meta);
+        if (tryParseHorizontalMatrixClient_(rows, role, store, meta)) return;
+        if (tryParseVerticalMatrixClient_(rows, role, store, meta)) return;
+        if (tryParseFiveDayBlocksClient_(rows, role, store, meta, sheetName)) return;
+        tryParseFlatRowTableClient_(rows, store);
+      }
+
+      function crossEnrichTimetablesClient_(store) {
+        var maxP = store.maxPeriod;
+
+        // 1. 교사 시간표 -> 학급 시간표 보완 (컴시간 2글자 축약 교사명도 정식 3글자 성명으로 자동 통합)
+        Object.keys(store.teachers).forEach(function (tKey) {
+          var tObj = store.teachers[tKey];
+          ensureGridRowSizeClient_(tObj.grid, maxP);
+          for (var p = 0; p < maxP; p++) {
+            for (var d = 0; d < 5; d++) {
+              var tSlot = tObj.grid[p][d];
+              if (!tSlot || !tSlot.c) continue;
+
+              var cObj = ensureClassEntityClient_(store, tSlot.c, '');
+              ensureGridRowSizeClient_(cObj.grid, maxP);
+              var cSlot = cObj.grid[p][d];
+
+              if (!cSlot) {
+                cObj.grid[p][d] = {
+                  s: tSlot.s || tObj.subjectMain || '',
+                  t: tObj.name,
+                  c: tSlot.c,
+                  r: tSlot.r || '',
+                  m: tSlot.m || 0,
+                  cc: tSlot.cc || 0,
+                  st: tSlot.st || ''
+                };
+                store.hasTeacherInClassCells = true;
+              } else {
+                if (
+                  !cSlot.t ||
+                  (cSlot.t.length < tObj.name.length && tObj.name.indexOf(cSlot.t) === 0)
+                ) {
+                  if (cSlot.t && cSlot.t !== tObj.name && store.teachers[cSlot.t]) {
+                    delete store.teachers[cSlot.t];
+                  }
+                  cSlot.t = tObj.name;
+                  store.hasTeacherInClassCells = true;
+                }
+                if ((!tSlot.s || tSlot.s === tSlot.c) && cSlot.s) {
+                  tSlot.s = cSlot.s;
+                }
+                if (!tObj.subjectMain && cSlot.s && !isChangcheSubjectClient_(cSlot.s)) {
+                  tObj.subjectMain = cSlot.s.replace(/\s*\(.*\)/, '');
+                }
+              }
+            }
+          }
+        });
+
+        // 2. 학급 시간표 -> 교사 시간표 보완
+        Object.keys(store.classes).forEach(function (cKey) {
+          var cObj = store.classes[cKey];
+          ensureGridRowSizeClient_(cObj.grid, maxP);
+          if (cObj.homeroom && store.teachers[cObj.homeroom]) {
+            store.teachers[cObj.homeroom].homeroomOf = cObj.label;
+          }
+          for (var p = 0; p < maxP; p++) {
+            for (var d = 0; d < 5; d++) {
+              var cSlot = cObj.grid[p][d];
+              if (!cSlot || !cSlot.t) continue;
+              var cleanSubj = !isChangcheSubjectClient_(cSlot.s)
+                ? cSlot.s.replace(/\s*\(.*\)/, '')
+                : '';
+              var tObj2 = ensureTeacherEntityClient_(store, cSlot.t, cleanSubj, '');
+              if (!tObj2) continue;
+              cSlot.t = tObj2.key;
+              ensureGridRowSizeClient_(tObj2.grid, maxP);
+              if (!tObj2.grid[p][d]) {
+                tObj2.grid[p][d] = {
+                  s: cSlot.s,
+                  t: tObj2.key,
+                  c: cKey,
+                  r: cSlot.r || '',
+                  m: cSlot.m || 0,
+                  cc: cSlot.cc || 0,
+                  st: cSlot.st || ''
+                };
+              }
+            }
+          }
+        });
+      }
+
+      function buildPayloadFromUploadedSheets_(sheetItems, prefix, weeklyFileName, classFileName) {
+        var normPrefix = normalizeClientSemesterPrefix_(prefix);
+        var m = normPrefix.match(/^(20\d{2})-([12])$/);
+        var defaultYear = (m ? m[1] : new Date().getFullYear()) + '학년도';
+        var defaultSem = m ? m[2] + '학기' : '시간표';
+
+        var weeklySheetName = normPrefix + '주간시간표';
+        var classSheetName = normPrefix + '학급시간표';
+
+        var meta = {
+          schoolName: '',
+          schoolYear: defaultYear,
+          semester: defaultSem,
+          slogan: '',
+          weekRange: '',
+          periodTimes: ['', '', '', '', '', '', '']
+        };
+
+        var store = {
+          maxPeriod: 7,
+          classes: {},
+          teachers: {},
+          hasTeacherInClassCells: false
+        };
+
+        sheetItems.forEach(function (item) {
+          var detectedRole = detectClientSheetRole_(
+            item.rows,
+            item.name,
+            item.fileName,
+            item.roleHint
+          );
+          parseSheetAutoLayoutClient_(item.rows, detectedRole, store, meta, item.name);
+        });
+
+        crossEnrichTimetablesClient_(store);
+
+        if (m) {
+          meta.schoolYear = m[1] + '학년도';
+          meta.semester = m[2] + '학기';
+        }
+
+        var now = new Date();
+        var pad2 = function (n) {
+          return n < 10 ? '0' + n : String(n);
+        };
+        var verStr =
+          now.getFullYear() +
+          pad2(now.getMonth() + 1) +
+          pad2(now.getDate()) +
+          '_' +
+          pad2(now.getHours()) +
+          pad2(now.getMinutes());
+
+        return {
+          ok: true,
+          v: normPrefix + ' (' + verStr + ')',
+          activePrefix: normPrefix,
+          projectName: formatClientSemesterDisplayName_(normPrefix),
+          foundSheets: {
+            weekly: weeklySheetName,
+            classSheet: classSheetName
+          },
+          sheetNames: [weeklySheetName, classSheetName],
+          hasTeacherInClassCells: store.hasTeacherInClassCells,
+          meta: meta,
+          days: ['월', '화', '수', '목', '금'],
+          maxPeriod: store.maxPeriod,
+          classes: store.classes,
+          teachers: store.teachers
+        };
+      }
+
+      window.saveAndLoadUploadedProject = function () {
+        var statusEl = document.getElementById('projUploadStatus');
+        var projNameEl = document.getElementById('projNameInput');
+        var rawInput = projNameEl ? projNameEl.value.trim() : '';
+
+        if (!rawInput) {
+          statusEl.textContent = '⚠️ 년도·학기(예: 2025-2, 2026-1)를 입력해 주세요.';
+          statusEl.classList.add('is-error');
+          if (projNameEl) projNameEl.focus();
+          return;
+        }
+
+        var prefix = normalizeClientSemesterPrefix_(rawInput);
+        var weeklySheetName = prefix + '주간시간표';
+        var classSheetName = prefix + '학급시간표';
+
+        var wFile = state.pendingFiles.weekly;
+        var cFile = state.pendingFiles.classFile;
+        if (!wFile && !cFile) {
+          statusEl.textContent = '⚠️ 주간시간표와 학급시간표 엑셀(.xls, .xlsx) 파일을 선택해 주세요.';
+          statusEl.classList.add('is-error');
+          return;
+        }
+
+        statusEl.textContent =
+          '⏳ 엑셀 데이터를 분석하여 [' +
+          weeklySheetName +
+          '], [' +
+          classSheetName +
+          '] 시트를 추가하는 중...';
+        statusEl.classList.remove('is-error');
+
+        var pWeekly = wFile ? readExcelFileToSheetsAsync_(wFile, 'teacher') : Promise.resolve([]);
+        var pClass = cFile ? readExcelFileToSheetsAsync_(cFile, 'class') : Promise.resolve([]);
+
+        Promise.all([pWeekly, pClass])
+          .then(function (results) {
+            var weeklySheets = results[0] || [];
+            var classSheets = results[1] || [];
+            var allSheetItems = weeklySheets.concat(classSheets);
+
+            var payload = buildPayloadFromUploadedSheets_(
+              allSheetItems,
+              prefix,
+              wFile ? wFile.name : '',
+              cFile ? cFile.name : ''
+            );
+
+            var classCnt = Object.keys(payload.classes || {}).length;
+            var teacherCnt = Object.keys(payload.teachers || {}).length;
+            if (classCnt === 0 && teacherCnt === 0) {
+              throw new Error(
+                '업로드한 파일에서 유효한 시간표(월~금, 1~7교시)를 찾지 못했습니다. 파일 내용을 확인해 주세요.'
+              );
+            }
+
+            var combinedWeeklyRows = [];
+            var combinedClassRows = [];
+            allSheetItems.forEach(function (item) {
+              var role = detectClientSheetRole_(item.rows, item.name, item.fileName, item.roleHint);
+              if (role === 'teacher') {
+                combinedWeeklyRows = combinedWeeklyRows.concat(item.rows || []);
+              } else {
+                combinedClassRows = combinedClassRows.concat(item.rows || []);
+              }
+            });
+
+            var existingIdx = -1;
+            for (var i = 0; i < state.projects.length; i++) {
+              if (state.projects[i].id === prefix) {
+                existingIdx = i;
+                break;
+              }
+            }
+
+            var now = new Date();
+            var updatedAt =
+              now.getFullYear() +
+              '-' +
+              (now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : now.getMonth() + 1) +
+              '-' +
+              (now.getDate() < 10 ? '0' + now.getDate() : now.getDate());
+
+            var record = {
+              id: prefix,
+              prefix: prefix,
+              name: formatClientSemesterDisplayName_(prefix),
+              weeklySheetName: weeklySheetName,
+              classSheetName: classSheetName,
+              updatedAt: updatedAt,
+              weeklyFileName: wFile ? wFile.name : '',
+              classFileName: cFile ? cFile.name : '',
+              classCount: classCnt,
+              teacherCount: teacherCnt,
+              payload: payload
+            };
+
+            if (existingIdx !== -1) {
+              state.projects[existingIdx] = record;
+            } else {
+              state.projects.unshift(record);
+            }
+            state.activeProjectId = prefix;
+
+            saveProjectsToLocalStorage_();
+            renderProjectSelectUI_();
+            renderSavedProjectsList_();
+            applyLoadedData(payload, true);
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+              try {
+                google.script.run
+                  .withSuccessHandler(function (resStr) {
+                    var serverData = parseServerPayload_(resStr);
+                    if (serverData && serverData.ok) {
+                      state.sheetBackupData = serverData;
+                      syncSemesterSetsFromPayload_(serverData);
+                      applyLoadedData(serverData, true);
+                    }
+                  })
+                  .saveSemesterSheetsToSpreadsheet(
+                    JSON.stringify({
+                      prefix: prefix,
+                      name: record.name,
+                      weeklyRows: combinedWeeklyRows,
+                      classRows: combinedClassRows,
+                      weeklyFileName: record.weeklyFileName,
+                      classFileName: record.classFileName
+                    })
+                  );
+              } catch (e) {}
+            }
+
+            statusEl.textContent =
+              '✅ [' +
+              weeklySheetName +
+              '] · [' +
+              classSheetName +
+              '] 시트 생성 및 적용 완료! (학급 ' +
+              classCnt +
+              '개 · 교사 ' +
+              teacherCnt +
+              '명)';
+            setTimeout(function () {
+              window.closeProjectModal();
+            }, 350);
+          })
+          .catch(function (err) {
+            statusEl.textContent = '❌ 오류: ' + (err && err.message ? err.message : err);
+            statusEl.classList.add('is-error');
+          });
+      };
+
       window.refreshFromSheet = function (isBackgroundWarmup) {
         var perfEl = document.getElementById('perfIndicator');
         var forceRefresh = !isBackgroundWarmup;
+        var curPrefix = normalizeClientSemesterPrefix_(state.activeProjectId || '2025-2');
         if (!isBackgroundWarmup || !state.data) {
-          perfEl.textContent = '🔄 스프레드시트 [주간시간표] · [학급시간표] 동기화 중...';
+          perfEl.textContent =
+            '🔄 스프레드시트 [' + curPrefix + '주간시간표] · [' + curPrefix + '학급시간표] 동기화 중...';
         }
         if (typeof google !== 'undefined' && google.script && google.script.run) {
           var runner = google.script.run
             .withSuccessHandler(function (res) {
               var freshData = parseServerPayload_(res);
               if (freshData) {
+                state.sheetBackupData = freshData;
+                syncSemesterSetsFromPayload_(freshData);
                 applyLoadedData(freshData, true);
               }
             })
@@ -3234,7 +5987,7 @@
             runner.getTimetableData(forceRefresh);
           }
         } else if (!state.data) {
-          perfEl.textContent = '⚠️ Google Apps Script 웹앱 환경에서 실행해 주세요.';
+          perfEl.textContent = '⚠️ Google Apps Script 웹앱 환경에서 실행하거나 엑셀 파일을 업로드해 주세요.';
         }
       };
 
@@ -3248,6 +6001,8 @@
             .withSuccessHandler(function (res) {
               var freshData = parseServerPayload_(res);
               if (freshData) {
+                state.sheetBackupData = freshData;
+                syncSemesterSetsFromPayload_(freshData);
                 applyLoadedData(freshData, true);
               }
             })
@@ -3272,8 +6027,32 @@
         }
         if (payload.hasTeacherInClassCells !== undefined) {
           state.showTeacherInClass = Boolean(payload.hasTeacherInClassCells);
-          syncModeTabsUI();
         }
+        var cKeys = getSortedClassKeys(payload.classes);
+        var tKeys = getSortedTeacherKeys(payload.teachers);
+        if (state.mode === 'class' && cKeys.length === 0 && tKeys.length > 0) {
+          state.mode = 'teacher';
+        } else if (state.mode === 'teacher' && tKeys.length === 0 && cKeys.length > 0) {
+          state.mode = 'class';
+        }
+        if (state.mode === 'class') {
+          if (!state.currentKey || !payload.classes[state.currentKey]) {
+            state.currentKey = cKeys.length > 0 ? cKeys[0] : '';
+          }
+        } else if (state.mode === 'teacher') {
+          if (!state.currentKey || !payload.teachers[state.currentKey]) {
+            state.currentKey = tKeys.length > 0 ? tKeys[0] : '';
+          }
+        } else if (state.mode === 'free') {
+          var initFreeList = getFreeTeacherObjects_(payload, state.freeDayIdx, state.freePeriodIdx);
+          var hasInitFree = initFreeList.some(function (t) {
+            return t.key === state.currentKey;
+          });
+          if (!hasInitFree) {
+            state.currentKey = initFreeList.length > 0 ? initFreeList[0].key : '';
+          }
+        }
+        syncModeTabsUI();
         buildInMemorySearchIndex(payload);
         if (saveToStorage && payload.ok) {
           try {
@@ -3285,11 +6064,13 @@
 
       function revalidateSheetInBackground_() {
         if (typeof google === 'undefined' || !google.script || !google.script.run) return;
-        var currentSig = state.data && state.data.sig ? state.data.sig : '';
+        var currentSig = state.sheetBackupData && state.sheetBackupData.sig ? state.sheetBackupData.sig : '';
         var runner = google.script.run.withSuccessHandler(function (res) {
           if (res && res.changed && res.json) {
             var freshData = parseServerPayload_(res.json);
             if (freshData) {
+              state.sheetBackupData = freshData;
+              syncSemesterSetsFromPayload_(freshData);
               applyLoadedData(freshData, true);
             }
           }
@@ -3301,34 +6082,48 @@
 
       function initApp() {
         state.todayDayIdx = detectTodayIndex();
+        loadProjectsFromLocalStorage_();
+        renderProjectSelectUI_();
 
-        // 1순위: doGet 서버 캐시 인라인 주입 실데이터 (즉시 0ms 렌더링 + 백그라운드 시트 변경 자동 감지)
         var inlineData = parseServerPayload_(SERVER_INLINE_RAW);
         if (inlineData && typeof inlineData === 'object') {
+          state.sheetBackupData = inlineData;
+          syncSemesterSetsFromPayload_(inlineData);
           applyLoadedData(inlineData, true);
           setTimeout(revalidateSheetInBackground_, 150);
         } else {
-          // 2순위: 서버 콜드 스타트 시 브라우저 로컬 캐시로 0ms 즉시 화면 표시 후 백그라운드 캐시 워밍업
-          var cachedStr = null;
-          try {
-            cachedStr = localStorage.getItem(STORAGE_KEY);
-          } catch (e) {}
+          var activeSavedProj = state.projects.filter(function (p) {
+            return p.id === state.activeProjectId && p.payload;
+          })[0];
 
-          var renderedFromLocal = false;
-          if (cachedStr) {
+          if (activeSavedProj && activeSavedProj.payload) {
+            applyLoadedData(activeSavedProj.payload, false);
+          } else {
+            var cachedStr = null;
             try {
-              var parsedLocal = JSON.parse(cachedStr);
-              if (parsedLocal && typeof parsedLocal === 'object') {
-                applyLoadedData(parsedLocal, false);
-                renderedFromLocal = true;
-              }
-            } catch (err) {}
-          }
-          if (!renderedFromLocal) {
-            renderEmptyGridTable_(['월', '화', '수', '목', '금'], 7);
+              cachedStr = localStorage.getItem(STORAGE_KEY);
+            } catch (e) {}
+
+            var renderedFromLocal = false;
+            if (cachedStr) {
+              try {
+                var parsedLocal = JSON.parse(cachedStr);
+                if (parsedLocal && typeof parsedLocal === 'object') {
+                  state.sheetBackupData = parsedLocal;
+                  syncSemesterSetsFromPayload_(parsedLocal);
+                  applyLoadedData(parsedLocal, false);
+                  renderedFromLocal = true;
+                }
+              } catch (err) {}
+            }
+            if (!renderedFromLocal) {
+              renderEmptyGridTable_(['월', '화', '수', '목', '금'], 7);
+            }
           }
           window.refreshFromSheet(true);
         }
+
+        setTimeout(syncProjectsFromServerInBackground_, 200);
 
         var inputEl = document.getElementById('searchInput');
         inputEl.addEventListener('focus', function () {
@@ -3369,13 +6164,18 @@
 
         document.addEventListener('keydown', function (e) {
           if (e.key === 'Escape') {
+            var projModal = document.getElementById('projectManagerModal');
+            if (projModal && projModal.classList.contains('open')) {
+              window.closeProjectModal();
+              return;
+            }
             var modal = document.getElementById('timetableZoomModal');
             if (modal && modal.classList.contains('open')) {
               window.closeTimetableModal();
               return;
             }
           }
-          if (e.key === '/' && document.activeElement !== inputEl) {
+          if (e.key === '/' && document.activeElement !== inputEl && document.activeElement.tagName !== 'INPUT') {
             e.preventDefault();
             inputEl.focus();
             inputEl.select();
