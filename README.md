@@ -182,3 +182,12 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` Node.js `vm.Script` 정적 구문 검사 통과 (`Syntax check passed!`)
 
+### [2026-11-01 12:01] 업데이트 이력 (Commit ID: `6a63f65`)
+- **날짜 및 시간 (KST)**: `2026-11-01 12:01`
+- **커밋 ID (Commit Hash)**: `6a63f65`
+- **수정 내용 (Modification Details)**:
+  - **교사 선택 버튼 및 상단 헤더에서 대표 교과명 제거 (`index.html`)**:
+    - 1명의 교사가 여러 교과를 담당하는 경우를 고려하여, 교사 선택 버튼(`renderQuickChips`), 공강 교사 버튼, 시간표 상단 우측 헤더(`renderTimetable`), 문서 내보내기 헤더(`getCurrentExportModel_`), 검색 자동완성 서브 라벨(`buildInMemorySearchIndex`)에서 교사 이름 옆의 대표 교과명 표기를 제거하고 교사 성명만 표시되도록 수정 (교과목명은 시간표 테이블 각 교시 셀에만 표시)
+- **검증 결과 (Verification Results)**:
+  - `Code.gs` 및 `index.html` Node.js `vm.Script` 정적 구문 검사 통과 (`Syntax check passed!`)
+
