@@ -179,15 +179,23 @@
 
     .control-row-actions {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      gap: 10px;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .control-row-actions::-webkit-scrollbar {
+      display: none;
     }
 
     .mode-tabs {
       display: inline-flex;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
       background: #F3F4F6;
       padding: 3px;
       border-radius: var(--radius-md);
@@ -197,16 +205,17 @@
     .mode-tab {
       border: none;
       background: transparent;
-      padding: 7px 13px;
-      font-size: 13px;
+      padding: 7px 11px;
+      font-size: 12.5px;
       font-weight: 700;
       color: var(--ink-secondary);
       border-radius: var(--radius-sm);
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.14s ease;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
 
     .mode-tab.active {
@@ -367,19 +376,21 @@
     .utility-btns {
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 6px;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+      gap: 5px;
     }
 
     .util-btn {
       height: 34px;
-      padding: 0 10px;
+      padding: 0 9px;
       border-radius: var(--radius-md);
       border: 1px solid #D1D5DB;
       background: #FFFFFF;
       color: var(--ink-secondary);
       font-size: 12px;
       font-weight: 600;
+      white-space: nowrap;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -822,6 +833,19 @@
     .tt-table tbody td.td-cell.is-current-slot .cell-sub-info,
     .tt-table tbody td.td-cell.is-current-slot .cell-empty-dash {
       color: #FFFFFF !important;
+    }
+
+    /* 공유 공강 확인: 선택된 교사들의 겹치는 공강 시간 셀 강조 (Stone Gray #313339) */
+    .tt-table tbody td.td-cell.is-shared-free {
+      background-color: var(--brand-stone) !important;
+      color: #FFFFFF !important;
+      box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.22);
+    }
+
+    .tt-table tbody td.td-cell.is-shared-free .cell-empty-dash,
+    .tt-table tbody td.td-cell.is-shared-free .cell-main-text {
+      color: #FFFFFF !important;
+      font-weight: 700;
     }
 
     /* 4교시와 5교시 사이 점심 시간 행 (세로 높이 1/2 = 38px) */
@@ -1527,7 +1551,7 @@
         </div>
       </div>
 
-      <!-- 2행: 좌측(학급 시간표 / 교사 시간표 / 공강 교사 찾기) + 우측(엑셀등록, 교사명, *표시, 동기화, HWPX, XLSX, PDF) -->
+      <!-- 2행: 좌측(학급 시간표 / 교사 시간표 / 공강 교사 찾기 / 공유 공강 확인) + 우측(엑셀등록, 교사명, *표시, 동기화, HWPX, XLSX, PDF) -->
       <div class="control-row-actions">
         <div class="mode-tabs" role="tablist">
           <button type="button" class="mode-tab active" id="tabClass" onclick="switchMode('class')">
@@ -1538,6 +1562,9 @@
           </button>
           <button type="button" class="mode-tab" id="tabFree" onclick="switchMode('free')">
             ✨ 공강 교사 찾기
+          </button>
+          <button type="button" class="mode-tab" id="tabSharedFree" onclick="switchMode('shared_free')">
+            🤝 공유 공강 확인
           </button>
         </div>
 
@@ -1859,6 +1886,7 @@
         todayDayIdx: 0,
         freeDayIdx: 0,
         freePeriodIdx: 0,
+        sharedFreeTeachers: [],
         hideQuickChips: false,
         searchIndex: [],
         acSelectedIdx: -1,
@@ -2331,6 +2359,45 @@
             }
           }
           html += '</div></div>';
+        } else if (state.mode === 'shared_free') {
+          var tKeysShared = getSortedTeacherKeys(data.teachers);
+          var validSelected = (state.sharedFreeTeachers || []).filter(function (tk) {
+            return Boolean(data.teachers && data.teachers[tk]);
+          });
+          state.sharedFreeTeachers = validSelected;
+          if (tKeysShared.length > 0) {
+            html += '<div class="teacher-chips-section">';
+            html += '<div class="teacher-chips-header">';
+            html +=
+              '<span class="chip-label">👨‍🏫 교사 (' +
+              tKeysShared.length +
+              ') · 선택 ' +
+              validSelected.length +
+              '명:</span>';
+            if (validSelected.length > 0) {
+              html +=
+                '<button type="button" class="util-btn" style="padding:2px 8px;font-size:11px;" onclick="clearSharedFreeTeachers()">선택 초기화</button>';
+            }
+            html += '</div>';
+            html += '<div class="teacher-chips-wrap">';
+            for (var sIdx = 0; sIdx < tKeysShared.length; sIdx++) {
+              var stk = tKeysShared[sIdx];
+              var stObj = data.teachers[stk];
+              var activeShared = validSelected.indexOf(stk) !== -1 ? ' active' : '';
+              var stBtnLabel = formatTeacherName(stObj.name, false);
+              html +=
+                '<button type="button" class="q-chip' +
+                activeShared +
+                '" title="' +
+                escapeHtml_(stBtnLabel) +
+                '" onclick="toggleSharedFreeTeacher(\'' +
+                escapeSingleQuote_(stk) +
+                '\')">' +
+                escapeHtml_(stBtnLabel) +
+                '</button>';
+            }
+            html += '</div></div>';
+          }
         }
 
         bar.innerHTML = html;
@@ -2343,6 +2410,33 @@
         if (bar) {
           bar.classList.toggle('is-hidden', !visible);
         }
+      }
+
+      function formatSchoolYearSemester_(meta, data) {
+        var m = meta || {};
+        var yearStr = String(m.schoolYear || '').trim();
+        var semStr = String(m.semester || '').trim();
+        if (semStr === '시간표') semStr = '';
+
+        var prefixSource = String(
+          state.activeProjectId ||
+            (data && data.activeProjectId) ||
+            (data &&
+              data.foundSheets &&
+              (data.foundSheets.weekly || data.foundSheets.classSheet)) ||
+            ''
+        );
+        var pMatch = prefixSource.match(/(20\d{2})-([12])/);
+        if (!yearStr) {
+          yearStr = (pMatch ? pMatch[1] : new Date().getFullYear()) + '학년도';
+        }
+        if (!semStr && pMatch) {
+          semStr = pMatch[2] + '학기';
+        }
+        if (semStr && yearStr.indexOf(semStr) === -1) {
+          return yearStr + ' ' + semStr;
+        }
+        return yearStr;
       }
 
       function renderTimetable() {
@@ -2374,7 +2468,7 @@
           meta.slogan || sheetInfoText || '초고속 주간시간표 · 학급시간표 검색';
 
         document.getElementById('headerSchoolYear').textContent =
-          meta.schoolYear || new Date().getFullYear() + '학년도';
+          formatSchoolYearSemester_(meta, data);
 
         var cKeys = getSortedClassKeys(data.classes);
         var tKeys = getSortedTeacherKeys(data.teachers);
@@ -2398,14 +2492,127 @@
         var mainTitleEl = document.getElementById('headerMainTitle');
         var affEl = document.getElementById('headerAffiliation');
         var subRoleEl = document.getElementById('headerSubRole');
+        subRoleEl.style.fontSize = '';
+
+        if (state.mode === 'shared_free') {
+          var selectedKeys = (state.sharedFreeTeachers || []).filter(function (tk) {
+            return Boolean(data.teachers && data.teachers[tk]);
+          });
+          state.sharedFreeTeachers = selectedKeys;
+
+          mainTitleEl.textContent = '공유 공강 시간표';
+          affEl.classList.remove('is-subject-sub');
+          affEl.textContent = meta.schoolName ? meta.schoolName : '';
+
+          if (selectedKeys.length === 0) {
+            subRoleEl.textContent = '';
+            renderEmptyGridTable_(days, maxP, pTimes, liveSlot);
+          } else {
+            var selectedNames = selectedKeys.map(function (tk) {
+              return formatTeacherName(data.teachers[tk].name, false);
+            });
+            if (selectedKeys.length === 1) {
+              subRoleEl.innerHTML =
+                '교사 <span class="divider">|</span> ' + escapeHtml_(selectedNames[0]);
+            } else if (selectedKeys.length === 2) {
+              subRoleEl.style.fontSize = '26px';
+              subRoleEl.innerHTML =
+                '교사(2명) <span class="divider">|</span> ' +
+                escapeHtml_(selectedNames.join(', '));
+            } else {
+              subRoleEl.style.fontSize = '20px';
+              subRoleEl.innerHTML =
+                '교사(' +
+                selectedKeys.length +
+                '명) <span class="divider">|</span> ' +
+                escapeHtml_(selectedNames.join(', '));
+            }
+
+            var sfTheadHtml = '<tr><th class="th-period-corner">교시</th>';
+            for (var sfd = 0; sfd < days.length; sfd++) {
+              var sfTodayThCls = sfd === liveSlot.dayIdx ? ' class="th-today"' : '';
+              var sfRawDay = String(days[sfd] || '');
+              var sfDayLabel = sfRawDay.indexOf('요일') !== -1 ? sfRawDay : sfRawDay + '요일';
+              sfTheadHtml += '<th' + sfTodayThCls + '>' + sfDayLabel + '</th>';
+            }
+            sfTheadHtml += '</tr>';
+            document.getElementById('ttThead').innerHTML = sfTheadHtml;
+
+            var sfTbodyHtml = '';
+            for (var sfp = 0; sfp < maxP; sfp++) {
+              var sfPLabel = (sfp + 1) + '교시';
+              var sfPTimeStr = pTimes[sfp] || '';
+              var sfIsCurrentPeriod = liveSlot.dayIdx !== -1 && sfp === liveSlot.periodIdx;
+
+              sfTbodyHtml += '<tr>';
+              sfTbodyHtml +=
+                '<td class="td-period' +
+                (sfIsCurrentPeriod ? ' is-current-period' : '') +
+                '">' +
+                '<div class="period-num">' +
+                sfPLabel +
+                '</div>' +
+                (sfPTimeStr
+                  ? '<div class="period-time">' + escapeHtml_(sfPTimeStr) + '</div>'
+                  : '') +
+                '</td>';
+
+              for (var sfCol = 0; sfCol < 5; sfCol++) {
+                var isSharedFreeSlot = selectedKeys.every(function (tk) {
+                  var tObj = data.teachers[tk];
+                  if (!tObj || !tObj.grid) return true;
+                  var slot = tObj.grid[sfp] ? tObj.grid[sfp][sfCol] : null;
+                  return !slot || (!slot.s && !slot.c);
+                });
+
+                if (isSharedFreeSlot) {
+                  sfTbodyHtml +=
+                    '<td class="td-cell is-shared-free" title="선택된 교사 전원 공강"></td>';
+                } else {
+                  sfTbodyHtml +=
+                    '<td class="td-cell"><span class="cell-empty-dash">—</span></td>';
+                }
+              }
+
+              sfTbodyHtml += '</tr>';
+
+              if (sfp === 3 && maxP > 4) {
+                var sfLunchCls =
+                  liveSlot.dayIdx !== -1 && liveSlot.isLunch
+                    ? ' class="tr-lunch is-current-lunch"'
+                    : ' class="tr-lunch"';
+                sfTbodyHtml +=
+                  '<tr' +
+                  sfLunchCls +
+                  '>' +
+                  '<td class="td-period td-lunch-period"><div class="period-num">점심</div></td>' +
+                  '<td class="td-cell td-lunch-cell" colspan="5">점심 시간</td>' +
+                  '</tr>';
+              }
+            }
+            document.getElementById('ttTbody').innerHTML = sfTbodyHtml;
+          }
+
+          syncModalTimetableView_();
+          renderQuickChips();
+
+          var elapsedSf = (performance.now() - t0).toFixed(2);
+          document.getElementById('perfIndicator').textContent =
+            '⚡ 초고속 렌더링 완료 (' +
+            elapsedSf +
+            'ms · 학급 ' +
+            cKeys.length +
+            '개 / 교사 ' +
+            tKeys.length +
+            '명)';
+          document.getElementById('versionIndicator').textContent =
+            '시트 동기화 버전: ' + (data.v || '-');
+          return;
+        }
 
         if (!targetObj) {
           state.currentKey = '';
-          mainTitleEl.textContent = isClassMode
-            ? meta.semester && meta.semester !== '시간표'
-              ? meta.semester + ' 시간표'
-              : '학급 시간표'
-            : '주간 시간표';
+          mainTitleEl.textContent = isClassMode ? '학급 시간표' : '주간 시간표';
           affEl.textContent = '';
           subRoleEl.textContent = '';
           renderEmptyGridTable_(days, maxP, pTimes, liveSlot);
@@ -2429,10 +2636,7 @@
         state.currentKey = targetObj.key;
 
         if (isClassMode) {
-          mainTitleEl.textContent =
-            meta.semester && meta.semester !== '시간표'
-              ? meta.semester + ' 시간표'
-              : '학급 시간표';
+          mainTitleEl.textContent = '학급 시간표';
           affEl.classList.remove('is-subject-sub');
           affEl.textContent =
             (meta.schoolName ? meta.schoolName + ' ' : '') + targetObj.label;
@@ -2781,6 +2985,10 @@
         document.getElementById('tabClass').classList.toggle('active', state.mode === 'class');
         document.getElementById('tabTeacher').classList.toggle('active', state.mode === 'teacher');
         document.getElementById('tabFree').classList.toggle('active', state.mode === 'free');
+        var tabSharedFreeEl = document.getElementById('tabSharedFree');
+        if (tabSharedFreeEl) {
+          tabSharedFreeEl.classList.toggle('active', state.mode === 'shared_free');
+        }
         document
           .getElementById('btnToggleSubTeacher')
           .classList.toggle('active-opt', state.showTeacherInClass);
@@ -2866,6 +3074,26 @@
         state.mode = 'free';
         state.currentKey = key;
         syncModeTabsUI();
+        renderTimetable();
+      };
+
+      window.toggleSharedFreeTeacher = function (key) {
+        state.mode = 'shared_free';
+        if (!Array.isArray(state.sharedFreeTeachers)) {
+          state.sharedFreeTeachers = [];
+        }
+        var idx = state.sharedFreeTeachers.indexOf(key);
+        if (idx === -1) {
+          state.sharedFreeTeachers.push(key);
+        } else {
+          state.sharedFreeTeachers.splice(idx, 1);
+        }
+        syncModeTabsUI();
+        renderTimetable();
+      };
+
+      window.clearSharedFreeTeachers = function () {
+        state.sharedFreeTeachers = [];
         renderTimetable();
       };
 
@@ -3066,17 +3294,57 @@
       function getCurrentExportModel_() {
         var data = state.data;
         if (!data) return null;
+        var meta = data.meta || {};
+        var schoolYear = formatSchoolYearSemester_(meta, data);
+        var days = (data.days || ['월', '화', '수', '목', '금']).map(function (d) {
+          var s = String(d || '');
+          return s.indexOf('요일') !== -1 ? s : s + '요일';
+        });
+        var maxP = data.maxPeriod || 7;
+        var pTimes = meta.periodTimes || [];
+
+        if (state.mode === 'shared_free') {
+          var selectedKeys = (state.sharedFreeTeachers || []).filter(function (tk) {
+            return Boolean(data.teachers && data.teachers[tk]);
+          });
+          if (selectedKeys.length === 0) return null;
+          var selectedNames = selectedKeys.map(function (tk) {
+            return formatTeacherName(data.teachers[tk].name, false);
+          });
+          var sfRows = [];
+          for (var sfp = 0; sfp < maxP; sfp++) {
+            var sfCells = [];
+            for (var sfCol = 0; sfCol < 5; sfCol++) {
+              var isAllFree = selectedKeys.every(function (tk) {
+                var tObj = data.teachers[tk];
+                if (!tObj || !tObj.grid) return true;
+                var slot = tObj.grid[sfp] ? tObj.grid[sfp][sfCol] : null;
+                return !slot || (!slot.s && !slot.c);
+              });
+              sfCells.push({ main: isAllFree ? '공강' : '—', sub: '' });
+            }
+            sfRows.push({
+              periodLabel: (sfp + 1) + '교시',
+              periodTime: pTimes[sfp] || '',
+              cells: sfCells
+            });
+          }
+          return {
+            schoolYear: schoolYear,
+            mainTitle: '공유 공강 시간표',
+            affiliation: meta.schoolName || '',
+            subRole: '교사 | ' + selectedNames.join(', '),
+            days: days,
+            rows: sfRows,
+            fileBaseName: '공유공강_시간표'
+          };
+        }
+
         var isClassMode = state.mode === 'class';
         var targetObj = getActiveTargetObject_(data);
         if (!targetObj) return null;
 
-        var meta = data.meta || {};
-        var schoolYear = meta.schoolYear || new Date().getFullYear() + '학년도';
-        var mainTitle = isClassMode
-          ? meta.semester && meta.semester !== '시간표'
-            ? meta.semester + ' 시간표'
-            : '학급 시간표'
-          : '주간 시간표';
+        var mainTitle = isClassMode ? '학급 시간표' : '주간 시간표';
         var affiliation = isClassMode
           ? (meta.schoolName ? meta.schoolName + ' ' : '') + targetObj.label
           : meta.schoolName || '';
@@ -3087,13 +3355,6 @@
           : '교사 | ' +
             formatTeacherName(targetObj.name, false) +
             (targetObj.homeroomOf ? ' (' + targetObj.homeroomOf + ' 담임)' : '');
-
-        var days = (data.days || ['월', '화', '수', '목', '금']).map(function (d) {
-          var s = String(d || '');
-          return s.indexOf('요일') !== -1 ? s : s + '요일';
-        });
-        var maxP = data.maxPeriod || 7;
-        var pTimes = meta.periodTimes || [];
 
         var rows = [];
         for (var p = 0; p < maxP; p++) {
