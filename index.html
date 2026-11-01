@@ -2042,7 +2042,7 @@
             type: 'teacher',
             key: t.key,
             title: t.name,
-            sub: (t.subjectMain || '교사 시간표') + (t.homeroomOf ? ' · ' + t.homeroomOf + ' 담임' : ''),
+            sub: t.homeroomOf ? t.homeroomOf + ' 담임' : '교사 시간표',
             blob: searchBlob
           });
         });
@@ -2254,9 +2254,7 @@
               var tk = tKeys[j];
               var tObj = data.teachers[tk];
               var activeT = state.currentKey === tk ? ' active' : '';
-              var tBtnLabel =
-                formatTeacherName(tObj.name, false) +
-                (tObj.subjectMain ? ' (' + tObj.subjectMain + ')' : '');
+              var tBtnLabel = formatTeacherName(tObj.name, false);
               html +=
                 '<button type="button" class="q-chip' +
                 activeT +
@@ -2319,9 +2317,7 @@
             for (var f = 0; f < freeTeachers.length; f++) {
               var ft = freeTeachers[f];
               var activeFree = state.currentKey === ft.key ? ' active' : '';
-              var fBtnLabel =
-                formatTeacherName(ft.name, false) +
-                (ft.subjectMain ? ' (' + ft.subjectMain + ')' : '');
+              var fBtnLabel = formatTeacherName(ft.name, false);
               html +=
                 '<button type="button" class="q-chip' +
                 activeFree +
@@ -2449,10 +2445,8 @@
           }
         } else {
           mainTitleEl.textContent = '주간 시간표';
-          affEl.classList.add('is-subject-sub');
-          affEl.textContent =
-            (meta.schoolName ? meta.schoolName + ' ' : '') +
-            (targetObj.subjectMain ? targetObj.subjectMain : '');
+          affEl.classList.remove('is-subject-sub');
+          affEl.textContent = meta.schoolName ? meta.schoolName : '';
           subRoleEl.innerHTML =
             '교사 <span class="divider">|</span> ' +
             escapeHtml_(formatTeacherName(targetObj.name, false)) +
@@ -3085,7 +3079,7 @@
           : '주간 시간표';
         var affiliation = isClassMode
           ? (meta.schoolName ? meta.schoolName + ' ' : '') + targetObj.label
-          : (meta.schoolName ? meta.schoolName + ' ' : '') + (targetObj.subjectMain || '');
+          : meta.schoolName || '';
         var subRole = isClassMode
           ? targetObj.homeroom
             ? '담임 | ' + formatTeacherName(targetObj.homeroom, false)
