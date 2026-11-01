@@ -82,55 +82,46 @@
 
     .control-row-search {
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
       width: 100%;
       gap: 10px;
       flex-wrap: wrap;
     }
 
-    .project-bar-group {
+    .top-toggle-group {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       flex-shrink: 0;
     }
 
-    .project-select-wrap {
-      display: inline-flex;
-      align-items: center;
-      background: #FFFFFF;
-      border: 2px solid var(--main-color);
-      border-radius: var(--radius-lg);
-      padding: 0 12px;
+    .util-btn.top-toggle-btn {
       height: 46px;
-      gap: 6px;
-      box-shadow: 0 2px 8px rgba(2, 112, 70, 0.08);
-      transition: border-color 0.14s ease, box-shadow 0.14s ease;
+      padding: 0 14px;
+      border-radius: var(--radius-lg);
+      border: 2px solid #D1D5DB;
+      background: #FFFFFF;
+      color: var(--ink-secondary);
+      font-size: 14px;
+      font-weight: 700;
+      gap: 5px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      transition: all 0.14s ease;
     }
 
-    .project-select-wrap:focus-within {
-      border-color: var(--main-color-dark);
-      box-shadow: 0 0 0 4px var(--main-focus-ring);
-    }
-
-    .project-select-icon {
-      font-size: 15px;
-      user-select: none;
-    }
-
-    .project-select {
-      border: none;
-      outline: none;
-      background: transparent;
-      font-family: var(--font-sans);
-      font-size: 14.5px;
-      font-weight: 800;
+    .util-btn.top-toggle-btn:hover {
+      background: #F9FAFB;
+      border-color: var(--main-color);
       color: var(--main-color-dark);
-      cursor: pointer;
-      padding: 4px 2px;
-      min-width: 140px;
-      max-width: 220px;
+    }
+
+    .util-btn.top-toggle-btn.active-opt {
+      background: var(--main-tint-bg);
+      border: 2px solid var(--main-color);
+      color: var(--main-color-dark);
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(2, 112, 70, 0.1);
     }
 
     .project-bar-group {
@@ -196,32 +187,46 @@
       display: inline-flex;
       flex-wrap: nowrap;
       flex-shrink: 0;
-      background: #F3F4F6;
-      padding: 3px;
-      border-radius: var(--radius-md);
-      border: 1px solid #D1D5DB;
+      background: var(--main-tint-bg);
+      padding: 5px;
+      gap: 6px;
+      border-radius: var(--radius-lg);
+      border: 2px solid var(--main-color);
+      box-shadow: 0 3px 10px rgba(2, 112, 70, 0.12);
     }
 
     .mode-tab {
-      border: none;
-      background: transparent;
-      padding: 7px 11px;
-      font-size: 12.5px;
-      font-weight: 700;
-      color: var(--ink-secondary);
-      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--main-tint-border);
+      background: #FFFFFF;
+      height: 38px;
+      padding: 0 15px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--main-color-dark);
+      border-radius: var(--radius-md);
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.14s ease;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(2, 112, 70, 0.08);
+    }
+
+    .mode-tab:hover:not(.active) {
+      background: #FFFFFF;
+      border-color: var(--main-color);
+      color: var(--main-color);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(2, 112, 70, 0.16);
     }
 
     .mode-tab.active {
       background: var(--main-color);
       color: #FFFFFF;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      border-color: var(--main-color-dark);
+      box-shadow: 0 3px 10px rgba(2, 112, 70, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
 
     .search-box-container {
@@ -1508,8 +1513,17 @@
        ======================================================================== -->
   <header class="control-bar-wrap">
     <div class="control-bar">
-      <!-- 1행: 좌측 년도·학기(프로젝트) 드롭다운 + 중앙 초고속 초성 & 단축어 즉시 검색창 -->
+      <!-- 1행: 좌측(교사명, *표시 토글) + 년도·학기 드롭다운 + 초고속 초성 & 단축어 즉시 검색창 -->
       <div class="control-row-search">
+        <div class="top-toggle-group">
+          <button type="button" class="util-btn top-toggle-btn" id="btnToggleSubTeacher" onclick="toggleShowTeacherInClass()" title="학급 시간표에서 담당 교사명 표시 전환">
+            👤 교사명
+          </button>
+          <button type="button" class="util-btn top-toggle-btn active-opt" id="btnToggleMask" onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환">
+            🔒 *표시
+          </button>
+        </div>
+
         <div class="project-bar-group">
           <div class="project-select-wrap" title="년도·학기 선택 (20XX-X주간시간표 + 20XX-X학급시간표 시트 세트)">
             <span class="project-select-icon">📅</span>
@@ -1551,13 +1565,10 @@
         </div>
       </div>
 
-      <!-- 2행: 좌측(학급 시간표 / 교사 시간표 / 공강 교사 찾기 / 공유 공강 확인) + 우측(엑셀등록, 교사명, *표시, 동기화, HWPX, XLSX, PDF) -->
+      <!-- 2행: 좌측(교사 시간표 / 공강 교사 찾기 / 공유 공강 확인 / 학급 시간표) + 우측(동기화, HWPX, XLSX, PDF) -->
       <div class="control-row-actions">
         <div class="mode-tabs" role="tablist">
-          <button type="button" class="mode-tab active" id="tabClass" onclick="switchMode('class')">
-            🏫 학급 시간표
-          </button>
-          <button type="button" class="mode-tab" id="tabTeacher" onclick="switchMode('teacher')">
+          <button type="button" class="mode-tab active" id="tabTeacher" onclick="switchMode('teacher')">
             👨‍🏫 교사 시간표
           </button>
           <button type="button" class="mode-tab" id="tabFree" onclick="switchMode('free')">
@@ -1566,18 +1577,12 @@
           <button type="button" class="mode-tab" id="tabSharedFree" onclick="switchMode('shared_free')">
             🤝 공유 공강 확인
           </button>
+          <button type="button" class="mode-tab" id="tabClass" onclick="switchMode('class')">
+            🏫 학급 시간표
+          </button>
         </div>
 
         <div class="utility-btns">
-          <button type="button" class="util-btn" onclick="openProjectModal()" title="교사 시간표 + 주간 시간표 엑셀(.xls, .xlsx) 세트 업로드 및 학기 프로젝트 관리">
-            📂 학기 엑셀 등록
-          </button>
-          <button type="button" class="util-btn" id="btnToggleSubTeacher" onclick="toggleShowTeacherInClass()" title="학급 시간표에서 담당 교사명 표시 전환">
-            👤 교사명
-          </button>
-          <button type="button" class="util-btn active-opt" id="btnToggleMask" onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환">
-            🔒 *표시
-          </button>
           <button type="button" class="util-btn" onclick="refreshFromSheet()" title="스프레드시트 주간시간표·학급시간표 최신 데이터 동기화">
             🔄 동기화
           </button>
@@ -1879,7 +1884,7 @@
           classFile: null
         },
         theme: 'green',
-        mode: 'class',
+        mode: 'teacher',
         currentKey: '',
         showTeacherInClass: false,
         maskTeacherName: true,
