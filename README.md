@@ -219,5 +219,20 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html script #1/#2 syntax OK`)
 
-
+### [2026-11-02 01:52] 업데이트 이력 (Commit ID: `f0936ba`)
+- **날짜 및 시간 (KST)**: `2026-11-02 01:52`
+- **커밋 ID (Commit Hash)**: `f0936ba`
+- **수정 내용 (Modification Details)**:
+  - **웹앱 브라우저 탭 제목 변경 (`Code.gs`, `index.html`)**:
+    - `Code.gs`의 `doGet(e)` 내 `.setTitle('교사·학급 시간표 검색')` 및 `index.html`의 `<title>교사·학급 시간표 검색</title>`로 탭 제목을 수정
+  - **상단 1행 검색창 중앙 배치 및 학기 드롭다운 순서 변경 (`index.html`)**:
+    - 1행(`.control-row-search`)의 요소 순서를 **`[👤 교사명] [🔒 *표시]` → `[🔍 학급·교사명·초성 즉시 검색창]`(중앙 메인) → `[📅 학기 선택 드롭다운]`** 순으로 재배치하고 `justify-content: center`를 적용하여 검색창이 중앙에 위치하도록 개선
+  - **전 모드(`교사 시간표`, `공강 교사 찾기`, `학급 시간표`) 초기 미선택 상태 통일 (`index.html`)**:
+    - `initApp`, `applyLoadedData`, `switchMode`, `setFreeFilter`, `clearSearchInput`에서 첫 번째 교사(`*수*`)나 첫 번째 학급(`1학년 1반`)을 자동 선택하던 기본값 로직을 제거하여, `공유 공강 확인`과 동일하게 사용자가 직접 선택하기 전까지는 미선택 상태(`state.currentKey = ''`, 빈 시간표 `—`)로 표시되도록 수정
+    - 이미 선택된 교사·학급 버튼을 다시 클릭하면 선택이 해제(토글)되도록 `selectTarget` 및 `selectFreeTeacher` 동작을 개선하고, 로컬 HTML 직접 실행 시에도 `SERVER_INLINE_RAW` 미정의 오류가 발생하지 않도록 안전 가드 추가
+  - **Impeccable 25대 디자인 품질 진단 및 리파인 적용 (`index.html`, `PRODUCT.md`, `DESIGN.md`, `.impeccable/design.json`)**:
+    - 모드 탭(`role="tablist"`, `role="tab"`, `aria-selected`) 및 상단 토글 버튼(`aria-pressed`) 접근성 속성 동기화, 모바일(`<=640px`) 칩 그리드 5열 반응형 대응, `2px`/`4px` 간격 스케일 및 `12px` 최소 폰트 토큰 동기화 완료
+- **검증 결과 (Verification Results)**:
+  - `Code.gs` 및 `index.html` Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html script #1/#2 syntax OK`)
+  - Impeccable 정적 스캐너 통과 (`0 anti-patterns found`, `No drift found`)
 
