@@ -1027,6 +1027,179 @@
       color: var(--ink-subtle);
     }
 
+    /* 공강 교사 찾기: 시간표 셀 클릭형 UI & 전용 모달창 */
+    .tt-table tbody td.td-cell.free-slot-cell {
+      cursor: pointer;
+      padding: 8px 6px;
+      transition: all 0.14s ease;
+    }
+
+    .tt-table tbody td.td-cell.free-slot-cell:hover {
+      background-color: var(--main-tint-bg) !important;
+      box-shadow: inset 0 0 0 2px var(--main-color);
+    }
+
+    .tt-table tbody td.td-cell.free-slot-cell.is-selected-free-slot {
+      background-color: var(--main-tint-bg);
+      box-shadow: inset 0 0 0 2px var(--main-color);
+    }
+
+    .free-slot-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      background-color: var(--main-tint-bg);
+      border: 1px solid var(--main-tint-border);
+      color: var(--main-color-dark);
+      font-size: 13.5px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .tt-table tbody td.td-cell.free-slot-cell:hover .free-slot-badge,
+    .tt-table tbody td.td-cell.free-slot-cell.is-selected-free-slot .free-slot-badge {
+      background-color: var(--main-color);
+      border-color: var(--main-color);
+      color: #FFFFFF;
+    }
+
+    .tt-table tbody td.td-cell.is-current-slot.free-slot-cell .free-slot-badge {
+      background-color: #FFFFFF;
+      border-color: #FFFFFF;
+      color: var(--main-color-dark);
+    }
+
+    .free-slot-hint {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--ink-subtle);
+      margin-top: 5px;
+      line-height: 1.2;
+    }
+
+    .tt-table tbody td.td-cell.is-current-slot.free-slot-cell .free-slot-hint {
+      color: rgba(255, 255, 255, 0.92) !important;
+    }
+
+    .free-back-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--main-tint-bg);
+      border: 1.5px solid var(--main-tint-border);
+      border-radius: var(--radius-md);
+    }
+
+    .free-back-info {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--main-color-dark);
+    }
+
+    .free-back-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .free-modal-dialog {
+      width: min(95vw, 820px);
+      max-height: 88vh;
+      background: #FFFFFF;
+      border: 2px solid var(--brand-stone);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.38);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .free-modal-body {
+      padding: 20px 24px 22px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: var(--bg-page);
+    }
+
+    .free-modal-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      width: 100%;
+    }
+
+    .free-teacher-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 10px 8px;
+      background: #FFFFFF;
+      border: 1.5px solid #D1D5DB;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.12s ease;
+      text-align: center;
+      min-height: 54px;
+    }
+
+    .free-teacher-btn:hover {
+      background: var(--main-tint-bg);
+      border-color: var(--main-color);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(2, 112, 70, 0.14);
+    }
+
+    .free-teacher-btn.active {
+      background: var(--main-color);
+      border-color: var(--main-color-dark);
+      color: #FFFFFF;
+    }
+
+    .free-teacher-name {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--ink-primary);
+      line-height: 1.2;
+    }
+
+    .free-teacher-btn.active .free-teacher-name,
+    .free-teacher-btn.active .free-teacher-meta {
+      color: #FFFFFF;
+    }
+
+    .free-teacher-meta {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--ink-subtle);
+      line-height: 1.2;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .free-modal-note {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
+      text-align: center;
+    }
+
     /* ==========================================================================
        6. 시간표 전체화면 확대 모달 (Full-Fit Timetable Modal)
        ========================================================================== */
@@ -1489,6 +1662,9 @@
       .ff-results {
         grid-template-columns: repeat(5, minmax(0, 1fr));
       }
+      .free-modal-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
       .card-inner {
         padding: 18px 14px;
       }
@@ -1870,6 +2046,50 @@
     </div>
   </div>
 
+  <!-- ========================================================================
+       공강 교사 찾기: 선택한 (요일 × 교시) 셀의 공강 교사 명단 모달창
+       ======================================================================== -->
+  <div
+    class="tt-modal-backdrop"
+    id="freeTeachersModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="freeModalTitle"
+    onclick="handleFreeModalBackdropClick(event)"
+  >
+    <div class="free-modal-dialog">
+      <header class="tt-modal-header">
+        <div class="tt-modal-title-group" style="align-items: center;">
+          <span class="tt-modal-year-badge" id="freeModalBadge">공강 조회</span>
+          <h2 class="tt-modal-main-title" id="freeModalTitle">공강 교사 명단</h2>
+          <span class="tt-modal-sub-meta" id="freeModalSubMeta"></span>
+          <button
+            type="button"
+            class="util-btn top-toggle-btn active-opt"
+            id="btnFreeModalToggleMask"
+            aria-pressed="true"
+            onclick="toggleMaskTeacherName()"
+            title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환"
+            style="height: 36px; padding: 0 12px; font-size: 13.5px;"
+          >
+            🔒 *표시
+          </button>
+        </div>
+        <div class="tt-modal-actions">
+          <button type="button" class="tt-modal-close-btn" onclick="closeFreeTeachersModal()" title="창 닫기 (Esc)">
+            ✕ 닫기
+          </button>
+        </div>
+      </header>
+      <div class="free-modal-body">
+        <div class="free-modal-grid" id="freeModalTeacherGrid"></div>
+        <div class="free-modal-note">
+          💡 선생님 성명을 클릭하면 해당 교사의 주간 시간표를 바로 확인할 수 있습니다.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     var SERVER_INLINE_RAW = <?!= typeof initialJson !== 'undefined' ? initialJson : 'null' ?>;
   </script>
@@ -1883,6 +2103,15 @@
       var CHO_LIST = [
         'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ',
         'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+      ];
+      // 한글 두벌식 조합 중 받침(종성 1~27)이 다음 글자 초성으로 넘어가는 경우 분리 테이블: [남는 종성 인덱스, 분리된 초성]
+      var JONG_SPLIT_MAP = [
+        null,
+        [0, 'ㄱ'], [0, 'ㄲ'], [1, 'ㅅ'], [0, 'ㄴ'], [4, 'ㅈ'], [4, 'ㅎ'],
+        [0, 'ㄷ'], [0, 'ㄹ'], [8, 'ㄱ'], [8, 'ㅁ'], [8, 'ㅂ'], [8, 'ㅅ'],
+        [8, 'ㅌ'], [8, 'ㅍ'], [8, 'ㅎ'], [0, 'ㅁ'], [0, 'ㅂ'], [17, 'ㅅ'],
+        [0, 'ㅅ'], [0, 'ㅆ'], [0, 'ㅇ'], [0, 'ㅈ'], [0, 'ㅊ'], [0, 'ㅋ'],
+        [0, 'ㅌ'], [0, 'ㅍ'], [0, 'ㅎ']
       ];
 
       var state = {
@@ -1905,6 +2134,7 @@
         sharedFreeTeachers: [],
         hideQuickChips: false,
         searchIndex: [],
+        lastSearchQuery: '',
         acSelectedIdx: -1,
         acFiltered: []
       };
@@ -2059,11 +2289,19 @@
             .toLowerCase();
 
           idx.push({
+            orderIdx: idx.length,
             type: 'class',
             key: c.key,
             title: c.label,
             homeroom: c.homeroom || '',
             sub: c.homeroom ? '담임 ' + c.homeroom : '학급 시간표',
+            primaryFields: [
+              String(c.label || '').toLowerCase(),
+              String(c.key || '').toLowerCase(),
+              String(compactNum || '').toLowerCase(),
+              String(rawDigits || '').toLowerCase()
+            ].filter(Boolean),
+            secondaryFields: [String(c.homeroom || '').toLowerCase()].filter(Boolean),
             blob: searchBlob
           });
         });
@@ -2083,15 +2321,158 @@
             .toLowerCase();
 
           idx.push({
+            orderIdx: idx.length,
             type: 'teacher',
             key: t.key,
             title: t.name,
             sub: t.homeroomOf ? t.homeroomOf + ' 담임' : '교사 시간표',
+            primaryFields: [String(t.name || '').toLowerCase()].filter(Boolean),
+            secondaryFields: [
+              String(t.subjectMain || '').toLowerCase(),
+              String(t.homeroomOf || '').toLowerCase()
+            ].filter(Boolean),
             blob: searchBlob
           });
         });
 
         state.searchIndex = idx;
+      }
+
+      /**
+       * 한글 두벌식 입력 중 마지막 음절의 종성이 다음 음절의 초성으로 입력된 상태 분리
+       * 예: '김징' -> '김지ㅇ', '임짛' -> '임지ㅎ'
+       */
+      function decomposeTrailingImeQuery_(q) {
+        var s = String(q || '');
+        if (!s) return '';
+        var lastCode = s.charCodeAt(s.length - 1);
+        if (lastCode < 44032 || lastCode > 55203) return '';
+        var offset = lastCode - 44032;
+        var jong = offset % 28;
+        if (jong <= 0 || !JONG_SPLIT_MAP[jong]) return '';
+        var splitInfo = JONG_SPLIT_MAP[jong];
+        var baseChar = String.fromCharCode(lastCode - jong + splitInfo[0]);
+        return s.slice(0, -1) + baseChar + splitInfo[1];
+      }
+
+      /**
+       * target 문자열의 startIdx 위치에서 query(완성형 음절 + 초성 자모 + 마지막 글자 조합중 음절) 매칭 검사
+       * 완성형 음절('임', '지', '훈', '연' 등)은 반드시 해당 음절과 일치해야 하며,
+       * 오직 사용자가 초성 자모('ㄱ'~'ㅎ')로 입력한 글자만 초성 비교를 수행합니다.
+       */
+      function matchKoreanAt_(target, q, startIdx, allowLastImeCompose) {
+        if (!target || !q || startIdx + q.length > target.length) return null;
+        var usedChosung = false;
+        var usedImeCompose = false;
+
+        for (var i = 0; i < q.length; i++) {
+          var qCh = q.charAt(i);
+          var tCh = target.charAt(startIdx + i);
+
+          if (qCh === tCh) continue;
+
+          var qCode = qCh.charCodeAt(0);
+          var tCode = tCh.charCodeAt(0);
+
+          // 사용자가 초성 자모(ㄱ~ㅎ)를 입력한 위치만 초성 일치 허용
+          if (qCode >= 0x3131 && qCode <= 0x314e) {
+            if (extractChosung(tCh) === qCh) {
+              usedChosung = true;
+              continue;
+            }
+            return null;
+          }
+
+          // 마지막 글자가 한글 조합 중(받침 미입력 또는 복합모음 조합 중)인 경우 허용
+          if (
+            allowLastImeCompose &&
+            i === q.length - 1 &&
+            qCode >= 44032 &&
+            qCode <= 55203 &&
+            tCode >= 44032 &&
+            tCode <= 55203
+          ) {
+            var qOff = qCode - 44032;
+            var tOff = tCode - 44032;
+            var qChoIdx = Math.floor(qOff / 588);
+            var tChoIdx = Math.floor(tOff / 588);
+            var qJungIdx = Math.floor((qOff % 588) / 28);
+            var tJungIdx = Math.floor((tOff % 588) / 28);
+            var qJongIdx = qOff % 28;
+
+            if (qChoIdx === tChoIdx && qJongIdx === 0) {
+              var sameVowel = qJungIdx === tJungIdx;
+              var compoundVowel =
+                (qJungIdx === 8 && tJungIdx >= 9 && tJungIdx <= 11) ||
+                (qJungIdx === 13 && tJungIdx >= 14 && tJungIdx <= 16) ||
+                (qJungIdx === 18 && tJungIdx === 19);
+              if (sameVowel || compoundVowel) {
+                usedImeCompose = true;
+                continue;
+              }
+            }
+          }
+
+          return null;
+        }
+
+        if (!usedChosung && !usedImeCompose) {
+          if (startIdx === 0 && q.length === target.length) return 1; // 완전 일치
+          return startIdx === 0 ? 2 : 3; // 접두사 일치(2) / 부분 문자열 일치(3)
+        }
+        if (!usedChosung && usedImeCompose) {
+          return startIdx === 0 ? 4 : 6; // 한글 조합 중 접두사 일치(4)
+        }
+        return startIdx === 0 ? 5 : 6; // 초성 포함 접두사(5) / 초성 포함 부분 일치(6)
+      }
+
+      function matchKoreanFieldRank_(fieldStr, q, altQ) {
+        if (!fieldStr || !q) return 0;
+        var bestRank = 0;
+        var maxStart = fieldStr.length - q.length;
+        for (var s = 0; s <= maxStart; s++) {
+          var r = matchKoreanAt_(fieldStr, q, s, true);
+          if (r !== null && (bestRank === 0 || r < bestRank)) {
+            bestRank = r;
+            if (bestRank === 1) return 1;
+          }
+        }
+        if (altQ && fieldStr.length >= altQ.length) {
+          var maxAltStart = fieldStr.length - altQ.length;
+          for (var a = 0; a <= maxAltStart; a++) {
+            var ar = matchKoreanAt_(fieldStr, altQ, a, false);
+            if (ar !== null) {
+              var adjRank = ar < 5 ? 5 : ar;
+              if (bestRank === 0 || adjRank < bestRank) {
+                bestRank = adjRank;
+              }
+            }
+          }
+        }
+        return bestRank;
+      }
+
+      function scoreSearchItem_(item, q, altQ) {
+        var bestPrimary = 0;
+        var pFields = item.primaryFields || [];
+        for (var i = 0; i < pFields.length; i++) {
+          var pr = matchKoreanFieldRank_(pFields[i], q, altQ);
+          if (pr > 0 && (bestPrimary === 0 || pr < bestPrimary)) {
+            bestPrimary = pr;
+            if (bestPrimary === 1) return 1;
+          }
+        }
+        if (bestPrimary > 0) return bestPrimary;
+
+        var bestSecondary = 0;
+        var sFields = item.secondaryFields || [];
+        for (var j = 0; j < sFields.length; j++) {
+          var sr = matchKoreanFieldRank_(sFields[j], q, altQ);
+          if (sr > 0 && (bestSecondary === 0 || sr < bestSecondary)) {
+            bestSecondary = sr;
+          }
+        }
+        return bestSecondary > 0 ? 10 + bestSecondary : 0;
       }
 
       /**
@@ -2313,68 +2694,33 @@
             html += '</div></div>';
           }
         } else if (state.mode === 'free') {
-          var days = data.days || ['월', '화', '수', '목', '금'];
-          var maxP = data.maxPeriod || 7;
-
-          html += '<div class="free-finder-inline">';
-          html += '<div class="ff-controls">';
-          html += '<strong class="ff-title">🕒 공강 교사 조회:</strong>';
-          html += '<div class="ff-btn-group">';
-          for (var d = 0; d < days.length; d++) {
-            var actD = d === state.freeDayIdx ? ' active-opt' : '';
-            var rawDay = String(days[d] || '');
+          if (state.currentKey && data.teachers && data.teachers[state.currentKey]) {
+            var days = data.days || ['월', '화', '수', '목', '금'];
+            var rawDay = String(days[state.freeDayIdx] || '월');
             var dLabel = rawDay.indexOf('요일') !== -1 ? rawDay : rawDay + '요일';
+            var pNum = (state.freePeriodIdx || 0) + 1;
+            var curTeacherName = formatTeacherName(data.teachers[state.currentKey].name, false);
+
+            html += '<div class="free-back-bar">';
             html +=
-              '<button type="button" class="util-btn' +
-              actD +
-              '" onclick="setFreeFilter(' +
-              d +
-              ', ' +
-              state.freePeriodIdx +
-              ')">' +
-              escapeHtml_(dLabel) +
-              '</button>';
-          }
-          html += '</div>';
-          html += '<span class="ff-divider">|</span>';
-          html += '<div class="ff-btn-group">';
-          for (var p = 0; p < maxP; p++) {
-            var actP = p === state.freePeriodIdx ? ' active-opt' : '';
+              '<span class="free-back-info">🕒 <strong>' +
+              escapeHtml_(dLabel + ' ' + pNum + '교시') +
+              '</strong> 공강 교사 · <strong>' +
+              escapeHtml_(curTeacherName) +
+              '</strong> 시간표 조회 중</span>';
+            html += '<div class="free-back-actions">';
             html +=
-              '<button type="button" class="util-btn' +
-              actP +
-              '" onclick="setFreeFilter(' +
+              '<button type="button" class="util-btn active-opt" onclick="openFreeTeachersModal(' +
               state.freeDayIdx +
               ', ' +
-              p +
-              ')">' +
-              (p + 1) +
-              '교시</button>';
+              state.freePeriodIdx +
+              ')">📋 ' +
+              escapeHtml_(dLabel + ' ' + pNum + '교시') +
+              ' 공강 명단 다시 열기</button>';
+            html +=
+              '<button type="button" class="util-btn" onclick="resetFreeTeacherSelection()">← 공강 교사 찾기 표로 돌아가기</button>';
+            html += '</div></div>';
           }
-          html += '</div></div>';
-
-          var freeTeachers = getFreeTeacherObjects_(data, state.freeDayIdx, state.freePeriodIdx);
-          html += '<div class="ff-results">';
-          if (freeTeachers.length === 0) {
-            html += '<span class="ff-empty-msg">해당 교시에 공강인 교사가 없습니다.</span>';
-          } else {
-            for (var f = 0; f < freeTeachers.length; f++) {
-              var ft = freeTeachers[f];
-              var activeFree = state.currentKey === ft.key ? ' active' : '';
-              var fBtnLabel = formatTeacherName(ft.name, false);
-              html +=
-                '<button type="button" class="q-chip' +
-                activeFree +
-                '" title="' +
-                escapeHtml_(fBtnLabel) +
-                '" onclick="selectFreeTeacher(\'' +
-                escapeSingleQuote_(ft.key) +
-                '\')">' +
-                escapeHtml_(fBtnLabel) +
-                '</button>';
-            }
-          }
-          html += '</div></div>';
         } else if (state.mode === 'shared_free') {
           var tKeysShared = getSortedTeacherKeys(data.teachers);
           var validSelected = (state.sharedFreeTeachers || []).filter(function (tk) {
@@ -2417,14 +2763,14 @@
         }
 
         bar.innerHTML = html;
-        bar.classList.toggle('is-hidden', Boolean(state.hideQuickChips));
+        bar.classList.toggle('is-hidden', Boolean(state.hideQuickChips || !html));
       }
 
       function setQuickChipsVisible_(visible) {
         state.hideQuickChips = !visible;
         var bar = document.getElementById('quickChipsBar');
         if (bar) {
-          bar.classList.toggle('is-hidden', !visible);
+          bar.classList.toggle('is-hidden', Boolean(!visible || !bar.innerHTML));
         }
       }
 
@@ -2616,6 +2962,115 @@
           document.getElementById('perfIndicator').textContent =
             '⚡ 초고속 렌더링 완료 (' +
             elapsedSf +
+            'ms · 학급 ' +
+            cKeys.length +
+            '개 / 교사 ' +
+            tKeys.length +
+            '명)';
+          document.getElementById('versionIndicator').textContent =
+            '시트 동기화 버전: ' + (data.v || '-');
+          return;
+        }
+
+        if (state.mode === 'free' && !targetObj) {
+          state.currentKey = '';
+          mainTitleEl.textContent = '공강 교사 찾기';
+          affEl.classList.remove('is-subject-sub');
+          affEl.textContent = meta.schoolName ? meta.schoolName : '';
+          subRoleEl.style.fontSize = '18px';
+          subRoleEl.textContent = '요일·교시 셀을 클릭하면 공강 교사 명단이 표시됩니다';
+
+          var ffTheadHtml = '<tr><th class="th-period-corner">교시</th>';
+          for (var ffd = 0; ffd < days.length; ffd++) {
+            var ffTodayThCls = ffd === liveSlot.dayIdx ? ' class="th-today"' : '';
+            var ffRawDay = String(days[ffd] || '');
+            var ffDayLabel = ffRawDay.indexOf('요일') !== -1 ? ffRawDay : ffRawDay + '요일';
+            ffTheadHtml += '<th' + ffTodayThCls + '>' + ffDayLabel + '</th>';
+          }
+          ffTheadHtml += '</tr>';
+          document.getElementById('ttThead').innerHTML = ffTheadHtml;
+
+          var ffTbodyHtml = '';
+          for (var ffp = 0; ffp < maxP; ffp++) {
+            var ffPLabel = (ffp + 1) + '교시';
+            var ffPTimeStr = pTimes[ffp] || '';
+            var ffIsCurrentPeriod = liveSlot.dayIdx !== -1 && ffp === liveSlot.periodIdx;
+
+            ffTbodyHtml += '<tr>';
+            ffTbodyHtml +=
+              '<td class="td-period' +
+              (ffIsCurrentPeriod ? ' is-current-period' : '') +
+              '">' +
+              '<div class="period-num">' +
+              ffPLabel +
+              '</div>' +
+              (ffPTimeStr
+                ? '<div class="period-time">' + escapeHtml_(ffPTimeStr) + '</div>'
+                : '') +
+              '</td>';
+
+            for (var ffCol = 0; ffCol < 5; ffCol++) {
+              var slotFreeList = getFreeTeacherObjects_(data, ffCol, ffp);
+              var freeCnt = slotFreeList.length;
+              var ffRawColDay = String(days[ffCol] || '');
+              var ffColDayLabel =
+                ffRawColDay.indexOf('요일') !== -1 ? ffRawColDay : ffRawColDay + '요일';
+
+              var ffCellClasses = ['td-cell', 'clickable', 'free-slot-cell'];
+              if (ffCol === liveSlot.dayIdx && ffp === liveSlot.periodIdx) {
+                ffCellClasses.push('is-current-slot');
+              }
+              if (ffCol === state.freeDayIdx && ffp === state.freePeriodIdx) {
+                ffCellClasses.push('is-selected-free-slot');
+              }
+
+              ffTbodyHtml +=
+                '<td class="' +
+                ffCellClasses.join(' ') +
+                '" tabindex="0" role="button" onclick="openFreeTeachersModal(' +
+                ffCol +
+                ', ' +
+                ffp +
+                ')" onkeydown="handleFreeSlotCellKey(event, ' +
+                ffCol +
+                ', ' +
+                ffp +
+                ')" title="' +
+                escapeHtml_(ffColDayLabel + ' ' + ffPLabel + ' 공강 교사 명단 보기 (' + freeCnt + '명)') +
+                '">' +
+                '<div class="free-slot-badge">공강 ' +
+                freeCnt +
+                '명</div>' +
+                '<div class="free-slot-hint">' +
+                (freeCnt > 0 ? '클릭하여 명단 보기' : '공강 교사 없음') +
+                '</div>' +
+                '</td>';
+            }
+
+            ffTbodyHtml += '</tr>';
+
+            if (ffp === 3 && maxP > 4) {
+              var ffLunchCls =
+                liveSlot.dayIdx !== -1 && liveSlot.isLunch
+                  ? ' class="tr-lunch is-current-lunch"'
+                  : ' class="tr-lunch"';
+              ffTbodyHtml +=
+                '<tr' +
+                ffLunchCls +
+                '>' +
+                '<td class="td-period td-lunch-period"><div class="period-num">점심</div></td>' +
+                '<td class="td-cell td-lunch-cell" colspan="5">점심 시간</td>' +
+                '</tr>';
+            }
+          }
+          document.getElementById('ttTbody').innerHTML = ffTbodyHtml;
+          syncModalTimetableView_();
+          renderQuickChips();
+
+          var elapsedFf = (performance.now() - t0).toFixed(2);
+          document.getElementById('perfIndicator').textContent =
+            '⚡ 초고속 렌더링 완료 (' +
+            elapsedFf +
             'ms · 학급 ' +
             cKeys.length +
             '개 / 교사 ' +
@@ -2925,15 +3380,43 @@
         var listEl = document.getElementById('autocompleteList');
 
         if (!q) {
+          state.lastSearchQuery = '';
           listEl.classList.remove('open');
           state.acFiltered = [];
           state.acSelectedIdx = -1;
           return;
         }
 
-        var qCho = extractChosung(q);
-        var matches = state.searchIndex.filter(function (item) {
-          return item.blob.indexOf(q) !== -1 || item.blob.indexOf(qCho) !== -1;
+        // 한글 IME 조합 확정(blur/ArrowDown/Enter/클릭 등)으로 동일 검색어 이벤트가 중복 발생 시 선택 상태 덮어쓰기 방지
+        if (q === state.lastSearchQuery && state.acFiltered.length > 0) {
+          return;
+        }
+        state.lastSearchQuery = q;
+
+        var altQ = decomposeTrailingImeQuery_(q);
+        var preferredType = state.mode === 'class' ? 'class' : 'teacher';
+        var scored = [];
+
+        for (var i = 0; i < state.searchIndex.length; i++) {
+          var item = state.searchIndex[i];
+          var rank = scoreSearchItem_(item, q, altQ);
+          if (rank > 0) {
+            scored.push({
+              item: item,
+              rank: rank,
+              typePriority: item.type === preferredType ? 0 : 1
+            });
+          }
+        }
+
+        scored.sort(function (a, b) {
+          if (a.rank !== b.rank) return a.rank - b.rank;
+          if (a.typePriority !== b.typePriority) return a.typePriority - b.typePriority;
+          return a.item.orderIdx - b.item.orderIdx;
+        });
+
+        var matches = scored.map(function (entry) {
+          return entry.item;
         });
 
         state.acFiltered = matches;
@@ -2976,11 +3459,13 @@
             return (
               '<div class="ac-item' +
               selCls +
-              '" onmousedown="selectTarget(\'' +
+              '" onmousedown="selectAutocompleteItem(event, \'' +
               item.type +
               '\', \'' +
               escapeSingleQuote_(item.key) +
-              '\', true)">' +
+              '\', ' +
+              i +
+              ')">' +
               '<div><span class="ac-main">' +
               escapeHtml_(displayTitle) +
               '</span> <span class="ac-sub">' +
@@ -2996,7 +3481,22 @@
           })
           .join('');
         listEl.innerHTML = html;
+        var selectedEl = listEl.querySelector('.ac-item.selected');
+        if (selectedEl && typeof selectedEl.scrollIntoView === 'function') {
+          selectedEl.scrollIntoView({ block: 'nearest' });
+        }
       }
+
+      window.selectAutocompleteItem = function (e, type, key, idx) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (typeof idx === 'number') {
+          state.acSelectedIdx = idx;
+        }
+        window.selectTarget(type, key, true);
+      };
 
       function syncModeTabsUI() {
         var tabClassEl = document.getElementById('tabClass');
@@ -3005,6 +3505,7 @@
         var tabSharedFreeEl = document.getElementById('tabSharedFree');
         var btnSubTeacherEl = document.getElementById('btnToggleSubTeacher');
         var btnMaskEl = document.getElementById('btnToggleMask');
+        var btnFreeModalMaskEl = document.getElementById('btnFreeModalToggleMask');
 
         if (tabClassEl) {
           tabClassEl.classList.toggle('active', state.mode === 'class');
@@ -3029,6 +3530,10 @@
         if (btnMaskEl) {
           btnMaskEl.classList.toggle('active-opt', state.maskTeacherName);
           btnMaskEl.setAttribute('aria-pressed', state.maskTeacherName ? 'true' : 'false');
+        }
+        if (btnFreeModalMaskEl) {
+          btnFreeModalMaskEl.classList.toggle('active-opt', state.maskTeacherName);
+          btnFreeModalMaskEl.setAttribute('aria-pressed', state.maskTeacherName ? 'true' : 'false');
         }
       }
 
@@ -3061,6 +3566,7 @@
         if (listEl) {
           listEl.classList.remove('open');
         }
+        state.lastSearchQuery = '';
         state.acFiltered = [];
         state.acSelectedIdx = -1;
         state.currentKey = '';
@@ -3069,7 +3575,19 @@
       };
 
       window.switchMode = function (newMode) {
+        var inputEl = document.getElementById('searchInput');
+        if (inputEl) {
+          inputEl.value = '';
+          inputEl.blur();
+        }
+        var listEl = document.getElementById('autocompleteList');
+        if (listEl) {
+          listEl.classList.remove('open');
+        }
         state.mode = newMode;
+        state.lastSearchQuery = '';
+        state.acFiltered = [];
+        state.acSelectedIdx = -1;
         state.hideQuickChips = false;
         state.currentKey = '';
         syncModeTabsUI();
@@ -3084,6 +3602,115 @@
           state.currentKey = key;
         }
         document.getElementById('autocompleteList').classList.remove('open');
+        syncModeTabsUI();
+        renderTimetable();
+      };
+
+      function renderFreeTeachersModalContent_() {
+        var data = state.data;
+        if (!data) return;
+        var days = data.days || ['월', '화', '수', '목', '금'];
+        var rawDay = String(days[state.freeDayIdx] || '월');
+        var dLabel = rawDay.indexOf('요일') !== -1 ? rawDay : rawDay + '요일';
+        var pLabel = (state.freePeriodIdx + 1) + '교시';
+        var freeList = getFreeTeacherObjects_(data, state.freeDayIdx, state.freePeriodIdx);
+
+        var badgeEl = document.getElementById('freeModalBadge');
+        var titleEl = document.getElementById('freeModalTitle');
+        var subMetaEl = document.getElementById('freeModalSubMeta');
+        var gridEl = document.getElementById('freeModalTeacherGrid');
+
+        if (badgeEl) {
+          badgeEl.textContent = formatSchoolYearSemester_(data.meta || {}, data);
+        }
+        if (titleEl) {
+          titleEl.textContent = dLabel + ' ' + pLabel + ' 공강 교사';
+        }
+        if (subMetaEl) {
+          subMetaEl.textContent = '총 ' + freeList.length + '명';
+        }
+        if (!gridEl) return;
+
+        if (freeList.length === 0) {
+          gridEl.innerHTML =
+            '<div class="ff-empty-msg">해당 교시에 공강인 교사가 없습니다.</div>';
+          return;
+        }
+
+        var html = '';
+        for (var i = 0; i < freeList.length; i++) {
+          var ft = freeList[i];
+          var actCls = state.currentKey === ft.key ? ' active' : '';
+          var tDispName = formatTeacherName(ft.name, false);
+          var tMeta = ft.homeroomOf
+            ? ft.homeroomOf + ' 담임'
+            : ft.subjectMain
+            ? ft.subjectMain
+            : '교사';
+          html +=
+            '<button type="button" class="free-teacher-btn' +
+            actCls +
+            '" onclick="selectFreeTeacherFromModal(\'' +
+            escapeSingleQuote_(ft.key) +
+            '\')" title="' +
+            escapeHtml_(tDispName + ' (' + tMeta + ') 주간 시간표 보기') +
+            '">' +
+            '<span class="free-teacher-name">' +
+            escapeHtml_(tDispName) +
+            '</span>' +
+            '<span class="free-teacher-meta">' +
+            escapeHtml_(tMeta) +
+            '</span>' +
+            '</button>';
+        }
+        gridEl.innerHTML = html;
+      }
+
+      window.openFreeTeachersModal = function (dayIdx, periodIdx) {
+        if (typeof dayIdx === 'number') state.freeDayIdx = dayIdx;
+        if (typeof periodIdx === 'number') state.freePeriodIdx = periodIdx;
+        renderTimetable();
+        renderFreeTeachersModalContent_();
+        var modal = document.getElementById('freeTeachersModal');
+        if (modal) {
+          modal.classList.add('open');
+          document.body.style.overflow = 'hidden';
+        }
+      };
+
+      window.closeFreeTeachersModal = function () {
+        var modal = document.getElementById('freeTeachersModal');
+        if (modal) {
+          modal.classList.remove('open');
+          document.body.style.overflow = '';
+        }
+      };
+
+      window.handleFreeModalBackdropClick = function (e) {
+        if (e.target && e.target.id === 'freeTeachersModal') {
+          window.closeFreeTeachersModal();
+        }
+      };
+
+      window.handleFreeSlotCellKey = function (e, dayIdx, periodIdx) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          window.openFreeTeachersModal(dayIdx, periodIdx);
+        }
+      };
+
+      window.selectFreeTeacherFromModal = function (key) {
+        window.closeFreeTeachersModal();
+        state.mode = 'free';
+        state.currentKey = key;
+        state.hideQuickChips = false;
+        syncModeTabsUI();
+        renderTimetable();
+      };
+
+      window.resetFreeTeacherSelection = function () {
+        state.mode = 'free';
+        state.currentKey = '';
         syncModeTabsUI();
         renderTimetable();
       };
@@ -3126,6 +3753,10 @@
         syncModeTabsUI();
         if (state.acFiltered && state.acFiltered.length > 0) {
           renderAutocompleteItems();
+        }
+        var freeModal = document.getElementById('freeTeachersModal');
+        if (freeModal && freeModal.classList.contains('open')) {
+          renderFreeTeachersModalContent_();
         }
         renderTimetable();
       };
@@ -6302,6 +6933,7 @@
         }
         if (!preserveSelection) {
           state.currentKey = '';
+          state.lastSearchQuery = '';
         } else if (state.mode === 'class') {
           if (!state.currentKey || !payload.classes[state.currentKey]) {
             state.currentKey = '';
@@ -6398,11 +7030,23 @@
         var inputEl = document.getElementById('searchInput');
         inputEl.addEventListener('focus', function () {
           setQuickChipsVisible_(false);
+          if (inputEl.value && inputEl.value.trim()) {
+            state.lastSearchQuery = '';
+            handleSearchInput(inputEl.value);
+          }
         });
         inputEl.addEventListener('click', function () {
           setQuickChipsVisible_(false);
+          if (inputEl.value && inputEl.value.trim()) {
+            state.lastSearchQuery = '';
+            handleSearchInput(inputEl.value);
+          }
         });
         inputEl.addEventListener('input', function (e) {
+          setQuickChipsVisible_(false);
+          handleSearchInput(e.target.value);
+        });
+        inputEl.addEventListener('compositionend', function (e) {
           setQuickChipsVisible_(false);
           handleSearchInput(e.target.value);
         });
@@ -6414,11 +7058,25 @@
           if (e.key === 'ArrowDown') {
             e.preventDefault();
             state.acSelectedIdx = (state.acSelectedIdx + 1) % state.acFiltered.length;
+            var downHit = state.acFiltered[state.acSelectedIdx];
+            if (downHit) {
+              state.mode = downHit.type;
+              state.currentKey = downHit.key;
+              syncModeTabsUI();
+              renderTimetable();
+            }
             renderAutocompleteItems();
           } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             state.acSelectedIdx =
               (state.acSelectedIdx - 1 + state.acFiltered.length) % state.acFiltered.length;
+            var upHit = state.acFiltered[state.acSelectedIdx];
+            if (upHit) {
+              state.mode = upHit.type;
+              state.currentKey = upHit.key;
+              syncModeTabsUI();
+              renderTimetable();
+            }
             renderAutocompleteItems();
           } else if (e.key === 'Enter') {
             e.preventDefault();
@@ -6434,6 +7092,11 @@
 
         document.addEventListener('keydown', function (e) {
           if (e.key === 'Escape') {
+            var freeModal = document.getElementById('freeTeachersModal');
+            if (freeModal && freeModal.classList.contains('open')) {
+              window.closeFreeTeachersModal();
+              return;
+            }
             var projModal = document.getElementById('projectManagerModal');
             if (projModal && projModal.classList.contains('open')) {
               window.closeProjectModal();
