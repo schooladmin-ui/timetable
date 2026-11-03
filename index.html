@@ -1142,7 +1142,6 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 3px;
       padding: 10px 8px;
       background: #FFFFFF;
       border: 1.5px solid #D1D5DB;
@@ -1150,7 +1149,7 @@
       cursor: pointer;
       transition: all 0.12s ease;
       text-align: center;
-      min-height: 54px;
+      min-height: 44px;
     }
 
     .free-teacher-btn:hover {
@@ -3642,24 +3641,16 @@
           var ft = freeList[i];
           var actCls = state.currentKey === ft.key ? ' active' : '';
           var tDispName = formatTeacherName(ft.name, false);
-          var tMeta = ft.homeroomOf
-            ? ft.homeroomOf + ' 담임'
-            : ft.subjectMain
-            ? ft.subjectMain
-            : '교사';
           html +=
             '<button type="button" class="free-teacher-btn' +
             actCls +
             '" onclick="selectFreeTeacherFromModal(\'' +
             escapeSingleQuote_(ft.key) +
             '\')" title="' +
-            escapeHtml_(tDispName + ' (' + tMeta + ') 주간 시간표 보기') +
+            escapeHtml_(tDispName + ' 주간 시간표 보기') +
             '">' +
             '<span class="free-teacher-name">' +
             escapeHtml_(tDispName) +
-            '</span>' +
-            '<span class="free-teacher-meta">' +
-            escapeHtml_(tMeta) +
             '</span>' +
             '</button>';
         }

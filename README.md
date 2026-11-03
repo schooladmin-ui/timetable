@@ -252,4 +252,14 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` Node.js `Function` 파서 기반 정적 구문 검사 통과 (`Syntax check passed: index.html inline script & Code.gs`)
 
+### [2026-11-03 13:14] 업데이트 이력 (Commit ID: `1a55401`)
+- **날짜 및 시간 (KST)**: `2026-11-03 13:14`
+- **커밋 ID (Commit Hash)**: `1a55401`
+- **수정 내용 (Modification Details)**:
+  - **공강 교사 명단 모달창(`#freeTeachersModal`) 내 교사 이름 하단 교과명 제거 (`index.html`)**:
+    - 1명의 교사가 여러 교과를 담당할 수 있고 공강 시간 조회 화면이므로, 공강 교사 모달창 버튼(`renderFreeTeachersModalContent_`)에서 교사 성명 아래에 출력되던 대표 교과명/담임 보조 텍스트(`<span class="free-teacher-meta">`)를 제거하고 **교사 이름만 단독으로 표시**되도록 수정
+    - 1줄 성명 표시에 맞춰 공강 교사 버튼(`.free-teacher-btn`)의 최소 높이를 `min-height: 44px`로 정돈
+- **검증 결과 (Verification Results)**:
+  - `index.html` 인라인 스크립트 Node.js `Function` 정적 구문 검사 통과 (`Syntax OK`)
+
 
