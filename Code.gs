@@ -407,7 +407,7 @@ function buildTimetablePayloadFromRealSheets_() {
   // 4. 네트워크 전송 및 캐시 용량 최소화를 위해 빈 속성/중복 속성 경량화 (~60% 용량 절감)
   compactStoreForTransport_(store);
 
-  // 5. 교사 묶음 시트('2026-2교사묶음' 또는 '<targetPrefix>교사묶음') 파싱
+  // 5. 교사 그룹 시트('2026-2교사그룹' 또는 '<targetPrefix>교사그룹') 파싱
   var teacherGroupSheet = findTeacherGroupSheet_(allSheets, allSheetNames, targetPrefix);
   var teacherGroups = teacherGroupSheet ? parseTeacherGroupsFromSheet_(teacherGroupSheet) : [];
 
@@ -1972,7 +1972,7 @@ function normalizeSemesterPrefix_(rawInput) {
   var mCompact = s.match(/^(20\d{2})0?([12])$/);
   if (mCompact) return mCompact[1] + '-' + mCompact[2];
   var cleaned = s
-    .replace(/(?:주간\s*시간표|학급\s*시간표|반별\s*시간표|교사\s*묶음)$/g, '')
+    .replace(/(?:주간\s*시간표|학급\s*시간표|반별\s*시간표|교사\s*그룹)$/g, '')
     .replace(/[-_.\s]+$/g, '')
     .trim();
   return cleaned || '2025-2';
@@ -1989,7 +1989,8 @@ function formatSemesterDisplayName_(prefix) {
 
 /**
  * 기존 스프레드시트에 '주간시간표', '학급시간표'로 저장되어 있는 시트명을
- * '2025-2주간시간표', '2025-2학급시간표'로 자동 변경
+ * '2025-2주간시간표', '2025-2학급시간표'로 자동 변경하고,
+ * 이전 버전의 '*교사그룹' 시트명 및 헤더를 표준 '20XX-X교사그룹'('그룹명')으로 정규화
  */
 function ensureDefaultSemesterSheetNames_(ss) {
   if (!ss) return;
@@ -2011,6 +2012,27 @@ function ensureDefaultSemesterSheetNames_(ss) {
         ss.getSheetByName('반별시간표');
       if (legacyClass) {
         legacyClass.setName(targetClassName);
+      }
+    }
+
+    // 기존 스프레드시트에 이전 명칭('*교사\uBB36\uC74C') 시트가 존재하면 '*교사그룹'으로 시트명과 헤더 내용을 자동 변경
+    var legacySuffix = '교사\uBB36\uC74C';
+    var legacyHeader = '\uBB36\uC74C명';
+    var sheets = ss.getSheets();
+    for (var i = 0; i < sheets.length; i++) {
+      var sh = sheets[i];
+      var sName = String(sh.getName() || '').trim();
+      if (sName.indexOf(legacySuffix) !== -1) {
+        var newGroupSheetName = sName.replace(legacySuffix, '교사그룹');
+        if (!ss.getSheetByName(newGroupSheetName)) {
+          sh.setName(newGroupSheetName);
+        }
+        try {
+          var a1Val = String(sh.getRange(1, 1).getDisplayValue() || '').trim();
+          if (a1Val === legacyHeader || a1Val.indexOf('\uBB36\uC74C') !== -1) {
+            sh.getRange(1, 1).setValue('그룹명');
+          }
+        } catch (headerErr) {}
       }
     }
   } catch (e) {}
@@ -2232,27 +2254,27 @@ function deleteProjectOnServer(projectId) {
 }
 
 /* ============================================================================
-   공유 공강 확인: 복수 교사 묶음('2026-2교사묶음' / '<prefix>교사묶음') 시트 파싱 및 저장 API
+   공유 공강 확인: 복수 교사 그룹('2026-2교사그룹' / '<prefix>교사그룹') 시트 파싱 및 저장 API
    ============================================================================ */
 
 /**
- * 학기 접두어(예: '2026-2')에 대응하는 교사묶음 시트명 반환 (예: '2026-2교사묶음')
+ * 학기 접두어(예: '2026-2')에 대응하는 교사그룹 시트명 반환 (예: '2026-2교사그룹')
  */
 function getTeacherGroupSheetName_(prefix) {
   var norm = normalizeSemesterPrefix_(prefix || '2026-2');
-  return norm + '교사묶음';
+  return norm + '교사그룹';
 }
 
 /**
- * 스프레드시트에서 현재 학기의 교사묶음 시트 탐색 ('2026-2교사묶음' 폴백 지원)
+ * 스프레드시트에서 현재 학기의 교사그룹 시트 탐색 ('2026-2교사그룹' 폴백 지원)
  */
 function findTeacherGroupSheet_(allSheets, allSheetNames, targetPrefix) {
   var primaryName = getTeacherGroupSheetName_(targetPrefix);
   var candidates = [primaryName];
-  if (candidates.indexOf('2026-2교사묶음') === -1) {
-    candidates.push('2026-2교사묶음');
+  if (candidates.indexOf('2026-2교사그룹') === -1) {
+    candidates.push('2026-2교사그룹');
   }
-  candidates.push('교사묶음');
+  candidates.push('교사그룹');
 
   for (var i = 0; i < candidates.length; i++) {
     var exactIdx = allSheetNames.indexOf(candidates[i]);
@@ -2262,7 +2284,7 @@ function findTeacherGroupSheet_(allSheets, allSheetNames, targetPrefix) {
   var normPrimary = primaryName.replace(/\s+/g, '');
   for (var j = 0; j < allSheets.length; j++) {
     var sNorm = String(allSheetNames[j] || '').replace(/\s+/g, '');
-    if (sNorm === normPrimary || sNorm === '2026-2교사묶음' || sNorm === '교사묶음') {
+    if (sNorm === normPrimary || sNorm === '2026-2교사그룹' || sNorm === '교사그룹') {
       return allSheets[j];
     }
   }
@@ -2270,8 +2292,8 @@ function findTeacherGroupSheet_(allSheets, allSheetNames, targetPrefix) {
 }
 
 /**
- * 교사묶음 시트('2026-2교사묶음')에서 복수 교사 묶음 목록을 파싱하여 반환
- * - 1열(A열): 묶음명 (예: '부장교사')
+ * 교사그룹 시트('2026-2교사그룹')에서 복수 교사 그룹 목록을 파싱하여 반환
+ * - 1열(A열): 그룹명 (예: '부장교사')
  * - 2열(B열) 이후: 쉼표 구분 교사 명단('김동진, 박수빈') 또는 열별 교사 성명 나열 모두 지원
  */
 function parseTeacherGroupsFromSheet_(sheet) {
@@ -2296,11 +2318,11 @@ function parseTeacherGroupsFromSheet_(sheet) {
     var headerCheck = rawGroupName.replace(/\s+/g, '');
     if (
       r === 0 &&
-      (headerCheck === '묶음명' ||
-        headerCheck === '묶음이름' ||
-        headerCheck === '그룹명' ||
-        headerCheck === '교사묶음' ||
-        headerCheck === '구분')
+      (headerCheck === '그룹명' ||
+        headerCheck === '그룹이름' ||
+        headerCheck === '교사그룹' ||
+        headerCheck === '구분' ||
+        headerCheck.indexOf('\uBB36\uC74C') !== -1)
     ) {
       continue;
     }
@@ -2344,7 +2366,7 @@ function parseTeacherGroupsFromSheet_(sheet) {
 }
 
 /**
- * 교사 묶음 배열을 지정된 시트(예: '2026-2교사묶음')에 생성 또는 덮어쓰기로 저장
+ * 교사 그룹 배열을 지정된 시트(예: '2026-2교사그룹')에 생성 또는 덮어쓰기로 저장
  */
 function writeTeacherGroupsToSheet_(ss, sheetName, groups) {
   if (!ss || !sheetName) return null;
@@ -2359,7 +2381,7 @@ function writeTeacherGroupsToSheet_(ss, sheetName, groups) {
   }
 
   var nowStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
-  var rows = [['묶음명', '교사명단', '교사수', '수정일시']];
+  var rows = [['그룹명', '교사명단', '교사수', '수정일시']];
 
   var list = Array.isArray(groups) ? groups : [];
   for (var i = 0; i < list.length; i++) {
@@ -2378,18 +2400,20 @@ function writeTeacherGroupsToSheet_(ss, sheetName, groups) {
 }
 
 /**
- * 클라이언트에서 선택한 복수 교사 묶음을 스프레드시트('2026-2교사묶음' 등)에 추가/업데이트
+ * 클라이언트에서 선택한 복수 교사 그룹을 스프레드시트('2026-2교사그룹' 등)에 추가/업데이트
  */
 function saveTeacherGroupOnServer(requestJson) {
   var req = typeof requestJson === 'string' ? JSON.parse(requestJson) : requestJson;
   if (!req || !req.groupName) {
-    throw new Error('교사 묶음 이름을 입력해 주세요.');
+    throw new Error('교사 그룹 이름을 입력해 주세요.');
   }
 
   var ss = getTargetSpreadsheet_();
   if (!ss) {
     throw new Error('연결된 구글 스프레드시트를 찾을 수 없습니다.');
   }
+
+  ensureDefaultSemesterSheetNames_(ss);
 
   var groupName = String(req.groupName || '').trim();
   var rawTeachers = Array.isArray(req.teachers) ? req.teachers : [];
@@ -2404,7 +2428,7 @@ function saveTeacherGroupOnServer(requestJson) {
   }
 
   if (cleanTeachers.length === 0) {
-    throw new Error('묶음에 포함할 교사를 1명 이상 선택해 주세요.');
+    throw new Error('그룹에 포함할 교사를 1명 이상 선택해 주세요.');
   }
 
   var props = PropertiesService.getScriptProperties();
@@ -2414,9 +2438,9 @@ function saveTeacherGroupOnServer(requestJson) {
 
   var existingSheet = ss.getSheetByName(sheetName);
   if (!existingSheet && prefix !== '2026-2') {
-    var fallback2026 = ss.getSheetByName('2026-2교사묶음');
+    var fallback2026 = ss.getSheetByName('2026-2교사그룹');
     if (fallback2026 && !req.prefix) {
-      sheetName = '2026-2교사묶음';
+      sheetName = '2026-2교사그룹';
       existingSheet = fallback2026;
     }
   }
@@ -2448,12 +2472,12 @@ function saveTeacherGroupOnServer(requestJson) {
 }
 
 /**
- * 지정된 교사 묶음을 스프레드시트('2026-2교사묶음' 등)에서 삭제
+ * 지정된 교사 그룹을 스프레드시트('2026-2교사그룹' 등)에서 삭제
  */
 function deleteTeacherGroupOnServer(requestJson) {
   var req = typeof requestJson === 'string' ? JSON.parse(requestJson) : requestJson;
   if (!req || !req.groupName) {
-    throw new Error('삭제할 교사 묶음 이름이 전달되지 않았습니다.');
+    throw new Error('삭제할 교사 그룹 이름이 전달되지 않았습니다.');
   }
 
   var ss = getTargetSpreadsheet_();
@@ -2461,13 +2485,15 @@ function deleteTeacherGroupOnServer(requestJson) {
     throw new Error('연결된 구글 스프레드시트를 찾을 수 없습니다.');
   }
 
+  ensureDefaultSemesterSheetNames_(ss);
+
   var groupName = String(req.groupName || '').trim();
   var props = PropertiesService.getScriptProperties();
   var savedPrefix = props.getProperty(PROP_ACTIVE_PROJECT_KEY) || '2026-2';
   var prefix = normalizeSemesterPrefix_(req.prefix || savedPrefix || '2026-2');
   var sheetName = getTeacherGroupSheetName_(prefix);
 
-  var existingSheet = ss.getSheetByName(sheetName) || ss.getSheetByName('2026-2교사묶음');
+  var existingSheet = ss.getSheetByName(sheetName) || ss.getSheetByName('2026-2교사그룹');
   if (existingSheet) {
     sheetName = existingSheet.getName();
   }

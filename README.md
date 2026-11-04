@@ -37,9 +37,9 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
   - **교사 시간표 모드**: 중복 없이 통합된 전 교사 버튼을 가나다순 `n × 10` 그리드로 표시합니다.
   - **수업 교사 찾기 모드 (`teaching`)**: 아래 주간 시간표 테이블의 `(요일 × 교시)` 셀에 교시별 **`수업 N명`** 현황을 표시하며, 원하는 요일·교시 셀을 클릭하면 **`수업 교사 현황 모달창(#teachingTeachersModal)`**이 열립니다. 모달창은 **1학년·2학년·3학년 행 × 학급 열로 구성된 `3 × n` 배열**로 표시되며, 각 학급 셀에 **교과명과 교사명**이 함께 표시됩니다. 모달 내 전용 검색창에서 **교과명 또는 교사명**(초성 검색 지원)을 입력하면 해당하는 학급 셀이 가시적으로 강조(`.is-search-match`)되며, 상단 헤더의 `🔒 *표시` 마스킹 적용/해제 버튼도 동일하게 지원합니다.
   - **공강 교사 찾기 모드 (`free`)**: 아래 주간 시간표 테이블의 `(요일 × 교시)` 셀에 교시별 **`공강 N명`** 현황을 직접 표시하며, 원하는 요일·교시 셀을 클릭하면 **`공강 교사 명단 모달창(#freeTeachersModal)`**이 열려 해당 교시의 공강 교사 명단과 `🔒 *표시` 마스킹 토글을 한눈에 확인하고 교사 클릭 시 주간 시간표로 바로 이동할 수 있습니다.
-  - **공유 공강 확인 모드 (`shared_free`) & 복수 교사 묶음(`n × 10` 배열) 원클릭 선택 (`2026-2교사묶음` 시트 연동)**:
+  - **공유 공강 확인 모드 (`shared_free`) & 복수 교사 그룹(`n × 10` 배열) 원클릭 선택 (`2026-2교사그룹` 시트 연동)**:
     - 교사 시간표와 동일한 `n × 10` 교사 선택 패널에서 교사를 **1명부터 원하는 수만큼 복수 선택(토글)**하면, 선택된 교사들의 공강 시간 중 **모두 겹치는 공강 교시**를 빈 시간표 위에 **Stone Gray(`#313339`)** 배경색으로 즉시 표시합니다.
-    - 개별 교사 목록 상단에 **복수 교사 묶음(`n × 10` 그리드 배열)** 영역을 배치하여, 자주 함께 선택하는 복수의 교사(예: `'부장교사'`, `'1학년부'`)를 선택한 뒤 묶음 이름을 입력해 **`💾 묶음 저장`**을 누르면 스프레드시트에 **`2026-2교사묶음`**(활성 학기 `<prefix>교사묶음`) 시트를 자동으로 생성·저장합니다. 저장된 묶음 버튼은 **한 번의 클릭만으로 소속 교사 전원을 일괄 선택/해제**할 수 있습니다.
+    - 개별 교사 목록 상단에 **복수 교사 그룹(`n × 10` 그리드 배열)** 영역을 배치하여, 자주 함께 선택하는 복수의 교사(예: `'부장교사'`, `'1학년부'`)를 선택한 뒤 그룹 이름을 입력해 **`💾 그룹 저장`**을 누르면 스프레드시트에 **`2026-2교사그룹`**(활성 학기 `<prefix>교사그룹`) 시트를 자동으로 생성·저장합니다. 저장된 그룹 버튼은 **한 번의 클릭만으로 소속 교사 전원을 일괄 선택/해제**할 수 있습니다.
 - **양방향 크로스 링크**: 학급 시간표의 수업 셀을 클릭하면 해당 **교사 시간표**로, 교사 시간표의 수업 셀을 클릭하면 해당 **학급 시간표**로 즉시 이동합니다.
 - **돋보기 전체화면 확대 모달창 (`#timetableZoomModal`)**:
   - 시간표 카드 상단 우측(학년도 행 우측, 스파클 아이콘 왼쪽)의 **돋보기 아이콘 버튼(`#btnOpenZoomModal`)**을 누르면 화면 전체 비율(`97vw × 94vh`)에 맞춰 시간표가 꽉 차게 보이는 확대 모달창이 열립니다.
@@ -284,14 +284,28 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **날짜 및 시간 (KST)**: `2026-11-04 16:09`
 - **커밋 ID (Commit Hash)**: `904ca56`
 - **수정 내용 (Modification Details)**:
-  - **‘공유 공강 확인’(`shared_free`) 내 복수 교사 묶음(`n × 10` 배열) 원클릭 선택 및 저장 UI 추가 (`index.html`)**:
-    - `🤝 공유 공강 확인` 탭 상단(`#quickChipsBar` 내 개별 교사 목록 위 영역)에 사용자가 추가하는 복수 교사 묶음을 **`n × 10` 그리드 배열(`.teacher-groups-wrap`, `grid-template-columns: repeat(10, minmax(0, 1fr))`)**로 배치
-    - 전체 교사 중 원하는 교사들(예: 부장교사들)을 선택한 뒤 묶음 이름 입력창(`#teacherGroupNameInput`)에 `'부장교사'`를 입력하고 **[💾 묶음 저장]**(`saveSelectedTeachersAsGroup`)을 누르면 즉시 0ms 만에 `n × 10` 교사 묶음 배열에 버튼이 생성되도록 구현
-    - 생성된 교사 묶음 버튼(`.q-chip.group-chip`) 클릭 시 해당 묶음의 교사 전원이 한 번에 일괄 선택/해제(`toggleTeacherGroup`)되어 공유 공강 시간표가 즉시 표시되며, 상단 헤더(`#headerSubRole`) 및 HWPX/XLSX 내보내기(`getCurrentExportModel_`)에도 묶음 이름(예: `부장교사(8명) | *수*, *진*...`)이 함께 표기되도록 연동
-    - 저장된 교사 묶음을 손쉽게 정리할 수 있는 **[🗑️ 묶음 삭제]** 모드(`toggleTeacherGroupDeleteMode`, `deleteTeacherGroup`) 지원
-  - **구글 스프레드시트 `'2026-2교사묶음'` 시트 자동 생성 및 양방향 파싱·저장 API 구현 (`Code.gs`)**:
-    - `getTeacherGroupSheetName_`, `findTeacherGroupSheet_`, `parseTeacherGroupsFromSheet_`를 추가하여 스프레드시트의 **`'2026-2교사묶음'`**(또는 활성 학기 `<prefix>교사묶음`) 시트에서 `[묶음명, 교사명단, 교사수, 수정일시]` 데이터를 읽어 페이로드(`teacherGroups`)와 변경 감지 서명(`computePayloadSignature_`)에 포함
-    - `saveTeacherGroupOnServer` 및 `deleteTeacherGroupOnServer` RPC 함수를 추가하여 웹앱에서 교사 묶음 저장 시 스프레드시트에 `'2026-2교사묶음'` 시트가 없으면 자동으로 새로 생성(`ss.insertSheet`)하여 저장하고 캐시를 무효화하도록 구현
+  - **‘공유 공강 확인’(`shared_free`) 내 복수 교사 그룹(`n × 10` 배열) 원클릭 선택 및 저장 UI 추가 (`index.html`)**:
+    - `🤝 공유 공강 확인` 탭 상단(`#quickChipsBar` 내 개별 교사 목록 위 영역)에 사용자가 추가하는 복수 교사 그룹을 **`n × 10` 그리드 배열(`.teacher-groups-wrap`, `grid-template-columns: repeat(10, minmax(0, 1fr))`)**로 배치
+    - 전체 교사 중 원하는 교사들(예: 부장교사들)을 선택한 뒤 그룹 이름 입력창(`#teacherGroupNameInput`)에 `'부장교사'`를 입력하고 **[💾 그룹 저장]**(`saveSelectedTeachersAsGroup`)을 누르면 즉시 0ms 만에 `n × 10` 교사 그룹 배열에 버튼이 생성되도록 구현
+    - 생성된 교사 그룹 버튼(`.q-chip.group-chip`) 클릭 시 해당 그룹의 교사 전원이 한 번에 일괄 선택/해제(`toggleTeacherGroup`)되어 공유 공강 시간표가 즉시 표시되며, 상단 헤더(`#headerSubRole`) 및 HWPX/XLSX 내보내기(`getCurrentExportModel_`)에도 그룹 이름(예: `부장교사(8명) | *수*, *진*...`)이 함께 표기되도록 연동
+    - 저장된 교사 그룹을 손쉽게 정리할 수 있는 **[🗑️ 그룹 삭제]** 모드(`toggleTeacherGroupDeleteMode`, `deleteTeacherGroup`) 지원
+  - **구글 스프레드시트 `'2026-2교사그룹'` 시트 자동 생성 및 양방향 파싱·저장 API 구현 (`Code.gs`)**:
+    - `getTeacherGroupSheetName_`, `findTeacherGroupSheet_`, `parseTeacherGroupsFromSheet_`를 추가하여 스프레드시트의 **`'2026-2교사그룹'`**(또는 활성 학기 `<prefix>교사그룹`) 시트에서 `[그룹명, 교사명단, 교사수, 수정일시]` 데이터를 읽어 페이로드(`teacherGroups`)와 변경 감지 서명(`computePayloadSignature_`)에 포함
+    - `saveTeacherGroupOnServer` 및 `deleteTeacherGroupOnServer` RPC 함수를 추가하여 웹앱에서 교사 그룹 저장 시 스프레드시트에 `'2026-2교사그룹'` 시트가 없으면 자동으로 새로 생성(`ss.insertSheet`)하여 저장하고 캐시를 무효화하도록 구현
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` 인라인 스크립트 Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline script syntax OK`)
+
+### [2026-11-04 18:52] 업데이트 이력 (Commit ID: `PENDING`)
+- **날짜 및 시간 (KST)**: `2026-11-04 18:52`
+- **커밋 ID (Commit Hash)**: `PENDING`
+- **수정 내용 (Modification Details)**:
+  - **프로젝트 전체 `'묶음'` 용어를 `'그룹'`으로 일괄 변경 및 스프레드시트 시트·헤더 자동 마이그레이션 (`Code.gs`, `index.html`, `README.md`)**:
+    - 웹앱 UI 라벨(`📌 교사 그룹`), 입력창 placeholder(`그룹 이름 입력 (예: 부장교사)`), 버튼(`💾 그룹 저장`, `🗑️ 그룹 삭제`), 안내 및 피드백 문구에서 `'묶음'` 텍스트를 모두 `'그룹'`으로 변경
+    - 스프레드시트 시트명을 **`'2026-2교사그룹'`**(또는 `<prefix>교사그룹`), 시트 1행 헤더를 **`['그룹명', '교사명단', '교사수', '수정일시']`**로 변경하고, 기존 스프레드시트에 생성된 `'2026-2교사묶음'` 시트 탭과 `A1` 셀 헤더를 앱 실행·저장·삭제 시 자동으로 `'2026-2교사그룹'` 및 `'그룹명'`으로 마이그레이션하도록 구현(`ensureDefaultSemesterSheetNames_`, `saveTeacherGroupOnServer`, `deleteTeacherGroupOnServer`)
+  - **교사 그룹 입력창 좌측 안내 문구(`🔔 직접 그룹 저장 및 삭제 가능`) 추가 (`index.html`)**:
+    - `공유 공강 확인` 상단 컨트롤 영역(`.teacher-groups-controls`)의 그룹 이름 입력창(`#teacherGroupNameInput`) 왼쪽에 알림 아이콘을 포함한 **`🔔 직접 그룹 저장 및 삭제 가능`** 안내 텍스트(`.teacher-groups-notice`)를 추가
+- **검증 결과 (Verification Results)**:
+  - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
+  - 프로젝트 전체 파일 내 `'묶음'` 잔여 문자열 0건 확인
+
 

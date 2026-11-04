@@ -483,7 +483,7 @@
       width: 100%;
     }
 
-    /* 공유 공강 확인: 복수 교사 묶음 (n×10 배열) */
+    /* 공유 공강 확인: 복수 교사 그룹 (n×10 배열) */
     .teacher-groups-section {
       display: flex;
       flex-direction: column;
@@ -514,6 +514,17 @@
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
+    }
+
+    .teacher-groups-notice {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-secondary);
+      margin-right: 2px;
+      white-space: nowrap;
     }
 
     .group-name-input {
@@ -3058,9 +3069,9 @@
 
       function getActiveGroupSheetName_(data) {
         if (data && data.foundSheets && data.foundSheets.teacherGroupSheet) {
-          return data.foundSheets.teacherGroupSheet;
+          return String(data.foundSheets.teacherGroupSheet).replace(/\uBB36\uC74C/g, '그룹');
         }
-        return getActiveGroupPrefix_(data) + '교사묶음';
+        return getActiveGroupPrefix_(data) + '교사그룹';
       }
 
       function loadTeacherGroupsMapFromLocal_() {
@@ -3443,12 +3454,12 @@
           var groupSheetName = getActiveGroupSheetName_(data);
 
           if (tKeysShared.length > 0) {
-            // 1. 복수 교사 묶음 (n×10 그리드 배열) — 첨부 이미지 내 빨간색 네모 위치
+            // 1. 복수 교사 그룹 (n×10 그리드 배열) — 첨부 이미지 내 빨간색 네모 위치
             html += '<div class="teacher-groups-section">';
             html += '<div class="teacher-groups-header">';
             html += '<div class="teacher-groups-title-wrap">';
             html +=
-              '<span class="chip-label">📌 교사 묶음 (' +
+              '<span class="chip-label">📌 교사 그룹 (' +
               groups.length +
               ') · [' +
               escapeHtml_(groupSheetName) +
@@ -3465,21 +3476,23 @@
 
             html += '<div class="teacher-groups-controls">';
             html +=
-              '<input type="text" id="teacherGroupNameInput" class="group-name-input" placeholder="묶음 이름 입력 (예: 부장교사)" value="' +
-              escapeHtml_(state.teacherGroupDraftName || '') +
-              '" oninput="handleTeacherGroupDraftInput(this.value)" onkeydown="handleTeacherGroupInputKey(event)" aria-label="저장할 교사 묶음 이름" />';
+              '<span class="teacher-groups-notice">🔔 직접 그룹 저장 및 삭제 가능</span>';
             html +=
-              '<button type="button" class="util-btn chip-save-group-btn" onclick="saveSelectedTeachersAsGroup()" title="아래에서 선택한 교사들을 입력한 묶음 이름으로 [' +
+              '<input type="text" id="teacherGroupNameInput" class="group-name-input" placeholder="그룹 이름 입력 (예: 부장교사)" value="' +
+              escapeHtml_(state.teacherGroupDraftName || '') +
+              '" oninput="handleTeacherGroupDraftInput(this.value)" onkeydown="handleTeacherGroupInputKey(event)" aria-label="저장할 교사 그룹 이름" />';
+            html +=
+              '<button type="button" class="util-btn chip-save-group-btn" onclick="saveSelectedTeachersAsGroup()" title="아래에서 선택한 교사들을 입력한 그룹 이름으로 [' +
               escapeHtml_(groupSheetName) +
-              '] 시트에 저장합니다">💾 묶음 저장' +
+              '] 시트에 저장합니다">💾 그룹 저장' +
               (validSelected.length > 0 ? ' (' + validSelected.length + '명)' : '') +
               '</button>';
             if (groups.length > 0) {
               html +=
                 '<button type="button" class="util-btn chip-reset-btn' +
                 (state.isDeletingTeacherGroup ? ' is-delete-mode' : '') +
-                '" onclick="toggleTeacherGroupDeleteMode()" title="저장된 교사 묶음을 클릭하여 삭제합니다">' +
-                (state.isDeletingTeacherGroup ? '✓ 삭제 완료' : '🗑️ 묶음 삭제') +
+                '" onclick="toggleTeacherGroupDeleteMode()" title="저장된 교사 그룹을 클릭하여 삭제합니다">' +
+                (state.isDeletingTeacherGroup ? '✓ 삭제 완료' : '🗑️ 그룹 삭제') +
                 '</button>';
             }
             html += '</div>';
@@ -3503,7 +3516,7 @@
                   })
                   .join(', ');
                 var grpTitle = state.isDeletingTeacherGroup
-                  ? '[' + grp.name + '] 묶음 삭제하기'
+                  ? '[' + grp.name + '] 그룹 삭제하기'
                   : grp.name +
                     ' (' +
                     grpKeys.length +
@@ -3533,7 +3546,7 @@
               html += '</div>';
             } else {
               html +=
-                '<div class="teacher-groups-empty">💡 아래 교사 목록에서 선생님을 선택한 뒤 묶음 이름(예: <strong>부장교사</strong>)을 입력하고 <strong>[💾 묶음 저장]</strong>을 누르면 이 위치에 <strong>n×10 묶음 버튼</strong>이 추가됩니다.</div>';
+                '<div class="teacher-groups-empty">💡 아래 교사 목록에서 선생님을 선택한 뒤 그룹 이름(예: <strong>부장교사</strong>)을 입력하고 <strong>[💾 그룹 저장]</strong>을 누르면 이 위치에 <strong>n×10 그룹 버튼</strong>이 추가됩니다.</div>';
             }
             html += '</div>';
 
@@ -5046,7 +5059,7 @@
 
         var grpKeys = getGroupValidTeacherKeys_(data, targetGrp);
         if (grpKeys.length === 0) {
-          state.teacherGroupFeedback = '⚠️ [' + groupName + '] 묶음에 현재 학기 교사가 없습니다.';
+          state.teacherGroupFeedback = '⚠️ [' + groupName + '] 그룹에 현재 학기 교사가 없습니다.';
           state.teacherGroupFeedbackError = true;
           renderTimetable();
           return;
@@ -5080,14 +5093,14 @@
         });
 
         if (selectedKeys.length === 0) {
-          state.teacherGroupFeedback = '⚠️ 먼저 아래 교사 목록에서 묶을 선생님을 1명 이상 선택해 주세요.';
+          state.teacherGroupFeedback = '⚠️ 먼저 아래 교사 목록에서 그룹으로 지정할 선생님을 1명 이상 선택해 주세요.';
           state.teacherGroupFeedbackError = true;
           renderQuickChips();
           return;
         }
 
         if (!groupName) {
-          state.teacherGroupFeedback = '⚠️ 저장할 묶음 이름(예: 부장교사)을 입력해 주세요.';
+          state.teacherGroupFeedback = '⚠️ 저장할 그룹 이름(예: 부장교사)을 입력해 주세요.';
           state.teacherGroupFeedbackError = true;
           renderQuickChips();
           var focusInput = document.getElementById('teacherGroupNameInput');
@@ -5123,7 +5136,7 @@
           groupName +
           '] (' +
           selectedKeys.length +
-          '명) 묶음이 [' +
+          '명) 그룹이 [' +
           sheetName +
           '] 시트에 저장되었습니다.';
         state.teacherGroupFeedbackError = false;
@@ -5173,7 +5186,7 @@
       window.toggleTeacherGroupDeleteMode = function () {
         state.isDeletingTeacherGroup = !state.isDeletingTeacherGroup;
         state.teacherGroupFeedback = state.isDeletingTeacherGroup
-          ? '🗑️ 삭제할 교사 묶음 버튼을 클릭하세요.'
+          ? '🗑️ 삭제할 교사 그룹 버튼을 클릭하세요.'
           : '';
         state.teacherGroupFeedbackError = false;
         renderQuickChips();
@@ -5199,7 +5212,7 @@
         } catch (e) {}
 
         state.teacherGroupFeedback =
-          '🗑️ [' + groupName + '] 묶음이 [' + sheetName + '] 시트에서 삭제되었습니다.';
+          '🗑️ [' + groupName + '] 그룹이 [' + sheetName + '] 시트에서 삭제되었습니다.';
         state.teacherGroupFeedbackError = false;
         renderTimetable();
 
