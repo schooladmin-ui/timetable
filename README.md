@@ -295,9 +295,9 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` 인라인 스크립트 Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline script syntax OK`)
 
-### [2026-11-04 18:52] 업데이트 이력 (Commit ID: `PENDING`)
+### [2026-11-04 18:52] 업데이트 이력 (Commit ID: `c392c20`)
 - **날짜 및 시간 (KST)**: `2026-11-04 18:52`
-- **커밋 ID (Commit Hash)**: `PENDING`
+- **커밋 ID (Commit Hash)**: `c392c20`
 - **수정 내용 (Modification Details)**:
   - **프로젝트 전체 `'묶음'` 용어를 `'그룹'`으로 일괄 변경 및 스프레드시트 시트·헤더 자동 마이그레이션 (`Code.gs`, `index.html`, `README.md`)**:
     - 웹앱 UI 라벨(`📌 교사 그룹`), 입력창 placeholder(`그룹 이름 입력 (예: 부장교사)`), 버튼(`💾 그룹 저장`, `🗑️ 그룹 삭제`), 안내 및 피드백 문구에서 `'묶음'` 텍스트를 모두 `'그룹'`으로 변경
