@@ -483,6 +483,154 @@
       width: 100%;
     }
 
+    /* 공유 공강 확인: 복수 교사 묶음 (n×10 배열) */
+    .teacher-groups-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #D1D5DB;
+    }
+
+    .teacher-groups-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .teacher-groups-title-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .teacher-groups-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .group-name-input {
+      height: 28px;
+      padding: 0 10px;
+      border: 1.5px solid #D1D5DB;
+      border-radius: var(--radius-md);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-primary);
+      background: #FFFFFF;
+      width: 185px;
+      outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .group-name-input:focus {
+      border-color: var(--main-color);
+      box-shadow: 0 0 0 3px var(--main-focus-ring);
+    }
+
+    .util-btn.chip-save-group-btn {
+      height: 28px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--main-tint-bg);
+      border-color: var(--main-color);
+      color: var(--main-color-dark);
+    }
+
+    .util-btn.chip-save-group-btn:hover {
+      background: var(--main-color);
+      color: #FFFFFF;
+    }
+
+    .util-btn.chip-reset-btn.is-delete-mode {
+      background: #FEF2F2;
+      border-color: #DC2626;
+      color: #B91C1C;
+      font-weight: 700;
+    }
+
+    .group-save-feedback {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--main-color-dark);
+    }
+
+    .group-save-feedback.is-error {
+      color: #DC2626;
+    }
+
+    .teacher-groups-wrap {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 5px;
+      width: 100%;
+    }
+
+    .teacher-groups-empty {
+      font-size: 12px;
+      color: var(--ink-muted);
+      background: #F9FAFB;
+      border: 1px dashed #D1D5DB;
+      border-radius: var(--radius-md);
+      padding: 6px 10px;
+    }
+
+    .q-chip.group-chip {
+      border: 1.5px solid var(--main-tint-border);
+      background: var(--main-tint-bg);
+      color: var(--main-color-dark);
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .q-chip.group-chip:hover {
+      border-color: var(--main-color);
+      background: #D1FAE5;
+    }
+
+    .q-chip.group-chip.active {
+      background: var(--main-color);
+      color: #FFFFFF;
+      border-color: var(--main-color-dark);
+      box-shadow: 0 2px 6px rgba(2, 112, 70, 0.22);
+    }
+
+    .q-chip.group-chip.is-delete-target {
+      border-color: #FCA5A5;
+      background: #FEF2F2;
+      color: #B91C1C;
+    }
+
+    .q-chip.group-chip.is-delete-target:hover {
+      background: #FEE2E2;
+      border-color: #DC2626;
+    }
+
+    .group-chip-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .group-chip-count {
+      font-size: 10.5px;
+      font-weight: 700;
+      opacity: 0.85;
+      flex-shrink: 0;
+    }
+
     .chip-label {
       font-size: 12px;
       font-weight: 700;
@@ -1898,6 +2046,7 @@
     @media (max-width: 640px) {
       .grade-row-chips,
       .teacher-chips-wrap,
+      .teacher-groups-wrap,
       .ff-results {
         grid-template-columns: repeat(5, minmax(0, 1fr));
       }
@@ -2414,6 +2563,7 @@
 
       var STORAGE_KEY = 'TIMETABLE_REAL_SHEETS_CACHE_V3';
       var PROJECTS_STORAGE_KEY = 'TIMETABLE_PROJECTS_STORAGE_V1';
+      var TEACHER_GROUPS_STORAGE_KEY = 'TIMETABLE_TEACHER_GROUPS_V1';
       var CHO_LIST = [
         'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ',
         'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
@@ -2449,6 +2599,10 @@
         freeDayIdx: 0,
         freePeriodIdx: 0,
         sharedFreeTeachers: [],
+        teacherGroupDraftName: '',
+        isDeletingTeacherGroup: false,
+        teacherGroupFeedback: '',
+        teacherGroupFeedbackError: false,
         hideQuickChips: false,
         searchIndex: [],
         lastSearchQuery: '',
@@ -2888,6 +3042,128 @@
             }
           });
         }
+
+        normalizePayloadTeacherGroups_(payload);
+      }
+
+      function getActiveGroupPrefix_(data) {
+        var raw =
+          (data && data.activePrefix) ||
+          state.activeProjectId ||
+          (data && data.foundSheets && data.foundSheets.weekly) ||
+          '2026-2';
+        var m = String(raw || '').match(/(20\d{2})[-_. ]?([12])/);
+        return m ? m[1] + '-' + m[2] : '2026-2';
+      }
+
+      function getActiveGroupSheetName_(data) {
+        if (data && data.foundSheets && data.foundSheets.teacherGroupSheet) {
+          return data.foundSheets.teacherGroupSheet;
+        }
+        return getActiveGroupPrefix_(data) + '교사묶음';
+      }
+
+      function loadTeacherGroupsMapFromLocal_() {
+        try {
+          var raw = localStorage.getItem(TEACHER_GROUPS_STORAGE_KEY);
+          if (!raw) return {};
+          var parsed = JSON.parse(raw);
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveTeacherGroupsToLocal_(prefix, groups) {
+        try {
+          var map = loadTeacherGroupsMapFromLocal_();
+          var normPrefix = String(prefix || '2026-2').trim() || '2026-2';
+          map[normPrefix] = Array.isArray(groups) ? groups : [];
+          localStorage.setItem(TEACHER_GROUPS_STORAGE_KEY, JSON.stringify(map));
+        } catch (e) {}
+      }
+
+      function sanitizeTeacherGroupsArray_(rawGroups) {
+        if (!Array.isArray(rawGroups)) return [];
+        var list = [];
+        var nameIdxMap = {};
+        for (var i = 0; i < rawGroups.length; i++) {
+          var g = rawGroups[i];
+          if (!g || !g.name) continue;
+          var gName = String(g.name || '').trim();
+          if (!gName) continue;
+          var rawT = Array.isArray(g.teachers) ? g.teachers : [];
+          var cleanT = [];
+          var seen = {};
+          for (var j = 0; j < rawT.length; j++) {
+            var tk = parseClientTeacherName_(rawT[j], '').name;
+            if (tk && !seen[tk]) {
+              seen[tk] = true;
+              cleanT.push(tk);
+            }
+          }
+          if (cleanT.length === 0) continue;
+          if (nameIdxMap[gName] !== undefined) {
+            list[nameIdxMap[gName]].teachers = cleanT;
+          } else {
+            nameIdxMap[gName] = list.length;
+            list.push({ name: gName, teachers: cleanT });
+          }
+        }
+        return list;
+      }
+
+      function normalizePayloadTeacherGroups_(payload) {
+        if (!payload) return;
+        var prefix = getActiveGroupPrefix_(payload);
+        var serverGroups = sanitizeTeacherGroupsArray_(payload.teacherGroups);
+        if (serverGroups.length > 0) {
+          payload.teacherGroups = serverGroups;
+          saveTeacherGroupsToLocal_(prefix, serverGroups);
+        } else {
+          var localMap = loadTeacherGroupsMapFromLocal_();
+          var localGroups = sanitizeTeacherGroupsArray_(
+            localMap[prefix] || localMap['2026-2'] || []
+          );
+          payload.teacherGroups = localGroups;
+        }
+      }
+
+      function getGroupValidTeacherKeys_(data, group) {
+        if (!data || !data.teachers || !group || !Array.isArray(group.teachers)) return [];
+        var valid = [];
+        var seen = {};
+        for (var i = 0; i < group.teachers.length; i++) {
+          var tk = parseClientTeacherName_(group.teachers[i], '').name;
+          if (tk && data.teachers[tk] && !seen[tk]) {
+            seen[tk] = true;
+            valid.push(tk);
+          }
+        }
+        return valid;
+      }
+
+      function isTeacherGroupAllSelected_(data, group, selectedKeys) {
+        var gKeys = getGroupValidTeacherKeys_(data, group);
+        if (gKeys.length === 0) return false;
+        var sel = Array.isArray(selectedKeys) ? selectedKeys : [];
+        for (var i = 0; i < gKeys.length; i++) {
+          if (sel.indexOf(gKeys[i]) === -1) return false;
+        }
+        return true;
+      }
+
+      function findExactMatchingTeacherGroupName_(data, selectedKeys) {
+        var sel = Array.isArray(selectedKeys) ? selectedKeys : [];
+        if (!data || sel.length === 0) return '';
+        var groups = Array.isArray(data.teacherGroups) ? data.teacherGroups : [];
+        for (var i = 0; i < groups.length; i++) {
+          var gKeys = getGroupValidTeacherKeys_(data, groups[i]);
+          if (gKeys.length === sel.length && isTeacherGroupAllSelected_(data, groups[i], sel)) {
+            return groups[i].name;
+          }
+        }
+        return '';
       }
 
       function getFreeTeacherObjects_(data, dayIdx, periodIdx) {
@@ -3163,7 +3439,105 @@
             return Boolean(data.teachers && data.teachers[tk]);
           });
           state.sharedFreeTeachers = validSelected;
+          var groups = Array.isArray(data.teacherGroups) ? data.teacherGroups : [];
+          var groupSheetName = getActiveGroupSheetName_(data);
+
           if (tKeysShared.length > 0) {
+            // 1. 복수 교사 묶음 (n×10 그리드 배열) — 첨부 이미지 내 빨간색 네모 위치
+            html += '<div class="teacher-groups-section">';
+            html += '<div class="teacher-groups-header">';
+            html += '<div class="teacher-groups-title-wrap">';
+            html +=
+              '<span class="chip-label">📌 교사 묶음 (' +
+              groups.length +
+              ') · [' +
+              escapeHtml_(groupSheetName) +
+              ']:</span>';
+            if (state.teacherGroupFeedback) {
+              html +=
+                '<span class="group-save-feedback' +
+                (state.teacherGroupFeedbackError ? ' is-error' : '') +
+                '">' +
+                escapeHtml_(state.teacherGroupFeedback) +
+                '</span>';
+            }
+            html += '</div>';
+
+            html += '<div class="teacher-groups-controls">';
+            html +=
+              '<input type="text" id="teacherGroupNameInput" class="group-name-input" placeholder="묶음 이름 입력 (예: 부장교사)" value="' +
+              escapeHtml_(state.teacherGroupDraftName || '') +
+              '" oninput="handleTeacherGroupDraftInput(this.value)" onkeydown="handleTeacherGroupInputKey(event)" aria-label="저장할 교사 묶음 이름" />';
+            html +=
+              '<button type="button" class="util-btn chip-save-group-btn" onclick="saveSelectedTeachersAsGroup()" title="아래에서 선택한 교사들을 입력한 묶음 이름으로 [' +
+              escapeHtml_(groupSheetName) +
+              '] 시트에 저장합니다">💾 묶음 저장' +
+              (validSelected.length > 0 ? ' (' + validSelected.length + '명)' : '') +
+              '</button>';
+            if (groups.length > 0) {
+              html +=
+                '<button type="button" class="util-btn chip-reset-btn' +
+                (state.isDeletingTeacherGroup ? ' is-delete-mode' : '') +
+                '" onclick="toggleTeacherGroupDeleteMode()" title="저장된 교사 묶음을 클릭하여 삭제합니다">' +
+                (state.isDeletingTeacherGroup ? '✓ 삭제 완료' : '🗑️ 묶음 삭제') +
+                '</button>';
+            }
+            html += '</div>';
+            html += '</div>';
+
+            if (groups.length > 0) {
+              html += '<div class="teacher-groups-wrap">';
+              for (var gIdx = 0; gIdx < groups.length; gIdx++) {
+                var grp = groups[gIdx];
+                var grpKeys = getGroupValidTeacherKeys_(data, grp);
+                var isGrpSelected =
+                  !state.isDeletingTeacherGroup &&
+                  isTeacherGroupAllSelected_(data, grp, validSelected);
+                var grpBtnCls =
+                  'q-chip group-chip' +
+                  (isGrpSelected ? ' active' : '') +
+                  (state.isDeletingTeacherGroup ? ' is-delete-target' : '');
+                var grpMemberNames = grpKeys
+                  .map(function (tk) {
+                    return formatTeacherName(data.teachers[tk].name, false);
+                  })
+                  .join(', ');
+                var grpTitle = state.isDeletingTeacherGroup
+                  ? '[' + grp.name + '] 묶음 삭제하기'
+                  : grp.name +
+                    ' (' +
+                    grpKeys.length +
+                    '명): ' +
+                    (grpMemberNames || '해당 학기 교사 없음') +
+                    ' — 클릭하여 일괄 선택/해제';
+                var grpAction = state.isDeletingTeacherGroup
+                  ? "deleteTeacherGroup('" + escapeSingleQuote_(grp.name) + "')"
+                  : "toggleTeacherGroup('" + escapeSingleQuote_(grp.name) + "')";
+
+                html +=
+                  '<button type="button" class="' +
+                  grpBtnCls +
+                  '" title="' +
+                  escapeHtml_(grpTitle) +
+                  '" onclick="' +
+                  grpAction +
+                  '">' +
+                  '<span class="group-chip-label">' +
+                  escapeHtml_(grp.name) +
+                  '</span>' +
+                  '<span class="group-chip-count">' +
+                  (state.isDeletingTeacherGroup ? '✕' : '(' + grpKeys.length + ')') +
+                  '</span>' +
+                  '</button>';
+              }
+              html += '</div>';
+            } else {
+              html +=
+                '<div class="teacher-groups-empty">💡 아래 교사 목록에서 선생님을 선택한 뒤 묶음 이름(예: <strong>부장교사</strong>)을 입력하고 <strong>[💾 묶음 저장]</strong>을 누르면 이 위치에 <strong>n×10 묶음 버튼</strong>이 추가됩니다.</div>';
+            }
+            html += '</div>';
+
+            // 2. 개별 교사 선택 (n×10 그리드 배열)
             html += '<div class="teacher-chips-section">';
             html += '<div class="teacher-chips-header">';
             html +=
@@ -3258,6 +3632,13 @@
           var foundArr = [];
           if (data.foundSheets.weekly) foundArr.push('[' + data.foundSheets.weekly + ']');
           if (data.foundSheets.classSheet) foundArr.push('[' + data.foundSheets.classSheet + ']');
+          if (
+            data.foundSheets.teacherGroupSheet &&
+            Array.isArray(data.teacherGroups) &&
+            data.teacherGroups.length > 0
+          ) {
+            foundArr.push('[' + data.foundSheets.teacherGroupSheet + ']');
+          }
           if (foundArr.length > 0) {
             sheetInfoText = '연동 시트: ' + foundArr.join(' · ');
           }
@@ -3317,20 +3698,22 @@
             var selectedNames = selectedKeys.map(function (tk) {
               return formatTeacherName(data.teachers[tk].name, false);
             });
-            if (selectedKeys.length === 1) {
+            var matchedGroupName = findExactMatchingTeacherGroupName_(data, selectedKeys);
+            var rolePrefixLabel = matchedGroupName ? matchedGroupName : '교사';
+            if (selectedKeys.length === 1 && !matchedGroupName) {
               subRoleEl.innerHTML =
                 '교사 <span class="divider">|</span> ' + escapeHtml_(selectedNames[0]);
-            } else if (selectedKeys.length === 2) {
+            } else if (selectedKeys.length <= 2) {
               subRoleEl.style.fontSize = '26px';
               subRoleEl.innerHTML =
-                '교사(2명) <span class="divider">|</span> ' +
+                escapeHtml_(rolePrefixLabel + '(' + selectedKeys.length + '명)') +
+                ' <span class="divider">|</span> ' +
                 escapeHtml_(selectedNames.join(', '));
             } else {
               subRoleEl.style.fontSize = '20px';
               subRoleEl.innerHTML =
-                '교사(' +
-                selectedKeys.length +
-                '명) <span class="divider">|</span> ' +
+                escapeHtml_(rolePrefixLabel + '(' + selectedKeys.length + '명)') +
+                ' <span class="divider">|</span> ' +
                 escapeHtml_(selectedNames.join(', '));
             }
 
@@ -4624,7 +5007,229 @@
 
       window.clearSharedFreeTeachers = function () {
         state.sharedFreeTeachers = [];
+        state.teacherGroupFeedback = '';
+        state.teacherGroupFeedbackError = false;
         renderTimetable();
+      };
+
+      window.handleTeacherGroupDraftInput = function (val) {
+        state.teacherGroupDraftName = String(val || '');
+        if (state.teacherGroupFeedback && state.teacherGroupFeedbackError) {
+          state.teacherGroupFeedback = '';
+          state.teacherGroupFeedbackError = false;
+        }
+      };
+
+      window.handleTeacherGroupInputKey = function (e) {
+        if (e && e.key === 'Enter') {
+          e.preventDefault();
+          window.saveSelectedTeachersAsGroup();
+        }
+      };
+
+      window.toggleTeacherGroup = function (groupName) {
+        var data = state.data;
+        if (!data || !data.teachers) return;
+        state.mode = 'shared_free';
+        state.teacherGroupFeedback = '';
+        state.teacherGroupFeedbackError = false;
+
+        var groups = Array.isArray(data.teacherGroups) ? data.teacherGroups : [];
+        var targetGrp = null;
+        for (var i = 0; i < groups.length; i++) {
+          if (groups[i].name === groupName) {
+            targetGrp = groups[i];
+            break;
+          }
+        }
+        if (!targetGrp) return;
+
+        var grpKeys = getGroupValidTeacherKeys_(data, targetGrp);
+        if (grpKeys.length === 0) {
+          state.teacherGroupFeedback = '⚠️ [' + groupName + '] 묶음에 현재 학기 교사가 없습니다.';
+          state.teacherGroupFeedbackError = true;
+          renderTimetable();
+          return;
+        }
+
+        var currentSel = Array.isArray(state.sharedFreeTeachers) ? state.sharedFreeTeachers : [];
+        var isAlreadyExact =
+          currentSel.length === grpKeys.length &&
+          isTeacherGroupAllSelected_(data, targetGrp, currentSel);
+
+        if (isAlreadyExact) {
+          state.sharedFreeTeachers = [];
+        } else {
+          state.sharedFreeTeachers = grpKeys.slice();
+        }
+
+        syncModeTabsUI();
+        renderTimetable();
+      };
+
+      window.saveSelectedTeachersAsGroup = function () {
+        var data = state.data;
+        if (!data || !data.teachers) return;
+
+        var inputEl = document.getElementById('teacherGroupNameInput');
+        var rawName = inputEl ? inputEl.value : state.teacherGroupDraftName;
+        var groupName = String(rawName || '').trim();
+
+        var selectedKeys = (state.sharedFreeTeachers || []).filter(function (tk) {
+          return Boolean(data.teachers && data.teachers[tk]);
+        });
+
+        if (selectedKeys.length === 0) {
+          state.teacherGroupFeedback = '⚠️ 먼저 아래 교사 목록에서 묶을 선생님을 1명 이상 선택해 주세요.';
+          state.teacherGroupFeedbackError = true;
+          renderQuickChips();
+          return;
+        }
+
+        if (!groupName) {
+          state.teacherGroupFeedback = '⚠️ 저장할 묶음 이름(예: 부장교사)을 입력해 주세요.';
+          state.teacherGroupFeedbackError = true;
+          renderQuickChips();
+          var focusInput = document.getElementById('teacherGroupNameInput');
+          if (focusInput) focusInput.focus();
+          return;
+        }
+
+        var groups = Array.isArray(data.teacherGroups) ? data.teacherGroups.slice() : [];
+        var updated = false;
+        for (var i = 0; i < groups.length; i++) {
+          if (groups[i].name === groupName) {
+            groups[i] = { name: groupName, teachers: selectedKeys.slice() };
+            updated = true;
+            break;
+          }
+        }
+        if (!updated) {
+          groups.push({ name: groupName, teachers: selectedKeys.slice() });
+        }
+
+        data.teacherGroups = groups;
+        var prefix = getActiveGroupPrefix_(data);
+        var sheetName = getActiveGroupSheetName_(data);
+        saveTeacherGroupsToLocal_(prefix, groups);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {}
+
+        state.teacherGroupDraftName = '';
+        state.isDeletingTeacherGroup = false;
+        state.teacherGroupFeedback =
+          '✅ [' +
+          groupName +
+          '] (' +
+          selectedKeys.length +
+          '명) 묶음이 [' +
+          sheetName +
+          '] 시트에 저장되었습니다.';
+        state.teacherGroupFeedbackError = false;
+
+        renderTimetable();
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          try {
+            google.script.run
+              .withSuccessHandler(function (resStr) {
+                try {
+                  var res = typeof resStr === 'string' ? JSON.parse(resStr) : resStr;
+                  if (res && res.ok && Array.isArray(res.teacherGroups)) {
+                    var synced = sanitizeTeacherGroupsArray_(res.teacherGroups);
+                    if (state.data) {
+                      state.data.teacherGroups = synced;
+                      if (res.sheetName && state.data.foundSheets) {
+                        state.data.foundSheets.teacherGroupSheet = res.sheetName;
+                      }
+                      saveTeacherGroupsToLocal_(prefix, synced);
+                      try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+                      } catch (e2) {}
+                    }
+                    renderTimetable();
+                  }
+                } catch (parseErr) {}
+              })
+              .withFailureHandler(function (err) {
+                state.teacherGroupFeedback =
+                  '⚠️ 시트 저장 실패(브라우저에는 임시 저장됨): ' +
+                  (err && err.message ? err.message : err);
+                state.teacherGroupFeedbackError = true;
+                renderQuickChips();
+              })
+              .saveTeacherGroupOnServer(
+                JSON.stringify({
+                  prefix: prefix,
+                  groupName: groupName,
+                  teachers: selectedKeys
+                })
+              );
+          } catch (rpcErr) {}
+        }
+      };
+
+      window.toggleTeacherGroupDeleteMode = function () {
+        state.isDeletingTeacherGroup = !state.isDeletingTeacherGroup;
+        state.teacherGroupFeedback = state.isDeletingTeacherGroup
+          ? '🗑️ 삭제할 교사 묶음 버튼을 클릭하세요.'
+          : '';
+        state.teacherGroupFeedbackError = false;
+        renderQuickChips();
+      };
+
+      window.deleteTeacherGroup = function (groupName) {
+        var data = state.data;
+        if (!data) return;
+        var groups = Array.isArray(data.teacherGroups) ? data.teacherGroups : [];
+        var filtered = groups.filter(function (g) {
+          return g.name !== groupName;
+        });
+
+        data.teacherGroups = filtered;
+        if (filtered.length === 0) {
+          state.isDeletingTeacherGroup = false;
+        }
+        var prefix = getActiveGroupPrefix_(data);
+        var sheetName = getActiveGroupSheetName_(data);
+        saveTeacherGroupsToLocal_(prefix, filtered);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {}
+
+        state.teacherGroupFeedback =
+          '🗑️ [' + groupName + '] 묶음이 [' + sheetName + '] 시트에서 삭제되었습니다.';
+        state.teacherGroupFeedbackError = false;
+        renderTimetable();
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          try {
+            google.script.run
+              .withSuccessHandler(function (resStr) {
+                try {
+                  var res = typeof resStr === 'string' ? JSON.parse(resStr) : resStr;
+                  if (res && res.ok && Array.isArray(res.teacherGroups)) {
+                    var synced = sanitizeTeacherGroupsArray_(res.teacherGroups);
+                    if (state.data) {
+                      state.data.teacherGroups = synced;
+                      saveTeacherGroupsToLocal_(prefix, synced);
+                      try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+                      } catch (e2) {}
+                    }
+                    renderTimetable();
+                  }
+                } catch (parseErr) {}
+              })
+              .deleteTeacherGroupOnServer(
+                JSON.stringify({
+                  prefix: prefix,
+                  groupName: groupName
+                })
+              );
+          } catch (rpcErr) {}
+        }
       };
 
       window.toggleShowTeacherInClass = function () {
@@ -4859,14 +5464,21 @@
               cells: sfCells
             });
           }
+          var matchedGrp = findExactMatchingTeacherGroupName_(data, selectedKeys);
+          var rolePrefix = matchedGrp
+            ? matchedGrp + '(' + selectedKeys.length + '명)'
+            : '교사(' + selectedKeys.length + '명)';
+          var sfFileTag = matchedGrp
+            ? String(matchedGrp).replace(/[\\/:*?"<>|\s]+/g, '_') + '_공유공강_시간표'
+            : '공유공강_시간표';
           return {
             schoolYear: schoolYear,
             mainTitle: '공유 공강 시간표',
             affiliation: meta.schoolName || '',
-            subRole: '교사 | ' + selectedNames.join(', '),
+            subRole: rolePrefix + ' | ' + selectedNames.join(', '),
             days: days,
             rows: sfRows,
-            fileBaseName: '공유공강_시간표'
+            fileBaseName: sfFileTag
           };
         }
 

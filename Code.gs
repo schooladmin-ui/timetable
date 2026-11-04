@@ -217,11 +217,11 @@ function checkAndRefreshIfChanged(clientSig) {
   return { changed: true, json: serialized };
 }
 
-function computePayloadSignature_(classes, teachers, meta) {
+function computePayloadSignature_(classes, teachers, meta, teacherGroups) {
   try {
     var digest = Utilities.computeDigest(
       Utilities.DigestAlgorithm.MD5,
-      JSON.stringify({ c: classes, t: teachers, m: meta }),
+      JSON.stringify({ c: classes, t: teachers, m: meta, g: teacherGroups || [] }),
       Utilities.Charset.UTF_8
     );
     var hex = '';
@@ -282,7 +282,8 @@ function buildEmptyErrorPayload_(errorMsg, sheetNames) {
     days: ['월', '화', '수', '목', '금'],
     maxPeriod: 7,
     classes: {},
-    teachers: {}
+    teachers: {},
+    teacherGroups: []
   };
 }
 
@@ -406,7 +407,11 @@ function buildTimetablePayloadFromRealSheets_() {
   // 4. 네트워크 전송 및 캐시 용량 최소화를 위해 빈 속성/중복 속성 경량화 (~60% 용량 절감)
   compactStoreForTransport_(store);
 
-  var sig = computePayloadSignature_(store.classes, store.teachers, meta);
+  // 5. 교사 묶음 시트('2026-2교사묶음' 또는 '<targetPrefix>교사묶음') 파싱
+  var teacherGroupSheet = findTeacherGroupSheet_(allSheets, allSheetNames, targetPrefix);
+  var teacherGroups = teacherGroupSheet ? parseTeacherGroupsFromSheet_(teacherGroupSheet) : [];
+
+  var sig = computePayloadSignature_(store.classes, store.teachers, meta, teacherGroups);
 
   var serializedSets = semesterSets.map(function (item) {
     return {
@@ -428,14 +433,18 @@ function buildTimetablePayloadFromRealSheets_() {
     sheetNames: allSheetNames,
     foundSheets: {
       weekly: weeklySheet ? weeklySheet.getName() : null,
-      classSheet: classSheet ? classSheet.getName() : null
+      classSheet: classSheet ? classSheet.getName() : null,
+      teacherGroupSheet: teacherGroupSheet
+        ? teacherGroupSheet.getName()
+        : getTeacherGroupSheetName_(targetPrefix)
     },
     hasTeacherInClassCells: store.hasTeacherInClassCells,
     meta: meta,
     days: ['월', '화', '수', '목', '금'],
     maxPeriod: store.maxPeriod,
     classes: store.classes,
-    teachers: store.teachers
+    teachers: store.teachers,
+    teacherGroups: teacherGroups
   };
 }
 
@@ -1963,7 +1972,7 @@ function normalizeSemesterPrefix_(rawInput) {
   var mCompact = s.match(/^(20\d{2})0?([12])$/);
   if (mCompact) return mCompact[1] + '-' + mCompact[2];
   var cleaned = s
-    .replace(/(?:주간\s*시간표|학급\s*시간표|반별\s*시간표)$/g, '')
+    .replace(/(?:주간\s*시간표|학급\s*시간표|반별\s*시간표|교사\s*묶음)$/g, '')
     .replace(/[-_.\s]+$/g, '')
     .trim();
   return cleaned || '2025-2';
@@ -2221,3 +2230,260 @@ function setActiveProjectOnServer(projectId) {
 function deleteProjectOnServer(projectId) {
   return deleteSemesterSheetsOnServer(projectId);
 }
+
+/* ============================================================================
+   공유 공강 확인: 복수 교사 묶음('2026-2교사묶음' / '<prefix>교사묶음') 시트 파싱 및 저장 API
+   ============================================================================ */
+
+/**
+ * 학기 접두어(예: '2026-2')에 대응하는 교사묶음 시트명 반환 (예: '2026-2교사묶음')
+ */
+function getTeacherGroupSheetName_(prefix) {
+  var norm = normalizeSemesterPrefix_(prefix || '2026-2');
+  return norm + '교사묶음';
+}
+
+/**
+ * 스프레드시트에서 현재 학기의 교사묶음 시트 탐색 ('2026-2교사묶음' 폴백 지원)
+ */
+function findTeacherGroupSheet_(allSheets, allSheetNames, targetPrefix) {
+  var primaryName = getTeacherGroupSheetName_(targetPrefix);
+  var candidates = [primaryName];
+  if (candidates.indexOf('2026-2교사묶음') === -1) {
+    candidates.push('2026-2교사묶음');
+  }
+  candidates.push('교사묶음');
+
+  for (var i = 0; i < candidates.length; i++) {
+    var exactIdx = allSheetNames.indexOf(candidates[i]);
+    if (exactIdx !== -1) return allSheets[exactIdx];
+  }
+
+  var normPrimary = primaryName.replace(/\s+/g, '');
+  for (var j = 0; j < allSheets.length; j++) {
+    var sNorm = String(allSheetNames[j] || '').replace(/\s+/g, '');
+    if (sNorm === normPrimary || sNorm === '2026-2교사묶음' || sNorm === '교사묶음') {
+      return allSheets[j];
+    }
+  }
+  return null;
+}
+
+/**
+ * 교사묶음 시트('2026-2교사묶음')에서 복수 교사 묶음 목록을 파싱하여 반환
+ * - 1열(A열): 묶음명 (예: '부장교사')
+ * - 2열(B열) 이후: 쉼표 구분 교사 명단('김동진, 박수빈') 또는 열별 교사 성명 나열 모두 지원
+ */
+function parseTeacherGroupsFromSheet_(sheet) {
+  if (!sheet) return [];
+  var rows = [];
+  try {
+    rows = sheet.getDataRange().getDisplayValues();
+  } catch (e) {
+    return [];
+  }
+  if (!rows || rows.length === 0) return [];
+
+  var groups = [];
+  var groupIndexMap = {};
+
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r] || [];
+    var rawGroupName = String(row[0] || '').trim();
+    if (!rawGroupName) continue;
+
+    // 헤더 행 건너뛰기
+    var headerCheck = rawGroupName.replace(/\s+/g, '');
+    if (
+      r === 0 &&
+      (headerCheck === '묶음명' ||
+        headerCheck === '묶음이름' ||
+        headerCheck === '그룹명' ||
+        headerCheck === '교사묶음' ||
+        headerCheck === '구분')
+    ) {
+      continue;
+    }
+
+    var teacherList = [];
+    var seen = {};
+
+    for (var c = 1; c < row.length; c++) {
+      var cellVal = String(row[c] || '').trim();
+      if (!cellVal) continue;
+      // 인원수 숫자 열('5', '5명') 또는 일시 열('2026-11-04 ...')은 교사명에서 제외
+      if (/^\d+\s*명?$/.test(cellVal)) continue;
+      if (/^20\d{2}[-./]\d{1,2}[-./]\d{1,2}/.test(cellVal)) continue;
+
+      var tokens = cellVal.split(/[,/;\r\n]+/);
+      for (var t = 0; t < tokens.length; t++) {
+        var cleaned = cleanTeacherIdentity_(tokens[t], '').name;
+        if (!cleaned || isIgnoredEntityName_(cleaned)) continue;
+        if (/^\d+$/.test(cleaned)) continue;
+        if (!seen[cleaned]) {
+          seen[cleaned] = true;
+          teacherList.push(cleaned);
+        }
+      }
+    }
+
+    if (teacherList.length === 0) continue;
+
+    if (groupIndexMap[rawGroupName] !== undefined) {
+      groups[groupIndexMap[rawGroupName]].teachers = teacherList;
+    } else {
+      groupIndexMap[rawGroupName] = groups.length;
+      groups.push({
+        name: rawGroupName,
+        teachers: teacherList
+      });
+    }
+  }
+
+  return groups;
+}
+
+/**
+ * 교사 묶음 배열을 지정된 시트(예: '2026-2교사묶음')에 생성 또는 덮어쓰기로 저장
+ */
+function writeTeacherGroupsToSheet_(ss, sheetName, groups) {
+  if (!ss || !sheetName) return null;
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  } else {
+    try {
+      sheet.showSheet();
+    } catch (e) {}
+    sheet.clearContents();
+  }
+
+  var nowStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+  var rows = [['묶음명', '교사명단', '교사수', '수정일시']];
+
+  var list = Array.isArray(groups) ? groups : [];
+  for (var i = 0; i < list.length; i++) {
+    var g = list[i];
+    if (!g || !g.name || !Array.isArray(g.teachers) || g.teachers.length === 0) continue;
+    rows.push([
+      String(g.name).trim(),
+      g.teachers.join(', '),
+      String(g.teachers.length),
+      nowStr
+    ]);
+  }
+
+  sheet.getRange(1, 1, rows.length, 4).setValues(rows);
+  return sheet;
+}
+
+/**
+ * 클라이언트에서 선택한 복수 교사 묶음을 스프레드시트('2026-2교사묶음' 등)에 추가/업데이트
+ */
+function saveTeacherGroupOnServer(requestJson) {
+  var req = typeof requestJson === 'string' ? JSON.parse(requestJson) : requestJson;
+  if (!req || !req.groupName) {
+    throw new Error('교사 묶음 이름을 입력해 주세요.');
+  }
+
+  var ss = getTargetSpreadsheet_();
+  if (!ss) {
+    throw new Error('연결된 구글 스프레드시트를 찾을 수 없습니다.');
+  }
+
+  var groupName = String(req.groupName || '').trim();
+  var rawTeachers = Array.isArray(req.teachers) ? req.teachers : [];
+  var cleanTeachers = [];
+  var seen = {};
+  for (var i = 0; i < rawTeachers.length; i++) {
+    var tName = cleanTeacherIdentity_(rawTeachers[i], '').name;
+    if (tName && !seen[tName]) {
+      seen[tName] = true;
+      cleanTeachers.push(tName);
+    }
+  }
+
+  if (cleanTeachers.length === 0) {
+    throw new Error('묶음에 포함할 교사를 1명 이상 선택해 주세요.');
+  }
+
+  var props = PropertiesService.getScriptProperties();
+  var savedPrefix = props.getProperty(PROP_ACTIVE_PROJECT_KEY) || '2026-2';
+  var prefix = normalizeSemesterPrefix_(req.prefix || savedPrefix || '2026-2');
+  var sheetName = getTeacherGroupSheetName_(prefix);
+
+  var existingSheet = ss.getSheetByName(sheetName);
+  if (!existingSheet && prefix !== '2026-2') {
+    var fallback2026 = ss.getSheetByName('2026-2교사묶음');
+    if (fallback2026 && !req.prefix) {
+      sheetName = '2026-2교사묶음';
+      existingSheet = fallback2026;
+    }
+  }
+
+  var groups = existingSheet ? parseTeacherGroupsFromSheet_(existingSheet) : [];
+  var updated = false;
+  for (var gIdx = 0; gIdx < groups.length; gIdx++) {
+    if (groups[gIdx].name === groupName) {
+      groups[gIdx].teachers = cleanTeachers;
+      updated = true;
+      break;
+    }
+  }
+  if (!updated) {
+    groups.push({
+      name: groupName,
+      teachers: cleanTeachers
+    });
+  }
+
+  writeTeacherGroupsToSheet_(ss, sheetName, groups);
+  clearTimetableCache_();
+
+  return JSON.stringify({
+    ok: true,
+    sheetName: sheetName,
+    teacherGroups: groups
+  });
+}
+
+/**
+ * 지정된 교사 묶음을 스프레드시트('2026-2교사묶음' 등)에서 삭제
+ */
+function deleteTeacherGroupOnServer(requestJson) {
+  var req = typeof requestJson === 'string' ? JSON.parse(requestJson) : requestJson;
+  if (!req || !req.groupName) {
+    throw new Error('삭제할 교사 묶음 이름이 전달되지 않았습니다.');
+  }
+
+  var ss = getTargetSpreadsheet_();
+  if (!ss) {
+    throw new Error('연결된 구글 스프레드시트를 찾을 수 없습니다.');
+  }
+
+  var groupName = String(req.groupName || '').trim();
+  var props = PropertiesService.getScriptProperties();
+  var savedPrefix = props.getProperty(PROP_ACTIVE_PROJECT_KEY) || '2026-2';
+  var prefix = normalizeSemesterPrefix_(req.prefix || savedPrefix || '2026-2');
+  var sheetName = getTeacherGroupSheetName_(prefix);
+
+  var existingSheet = ss.getSheetByName(sheetName) || ss.getSheetByName('2026-2교사묶음');
+  if (existingSheet) {
+    sheetName = existingSheet.getName();
+  }
+
+  var groups = existingSheet ? parseTeacherGroupsFromSheet_(existingSheet) : [];
+  var filtered = groups.filter(function (g) {
+    return g.name !== groupName;
+  });
+
+  writeTeacherGroupsToSheet_(ss, sheetName, filtered);
+  clearTimetableCache_();
+
+  return JSON.stringify({
+    ok: true,
+    sheetName: sheetName,
+    teacherGroups: filtered
+  });
+}
+
