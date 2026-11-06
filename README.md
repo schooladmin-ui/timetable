@@ -349,9 +349,9 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
   - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
   - Impeccable 정적 스캐너 `detect` 안티패턴 0건 및 `doctor` 드리프트 0건 통과 (`No drift found`)
 
-### [2026-11-06 20:14] 업데이트 이력 (Commit ID: `PENDING`)
+### [2026-11-06 20:14] 업데이트 이력 (Commit ID: `dfd2fc3`)
 - **날짜 및 시간 (KST)**: `2026-11-06 20:14`
-- **커밋 ID (Commit Hash)**: `PENDING`
+- **커밋 ID (Commit Hash)**: `dfd2fc3`
 - **수정 내용 (Modification Details)**:
   - **상단 통합 버튼 패널(`#quickChipsBar`) 세로 스크롤 연동 및 시간표 가시 영역 확대 (`index.html`)**:
     - 기존 `position: sticky; top: 0;`이 적용된 `<header class="control-bar-wrap">` 내부에 포함되어 있던 `#quickChipsBar`를 헤더 외부의 일반 문서 흐름 영역(`#quickChipsBarWrap`)으로 분리
