@@ -333,5 +333,22 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
 
+### [2026-11-06 19:59] 업데이트 이력 (Commit ID: `PENDING`)
+- **날짜 및 시간 (KST)**: `2026-11-06 19:59`
+- **커밋 ID (Commit Hash)**: `PENDING`
+- **수정 내용 (Modification Details)**:
+  - **긴 과목명 1행 동적 자동 맞춤(`autoFitSingleLineCells_`) 및 줄바꿈/잘림 방지 (`index.html`)**:
+    - 수업 교사 찾기 모달창(`.tcc-subject`, `.tcc-bracket`, `.tcc-teacher`, `.tcc-class-label`) 및 메인·확대 시간표(`.cell-main-text`, `.cell-bracket-sub`, `.cell-sub-info`)에 `white-space: nowrap; display: table; margin-left: auto; margin-right: auto;`를 적용하여 `언어생활탐구#`, `수학과제탐구#`, `데이터로탐구하는현대사회#`, `아동발달과부모#` 등 긴 과목명이나 특수문자(`#`)가 다음 행으로 내려가지 않도록 고정
+    - 셀 가용 폭(`availW`) 대비 텍스트 폭을 실시간 측정하여 자간 축소(`-0.05em`) → 폰트 크기 비례 축소 → 가로 스케일(`scaleX`)을 동적으로 적용하는 `autoFitSingleLineCells_` 엔진을 구현하고, `.teaching-modal-dialog` 폭을 `min(98vw, 1560px)`로 확장
+  - **학년별 교실 버튼 1행 정렬 및 최대 학급 수 기준 열 너비 통일 (`index.html`)**:
+    - `renderQuickChips`(`학급 시간표` 모드) 및 `renderTeachingTeachersModalContent_`(`수업 교사 찾기` 모달)에서 3개 학년 중 학급·특별실 개수가 가장 많은 학년의 개수(`maxGradeCols = 12`)를 공통 그리드 열 수(`--grade-chip-cols`, `--max-class-cols`)로 지정하여, 2·3학년 12개 교실(`1반~9반` + `211호`, `416호/315호`, `정보실`)이 한 행에 모두 표시되고 1학년(`1반~9반`)도 동일한 버튼 길이와 열 위치에 맞춰 정렬되도록 개선
+  - **`'O_선택'` 텍스트 파스텔톤 형광색 하이라이트 강조 및 Impeccable 25대 디자인 리파인 적용 (`index.html`, `DESIGN.md`, `.impeccable/design.json`)**:
+    - 학급 시간표 및 수업 교사 찾기 모달의 1행 `'O_선택'`(`A_선택` ~ `F_선택` 등) 텍스트에 **글자 크기는 그대로 유지**하면서 파스텔 네온 라임 형광색 마커 스타일(`.elective-group-highlight`, 배경 `#D9F99D`, 테두리 `#BEF264`, 텍스트 `#1A2E05`)을 적용하여 아래 2행 과목명과 시각적으로 명확히 구분
+    - `.teaching-search-input-wrap` 상하 패딩(`padding: 6px 12px;`)을 보정하여 Impeccable `[cramped-padding]` 안티패턴을 해결하고, `DESIGN.md` 및 `.impeccable/design.json`에 신규 컬러 토큰 및 램프를 동기화
+- **검증 결과 (Verification Results)**:
+  - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
+  - Impeccable 정적 스캐너 `detect` 안티패턴 0건 및 `doctor` 드리프트 0건 통과 (`No drift found`)
+
+
 
 

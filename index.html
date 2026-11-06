@@ -28,9 +28,12 @@
       --ink-muted: #4B5563;
       --ink-subtle: #52525B;
 
-      /* 배지 컬러 */
+      /* 배지 컬러 & 선택과목('O_선택') 파스텔 형광 하이라이트 토큰 */
       --badge-yellow-bg: #FEF08A;
       --badge-yellow-text: #713F12;
+      --elective-hl-bg: #D9F99D;
+      --elective-hl-border: #BEF264;
+      --elective-hl-text: #1A2E05;
 
       /* 보더 & 4단계 곡률 토큰 */
       --grid-border-crisp: #313339;
@@ -457,7 +460,7 @@
 
     .grade-row-chips {
       display: grid;
-      grid-template-columns: repeat(10, minmax(0, 1fr));
+      grid-template-columns: repeat(var(--grade-chip-cols, 12), minmax(0, 1fr));
       gap: 5px;
       flex: 1;
       min-width: 0;
@@ -691,8 +694,10 @@
     }
 
     .q-chip.class-grid-chip {
-      padding: 5px 4px;
+      padding: 5px 2px;
       width: 100%;
+      font-size: 11.5px;
+      letter-spacing: -0.02em;
       text-align: center;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1004,7 +1009,7 @@
       padding: 8px 6px;
       background-color: #FFFFFF;
       position: relative;
-      overflow-wrap: anywhere;
+      overflow: hidden;
       transition: background-color 0.1s ease;
     }
 
@@ -1080,12 +1085,33 @@
       color: var(--ink-primary);
       letter-spacing: -0.02em;
       line-height: 1.25;
-      word-break: keep-all;
+      white-space: nowrap;
+      display: table;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .cell-main-text.is-moved-origin {
       text-decoration: line-through;
       color: var(--ink-subtle);
+    }
+
+    /* 선택과목 1행('O_선택'): 글자 크기는 그대로 유지하고 파스텔톤 형광펜 하이라이트로 과목명과 명확히 구분 */
+    .cell-main-text.elective-group-highlight,
+    .tcc-subject.elective-group-highlight {
+      background-color: var(--elective-hl-bg);
+      border: 1px solid var(--elective-hl-border);
+      color: var(--elective-hl-text) !important;
+      padding: 0 6px;
+      border-radius: 5px;
+      margin-bottom: 2px;
+      box-shadow: inset 0 -6px 0 rgba(190, 242, 100, 0.45);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .tt-table tbody td.td-cell.is-current-slot .cell-main-text.elective-group-highlight {
+      color: var(--elective-hl-text) !important;
     }
 
     .mode-tab:focus-visible,
@@ -1100,6 +1126,10 @@
       font-weight: 600;
       color: var(--brand-stone);
       margin-top: 2px;
+      white-space: nowrap;
+      display: table;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .cell-sub-info {
@@ -1108,6 +1138,10 @@
       color: var(--ink-subtle);
       margin-top: 4px;
       line-height: 1.2;
+      white-space: nowrap;
+      display: table;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .cell-empty-dash {
@@ -1376,7 +1410,7 @@
 
     /* 수업 교사 찾기: 학급 기준 3×n 모달창 & 검색 하이라이트 UI */
     .teaching-modal-dialog {
-      width: min(96vw, 1280px);
+      width: min(98vw, 1560px);
       max-height: 90vh;
       background: #FFFFFF;
       border: 2px solid var(--brand-stone);
@@ -1405,7 +1439,7 @@
       min-width: 240px;
       max-width: 540px;
       height: 40px;
-      padding: 0 12px;
+      padding: 6px 12px;
       background: #FFFFFF;
       border: 2px solid var(--main-color);
       border-radius: var(--radius-md);
@@ -1491,7 +1525,7 @@
     .teaching-grade-cells {
       display: grid;
       grid-template-columns: repeat(var(--max-class-cols, 10), minmax(0, 1fr));
-      gap: 8px;
+      gap: 6px;
       flex: 1;
       min-width: 0;
     }
@@ -1501,8 +1535,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding: 8px 6px;
+      padding: 7px 4px;
       min-height: 82px;
+      min-width: 0;
       background: #FFFFFF;
       border: 1.5px solid #D1D5DB;
       border-radius: var(--radius-md);
@@ -1542,10 +1577,13 @@
       background: var(--main-tint-bg);
       border: 1px solid var(--main-tint-border);
       border-radius: var(--radius-pill);
-      padding: 1px 8px;
+      padding: 1px 7px;
       margin-bottom: 5px;
       line-height: 1.25;
       white-space: nowrap;
+      display: table;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .tcc-body {
@@ -1555,6 +1593,7 @@
       justify-content: center;
       flex: 1;
       width: 100%;
+      min-width: 0;
       gap: 2px;
     }
 
@@ -1563,7 +1602,11 @@
       font-weight: 800;
       color: var(--ink-primary);
       line-height: 1.22;
-      word-break: keep-all;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      display: table;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .tcc-subject.is-moved-origin {
@@ -1576,6 +1619,10 @@
       font-weight: 600;
       color: var(--brand-stone);
       line-height: 1.15;
+      white-space: nowrap;
+      display: table;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .tcc-teacher {
@@ -1584,6 +1631,10 @@
       color: var(--ink-secondary);
       line-height: 1.2;
       margin-top: 2px;
+      white-space: nowrap;
+      display: table;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .teaching-class-cell.is-search-match {
@@ -3582,13 +3633,23 @@
               gradeGroups[gKey].push(cObj);
             }
 
-            html += '<div class="class-grade-grid">';
+            var maxGradeCols = 1;
+            for (var m = 0; m < gradeOrder.length; m++) {
+              var gLen = (gradeGroups[gradeOrder[m]] || []).length;
+              if (gLen > maxGradeCols) {
+                maxGradeCols = gLen;
+              }
+            }
+
+            html +=
+              '<div class="class-grade-grid" style="--grade-chip-cols: ' + maxGradeCols + ';">';
             for (var g = 0; g < gradeOrder.length; g++) {
               var gLabel = gradeOrder[g];
               var list = gradeGroups[gLabel];
               html += '<div class="grade-chip-row">';
               html += '<span class="grade-row-badge">' + escapeHtml_(gLabel) + '</span>';
-              html += '<div class="grade-row-chips">';
+              html +=
+                '<div class="grade-row-chips" style="--grade-chip-cols: ' + maxGradeCols + ';">';
               for (var k = 0; k < list.length; k++) {
                 var item = list[k];
                 var activeCls = state.currentKey === item.key ? ' active' : '';
@@ -4475,7 +4536,7 @@
               var parsedElectiveSubj = splitSubjectBracket(cleanElectiveSubj);
 
               mainHtml =
-                '<div class="cell-main-text' +
+                '<div class="cell-main-text elective-group-highlight' +
                 movedCls +
                 '">' +
                 escapeHtml_(electiveHeader) +
@@ -4560,6 +4621,7 @@
 
         document.getElementById('ttTbody').innerHTML = tbodyHtml;
         syncModalTimetableView_();
+        autoFitSingleLineCells_(document.getElementById('ttTbody'));
         renderQuickChips();
 
         var elapsed = (performance.now() - t0).toFixed(2);
@@ -4574,6 +4636,76 @@
         document.getElementById('versionIndicator').textContent =
           '시트 동기화 버전: ' + (data.v || '-');
       }
+
+      /**
+       * 과목명·교사명·학급배지가 아무리 길어도 줄바꿈되거나 좌우로 잘리지 않도록
+       * 셀 내부 가용 폭(availW)에 맞춰 자간·폰트 크기·가로 배율(scaleX)을 동적으로 1행 자동 맞춤
+       */
+      function autoFitSingleLineCells_(containerEl) {
+        if (!containerEl) return;
+        var targets = containerEl.querySelectorAll(
+          '.tcc-subject, .tcc-bracket, .tcc-teacher, .tcc-class-label, .cell-main-text, .cell-bracket-sub, .cell-sub-info'
+        );
+        if (!targets || targets.length === 0) return;
+
+        for (var i = 0; i < targets.length; i++) {
+          var el = targets[i];
+          el.style.fontSize = '';
+          el.style.letterSpacing = '';
+          el.style.transform = '';
+
+          var cellEl = el.closest('.teaching-class-cell, .td-cell') || el.parentElement;
+          if (!cellEl) continue;
+          var cellW = cellEl.clientWidth;
+          if (!cellW || cellW <= 16) continue;
+
+          var isTcc = cellEl.classList.contains('teaching-class-cell');
+          var availW = Math.max(24, cellW - (isTcc ? 8 : 12));
+          var textW = el.offsetWidth || el.scrollWidth;
+          if (textW <= availW) continue;
+
+          // 1단계: 자간 미세 축소
+          el.style.letterSpacing = '-0.05em';
+          textW = el.offsetWidth || el.scrollWidth;
+          if (textW <= availW) continue;
+
+          // 2단계: 가용 폭 대비 텍스트 폭 비율로 폰트 크기 동적 축소
+          var computed = window.getComputedStyle(el);
+          var baseFont = parseFloat(computed.fontSize) || (isTcc ? 14 : 15);
+          var minFont = isTcc ? 8.5 : 9.5;
+          var ratio = (availW - 1) / textW;
+          var nextFont = Math.max(minFont, Math.floor(baseFont * ratio * 10) / 10);
+          el.style.fontSize = nextFont + 'px';
+
+          textW = el.offsetWidth || el.scrollWidth;
+          var guard = 0;
+          while (textW > availW && nextFont > minFont && guard < 6) {
+            nextFont = Math.max(minFont, Math.round((nextFont - 0.5) * 10) / 10);
+            el.style.fontSize = nextFont + 'px';
+            textW = el.offsetWidth || el.scrollWidth;
+            guard++;
+          }
+
+          // 3단계: 최소 폰트에서도 폭을 초과하는 초장문 과목명은 가로 스케일(scaleX)로 1행 완벽 수용
+          if (textW > availW && textW > 0) {
+            var scaleX = Math.max(0.55, Math.floor(((availW - 1) / textW) * 1000) / 1000);
+            el.style.transformOrigin = 'center center';
+            el.style.transform = 'scaleX(' + scaleX + ')';
+          }
+        }
+      }
+
+      window.addEventListener('resize', function () {
+        autoFitSingleLineCells_(document.getElementById('ttTbody'));
+        var zoomModal = document.getElementById('timetableZoomModal');
+        if (zoomModal && zoomModal.classList.contains('open')) {
+          autoFitSingleLineCells_(document.getElementById('ttModalTbody'));
+        }
+        var teachingModal = document.getElementById('teachingTeachersModal');
+        if (teachingModal && teachingModal.classList.contains('open')) {
+          autoFitSingleLineCells_(document.getElementById('teachingModalClassGrid'));
+        }
+      });
 
       function syncModalTimetableView_() {
         var modalThead = document.getElementById('ttModalThead');
@@ -4595,6 +4727,11 @@
         if (affTxt) subParts.push(escapeHtml_(affTxt));
         if (subRoleHtml) subParts.push(subRoleHtml);
         document.getElementById('modalSubMeta').innerHTML = subParts.join(' <span class="divider">·</span> ');
+
+        var zoomModal = document.getElementById('timetableZoomModal');
+        if (zoomModal && zoomModal.classList.contains('open')) {
+          autoFitSingleLineCells_(modalTbody);
+        }
       }
 
       window.openTimetableModal = function () {
@@ -4604,6 +4741,7 @@
           modal.classList.add('open');
           document.body.style.overflow = 'hidden';
         }
+        autoFitSingleLineCells_(document.getElementById('ttModalTbody'));
       };
 
       window.closeTimetableModal = function () {
@@ -5082,7 +5220,7 @@
         for (var g = 0; g < activeGrades.length; g++) {
           var gLabel = activeGrades[g];
           var list = gradeGroups[gLabel] || [];
-          var rowCols = Math.max(9, list.length || maxCols);
+          var rowCols = maxCols;
           html += '<div class="teaching-grade-row">';
           html += '<div class="teaching-grade-badge">' + escapeHtml_(gLabel) + '</div>';
           html +=
@@ -5171,7 +5309,7 @@
                   var cleanTccSubj = stripElectiveGroupPrefixClient_(info.subject || '');
                   var parsedElectiveTcc = splitSubjectBracket(cleanTccSubj);
                   html +=
-                    '<div class="tcc-subject' +
+                    '<div class="tcc-subject elective-group-highlight' +
                     movedCls +
                     '">' +
                     escapeHtml_(info.electiveGroup + '_선택') +
@@ -5224,6 +5362,12 @@
         }
 
         gridEl.innerHTML = html;
+        autoFitSingleLineCells_(gridEl);
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(function () {
+            autoFitSingleLineCells_(gridEl);
+          });
+        }
 
         if (countEl) {
           if (!hasQuery) {
@@ -5244,12 +5388,12 @@
         if (typeof dayIdx === 'number') state.teachingDayIdx = dayIdx;
         if (typeof periodIdx === 'number') state.teachingPeriodIdx = periodIdx;
         renderTimetable();
-        renderTeachingTeachersModalContent_();
         var modal = document.getElementById('teachingTeachersModal');
         if (modal) {
           modal.classList.add('open');
           document.body.style.overflow = 'hidden';
         }
+        renderTeachingTeachersModalContent_();
       };
 
       window.closeTeachingTeachersModal = function () {

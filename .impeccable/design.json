@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-02T01:15:50+09:00",
+  "generatedAt": "2026-11-06T19:36:00+09:00",
   "title": "Design System: 25-Timetable",
   "extensions": {
     "colorMeta": {
@@ -8,13 +8,19 @@
         "role": "primary",
         "displayName": "Emerald Green",
         "canonical": "#027046",
-        "tonalRamp": ["#EAF6F0", "#B6E2CE", "#048C58", "#027046", "#015434"]
+        "tonalRamp": ["#EAF6F0", "#DCFCE7", "#D1FAE5", "#B6E2CE", "#6EE7B7", "#048C58", "#027046", "#015434"]
       },
       "brand-stone": {
         "role": "neutral",
         "displayName": "Stone Gray",
         "canonical": "#313339",
-        "tonalRamp": ["#F4F6F8", "#D1D5DB", "#52525B", "#313339", "#111827"]
+        "tonalRamp": ["#F4F6F8", "#E5E7EB", "#D1D5DB", "#9CA3AF", "#52525B", "#313339", "#111827"]
+      },
+      "elective-highlighter": {
+        "role": "accent",
+        "displayName": "Pastel Lime Highlighter",
+        "canonical": "#D9F99D",
+        "tonalRamp": ["#ECFCCB", "#D9F99D", "#BEF264", "#1A2E05"]
       }
     },
     "typographyMeta": {

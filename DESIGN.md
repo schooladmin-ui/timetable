@@ -14,6 +14,18 @@ colors:
   ink-subtle: "#52525B"
   badge-yellow-bg: "#FEF08A"
   badge-yellow-text: "#713F12"
+  elective-hl-bg: "#D9F99D"
+  elective-hl-border: "#BEF264"
+  elective-hl-text: "#1A2E05"
+  semantic-danger-bg: "#FEF2F2"
+  semantic-danger-border: "#FCA5A5"
+  semantic-danger-text: "#B91C1C"
+  semantic-danger-strong: "#DC2626"
+  semantic-match-bg: "#DCFCE7"
+  semantic-match-tint: "#D1FAE5"
+  semantic-today-glow: "#6EE7B7"
+  border-neutral-light: "#E5E7EB"
+  ink-placeholder: "#9CA3AF"
 typography:
   display:
     fontFamily: "'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif"
@@ -96,6 +108,7 @@ components:
 | **Primary Tint** | `--main-tint-bg` | `#EAF6F0` | 모드 탭 트레이 배경, 교시 열 배경, 점심 시간 행 배경, 셀 호버 및 활성 토글 배경 |
 | **Structural Frame** | `--brand-stone` | `#313339` | 에디토리얼 상·하단 2px 구분선, 시간표 외곽 프레임, 좌측 상단 `교시` 코너 헤더, 공유 공강(`is-shared-free`) 강조 셀 |
 | **Status Accent** | `--badge-yellow-bg` | `#FEF08A` | `보강`·`교체`·`이동` 상태 배지 배경 (텍스트 `#713F12`, WCAG AA 고대비 충족) |
+| **Elective Highlighter** | `--elective-hl-bg` | `#D9F99D` | 선택과목 1행(`'O_선택'`) 파스텔 형광펜 마커 하이라이트 배경 (보더 `#BEF264`, 텍스트 `#1A2E05`, 글자 크기 유지) |
 
 ## Typography
 
