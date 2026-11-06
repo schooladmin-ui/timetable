@@ -349,6 +349,18 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
   - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
   - Impeccable 정적 스캐너 `detect` 안티패턴 0건 및 `doctor` 드리프트 0건 통과 (`No drift found`)
 
+### [2026-11-06 20:14] 업데이트 이력 (Commit ID: `PENDING`)
+- **날짜 및 시간 (KST)**: `2026-11-06 20:14`
+- **커밋 ID (Commit Hash)**: `PENDING`
+- **수정 내용 (Modification Details)**:
+  - **상단 통합 버튼 패널(`#quickChipsBar`) 세로 스크롤 연동 및 시간표 가시 영역 확대 (`index.html`)**:
+    - 기존 `position: sticky; top: 0;`이 적용된 `<header class="control-bar-wrap">` 내부에 포함되어 있던 `#quickChipsBar`를 헤더 외부의 일반 문서 흐름 영역(`#quickChipsBarWrap`)으로 분리
+    - `교사 시간표`, `공유 공강 확인`, `학급 시간표`에서 세로 스크롤 시 교사·교사 그룹·학급 선택 버튼 목록이 페이지와 함께 자연스럽게 위로 스크롤되어 메인 시간표 가시 영역이 넓어지도록 개선
+    - 검색창 포커스/패널 비활성 시 `renderQuickChips` 및 `setQuickChipsVisible_`에서 `#quickChipsBarWrap`의 `.is-hidden` 상태를 동기화하고, `@media print` 인쇄 시에도 자동 숨김 처리
+- **검증 결과 (Verification Results)**:
+  - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
+
+
 
 
 

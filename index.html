@@ -418,10 +418,20 @@
       font-weight: 700;
     }
 
+    .quick-chips-bar-wrap {
+      background: #FFFFFF;
+      border-bottom: 1px solid #E5E7EB;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .quick-chips-bar-wrap.is-hidden {
+      display: none !important;
+    }
+
     .quick-chips-bar {
       max-width: 1080px;
       margin: 0 auto;
-      padding: 6px 20px 12px;
+      padding: 8px 20px 12px;
       overflow-x: hidden;
     }
 
@@ -2130,6 +2140,7 @@
         padding: 0;
       }
       .control-bar-wrap,
+      .quick-chips-bar-wrap,
       .perf-status-bar,
       .free-finder-panel,
       .sheet-setup-panel,
@@ -2289,10 +2300,12 @@
         </div>
       </div>
     </div>
-
-    <!-- 통합 버튼 패널 (학급 3×n / 교사 목록 / 공강 교사 찾기 모두 동일 위치에 표시) -->
-    <div class="quick-chips-bar" id="quickChipsBar"></div>
   </header>
+
+  <!-- 통합 버튼 패널 (교사 시간표 / 공유 공강 확인 / 학급 시간표 세로 스크롤 연동 영역) -->
+  <div class="quick-chips-bar-wrap" id="quickChipsBarWrap">
+    <div class="quick-chips-bar" id="quickChipsBar"></div>
+  </div>
 
   <!-- ========================================================================
        메인 시간표 카드 (스프레드시트 주간시간표·학급시간표 실데이터 전용)
@@ -3899,14 +3912,24 @@
         }
 
         bar.innerHTML = html;
-        bar.classList.toggle('is-hidden', Boolean(state.hideQuickChips || !html));
+        var shouldHide = Boolean(state.hideQuickChips || !html);
+        bar.classList.toggle('is-hidden', shouldHide);
+        var wrapEl = document.getElementById('quickChipsBarWrap');
+        if (wrapEl) {
+          wrapEl.classList.toggle('is-hidden', shouldHide);
+        }
       }
 
       function setQuickChipsVisible_(visible) {
         state.hideQuickChips = !visible;
         var bar = document.getElementById('quickChipsBar');
+        var shouldHide = Boolean(!visible || !bar || !bar.innerHTML);
         if (bar) {
-          bar.classList.toggle('is-hidden', Boolean(!visible || !bar.innerHTML));
+          bar.classList.toggle('is-hidden', shouldHide);
+        }
+        var wrapEl = document.getElementById('quickChipsBarWrap');
+        if (wrapEl) {
+          wrapEl.classList.toggle('is-hidden', shouldHide);
         }
       }
 
