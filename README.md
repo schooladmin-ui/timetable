@@ -333,9 +333,9 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
 
-### [2026-11-06 19:59] 업데이트 이력 (Commit ID: `PENDING`)
+### [2026-11-06 19:59] 업데이트 이력 (Commit ID: `1318712`)
 - **날짜 및 시간 (KST)**: `2026-11-06 19:59`
-- **커밋 ID (Commit Hash)**: `PENDING`
+- **커밋 ID (Commit Hash)**: `1318712`
 - **수정 내용 (Modification Details)**:
   - **긴 과목명 1행 동적 자동 맞춤(`autoFitSingleLineCells_`) 및 줄바꿈/잘림 방지 (`index.html`)**:
     - 수업 교사 찾기 모달창(`.tcc-subject`, `.tcc-bracket`, `.tcc-teacher`, `.tcc-class-label`) 및 메인·확대 시간표(`.cell-main-text`, `.cell-bracket-sub`, `.cell-sub-info`)에 `white-space: nowrap; display: table; margin-left: auto; margin-right: auto;`를 적용하여 `언어생활탐구#`, `수학과제탐구#`, `데이터로탐구하는현대사회#`, `아동발달과부모#` 등 긴 과목명이나 특수문자(`#`)가 다음 행으로 내려가지 않도록 고정
