@@ -312,9 +312,9 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
   - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
   - 프로젝트 전체 파일 내 `'묶음'` 잔여 문자열 0건 확인
 
-### [2026-11-06 19:12] 업데이트 이력 (Commit ID: `PENDING`)
+### [2026-11-06 19:12] 업데이트 이력 (Commit ID: `291bcb8`)
 - **날짜 및 시간 (KST)**: `2026-11-06 19:12`
-- **커밋 ID (Commit Hash)**: `PENDING`
+- **커밋 ID (Commit Hash)**: `291bcb8`
 - **수정 내용 (Modification Details)**:
   - **2학년·3학년 선택과목 시트(`[20XX-X선택과목2학년]`, `[20XX-X선택과목3학년]`) 업로드 및 강의실-학급 정밀 매핑 (`Code.gs`, `index.html`)**:
     - `년도·학기 시간표 시트 추가 및 관리` 모달(`#projectManagerModal`)을 **`2 × 2` 4슬롯 그리드**(`[파일 1] 주간시간표`, `[파일 2] 학급시간표`, `[파일 3] 선택과목2학년`, `[파일 4] 선택과목3학년`)로 확장하고 `.xls`/`.xlsx`/`.csv`(UTF-8/EUC-KR 자동 감지) 개별 또는 동시 업로드를 지원(`tryParseCsvBytes_`, `saveSemesterSheetsToSpreadsheet`)
