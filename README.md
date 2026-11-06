@@ -22,6 +22,10 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 3. **5열 주간 그리드 블록형**: 단일 또는 복수의 `교시 | 월요일 | 화요일 | 수요일 | 목요일 | 금요일` 표 블록 구조
 4. **정규화 목록형**: `요일 | 교시 | 학급 | 과목 | 교사` 컬럼 테이블 구조
 - **양방향 교차 보완 (`crossEnrichTimetables_`)**: `[주간시간표]`와 `[학급시간표]`의 정보를 상호 대조하여 빠진 담당 교사명·과목명·담임 정보를 자동으로 채웁니다.
+- **2·3학년 선택과목 강의실(교실) 정밀 매핑 (`parseElectiveSubjectSheet_`, `applyElectiveClassroomMapping_`)**:
+  - **`[20XX-X선택과목2학년]`** 및 **`[20XX-X선택과목3학년]`** 시트 데이터를 기반으로, 선택과목 교시(`A_선택 ~ F_선택` 등)마다 실제 수업이 진행되는 강의실과 학급(`2학년 1반~9반 = 301호~309호`, `3학년 1반~9반 = 401호~409호`) 및 학년별 특별실(`2학년: 211호, 416호, 정보실` / `3학년: 211호, 315호, 정보실`)의 **교과명·교사명·강의실**을 정확히 매핑합니다.
+  - **학급 시간표 3행 표기**: 선택 교과 시간의 경우 학급 시간표 셀에 1행 **`O_선택`**(예: `B_선택`), 2행 **`교과명`**, 3행 **`교사명`** 구조로 표시됩니다.
+  - **교사 시간표 교실 단독 표기**: 선택 과목의 경우 교사 시간표 셀 하단에 학급명을 제외하고 실제 수업 **교실(`304호`, `406호`, `211호`, `정보실` 등)만** 깔끔하게 표시합니다.
 - **1교사 1버튼 자동 통합 (`cleanTeacherIdentity_`)**: 시트에 `'김동진(15)'`(시수 표기)와 `'김동진 (D_영문)'`(과목 표기)처럼 나뉘어 기록된 동일 교사를 **`김동진 (D_영문)`** 단일 버튼과 단일 시간표로 자동 병합합니다.
 
 ### 3. 일관된 상단 컨트롤 패널 & 양방향 탐색
@@ -307,5 +311,27 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
   - 프로젝트 전체 파일 내 `'묶음'` 잔여 문자열 0건 확인
+
+### [2026-11-06 19:12] 업데이트 이력 (Commit ID: `PENDING`)
+- **날짜 및 시간 (KST)**: `2026-11-06 19:12`
+- **커밋 ID (Commit Hash)**: `PENDING`
+- **수정 내용 (Modification Details)**:
+  - **2학년·3학년 선택과목 시트(`[20XX-X선택과목2학년]`, `[20XX-X선택과목3학년]`) 업로드 및 강의실-학급 정밀 매핑 (`Code.gs`, `index.html`)**:
+    - `년도·학기 시간표 시트 추가 및 관리` 모달(`#projectManagerModal`)을 **`2 × 2` 4슬롯 그리드**(`[파일 1] 주간시간표`, `[파일 2] 학급시간표`, `[파일 3] 선택과목2학년`, `[파일 4] 선택과목3학년`)로 확장하고 `.xls`/`.xlsx`/`.csv`(UTF-8/EUC-KR 자동 감지) 개별 또는 동시 업로드를 지원(`tryParseCsvBytes_`, `saveSemesterSheetsToSpreadsheet`)
+    - `parseElectiveSubjectSheet_`, `mapElectiveRoomToGradeClass_`, `detectElectiveGroupForGradeSlot_`, `applyElectiveClassroomMapping_`을 구현하여 2학년(`1반~9반 = 301호~309호` + `211호, 416호, 정보실`)과 3학년(`1반~9반 = 401호~409호` + `211호, 315호, 정보실`)의 선택과목 시간마다 실제 수업이 열리는 교실에 정확한 교과명과 담당 교사명이 매핑되도록 구현
+    - 3학년 등에서 교사 성명만 일치하는 일반 수업(예: 3학년 6반 수요일 4교시 김동진 진로 수업)이 선택과목 그룹(`B_선택` 등)으로 오탐지되지 않도록 `detectElectiveGroupForGradeSlot_`에서 교사+과목 동시 일치 조건 및 명시적 그룹 슬롯 중복 배정 방지(`explicitGroupSlotCounts`) 적용
+  - **존재하지 않는 가상 학급(`2학년 10반·11반`, `3학년 10반·12반`) 제거 및 실제 특별실(`211호`, `416호`, `315호`, `정보실`) 표시 (`Code.gs`, `index.html`)**:
+    - `finalizeSpecialRoomsAndCleanupVirtualClasses_` 및 `tryExtractClassKeyStrict_`를 통해 10반 이상 가상 학급을 제거하고, 학급 시간표 선택 칩 및 수업 교사 찾기 모달창에서 2학년은 `211호`, `416호`, `정보실`, 3학년은 `211호`, `315호`, `정보실`로 표시되도록 정규화
+  - **선택 과목 표시 형식 개선 (학급 시간표 3행 표기 & 교사 시간표 교실 단독 표기) (`index.html`)**:
+    - **학급 시간표**: 선택 교과 시간(`cell.eg`)에 1행 **`O_선택`**(예: `B_선택`), 2행 **`교과명`**, 3행 **`교사명`**의 3행 구조로 렌더링 및 HWPX/XLSX 내보내기 반영
+    - **교사 시간표**: `formatTeacherCellSubInfo_`를 추가하여 선택 과목의 경우 학급명(`2학년 4반` 등)을 함께 표시하지 않고 실제 수업 **교실(`304호`, `406호`, `211호`, `정보실` 등)만** 단독 표시되도록 개선
+  - **공유 공강 확인 상단 `'교사 그룹 ~ 그룹 삭제'` 헤더 1행 고정 및 모달 파일 슬롯별 우측 상단 `삭제` 버튼 추가 (`Code.gs`, `index.html`)**:
+    - `.teacher-groups-header`에 `flex-wrap: nowrap`과 `.group-save-feedback` 말줄임(`text-overflow: ellipsis`) 처리를 적용하여 저장 피드백 문구 길이에 관계없이 `'교사 그룹'`부터 `'그룹 삭제'`까지 항상 1행을 유지하도록 수정
+    - `년도·학기 시간표 시트 추가 및 관리` 모달 내 4개 파일창 우측 상단에 **`삭제` 버튼(`.proj-file-del-btn`, `handleDeleteProjectSlotFile`)**을 추가하고, 선택된 로컬 파일 해제 및 스프레드시트에 이미 업로드된 개별 시트 삭제(`deleteSingleRoleSheetOnServer`) 기능 구현
+  - **2파일 체제(`Code.gs` + `index.html`) 유지 및 클라이언트 중복 파서 제거를 통한 코드 경량화 (`index.html`)**:
+    - `Code.gs`를 시간표 파싱의 단일 진실 공급원(Single Source of Truth)으로 일원화하고 `index.html` 내 중복 파서 코드 약 2,170줄을 정리하여 유지보수성 향상
+- **검증 결과 (Verification Results)**:
+  - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
+
 
 
