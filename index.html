@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
-  <title>교사·학급 시간표 검색</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <title>교사·학생 시간표 검색</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     /* ==========================================================================
-       1. Design Tokens & Reset (단일 메인 테마 컬러: 녹색 #027046)
+       1. Design Tokens & Reset (교사: 녹색 #027046 / 학생: 스톤 그레이 #313339)
        ========================================================================== */
     :root {
       --brand-green: #027046;
       --brand-stone: #313339;
 
-      /* 메인 컬러: 녹색 #027046 고정 */
+      /* 기본 메인 컬러: 녹색 #027046 (교사 시간표 포털) */
       --main-color: #027046;
       --main-color-dark: #015434;
       --main-color-today: #048C58;
@@ -44,6 +45,89 @@
       --radius-pill: 999px;
 
       --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', '맑은 고딕', sans-serif;
+    }
+
+    /* 학생 시간표 포털 선택 시 메인 테마 컬러: 스톤 그레이 #313339 */
+    body[data-portal="student"] {
+      --main-color: #313339;
+      --main-color-dark: #1F2024;
+      --main-color-today: #4B5563;
+      --main-tint-bg: #F3F4F6;
+      --main-tint-border: #D1D5DB;
+      --main-focus-ring: rgba(49, 51, 57, 0.22);
+    }
+
+    body[data-portal="student"] #btnToggleSubTeacher,
+    body[data-portal="student"] #btnToggleMask,
+    body[data-portal="student"] .top-toggle-group,
+    body[data-portal="student"] #studentModeTabs,
+    body[data-portal="student"] #btnTopDownloadHwpx,
+    body[data-portal="student"] #btnTopDownloadXlsx,
+    body[data-portal="student"] #btnTopPrintPdf,
+    body[data-portal="student"] .control-row-actions {
+      display: none !important;
+    }
+
+    #btnStudentTopSync {
+      display: none;
+    }
+
+    body[data-portal="student"] #btnStudentTopSync {
+      display: inline-flex;
+    }
+
+    body[data-portal="student"] .control-row-search {
+      flex-wrap: nowrap;
+    }
+
+    /* 최상단 1×2 포털 선택 패널 ('교사 시간표' | '학생 시간표') */
+    .portal-switch-bar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 5px;
+      background: #E5E7EB;
+      border: 1.5px solid #D1D5DB;
+      border-radius: var(--radius-lg);
+      width: 100%;
+    }
+
+    .portal-switch-btn {
+      height: 42px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid transparent;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink-secondary);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.14s ease;
+    }
+
+    .portal-switch-btn:hover:not(.active) {
+      background: #FFFFFF;
+      border-color: #9CA3AF;
+      color: var(--ink-primary);
+    }
+
+    #btnPortalTeacher.active {
+      background: #027046;
+      color: #FFFFFF;
+      border-color: #015434;
+      box-shadow: 0 3px 10px rgba(2, 112, 70, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    #btnPortalStudent.active {
+      background: #313339;
+      color: #FFFFFF;
+      border-color: #1F2024;
+      box-shadow: 0 3px 10px rgba(49, 51, 57, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
     }
 
     * {
@@ -665,7 +749,7 @@
     }
 
     .group-chip-count {
-      font-size: 10.5px;
+      font-size: 12px;
       font-weight: 700;
       opacity: 0.85;
       flex-shrink: 0;
@@ -686,7 +770,7 @@
     }
 
     .q-chip {
-      border: 1px solid #D1D5DB;
+      border: 1px solid var(--main-tint-border);
       background: #FFFFFF;
       color: var(--ink-secondary);
       padding: 5px 4px;
@@ -706,7 +790,7 @@
     .q-chip.class-grid-chip {
       padding: 5px 2px;
       width: 100%;
-      font-size: 11.5px;
+      font-size: 12px;
       letter-spacing: -0.02em;
       text-align: center;
       overflow: hidden;
@@ -801,17 +885,7 @@
     }
 
     .top-slogan-banner {
-      background: var(--main-color-dark);
-      color: #FFFFFF;
-      text-align: center;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: -0.01em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      display: none !important;
     }
 
     .card-inner {
@@ -1113,7 +1187,7 @@
       border: 1px solid var(--elective-hl-border);
       color: var(--elective-hl-text) !important;
       padding: 0 6px;
-      border-radius: 5px;
+      border-radius: var(--radius-sm);
       margin-bottom: 2px;
       box-shadow: inset 0 -6px 0 rgba(190, 242, 100, 0.45);
       -webkit-print-color-adjust: exact;
@@ -1687,7 +1761,7 @@
       backdrop-filter: blur(3px);
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 8px;
     }
 
     .tt-modal-backdrop.open {
@@ -1695,8 +1769,8 @@
     }
 
     .tt-modal-dialog {
-      width: min(97vw, 1440px);
-      height: 94vh;
+      width: min(98vw, 1480px);
+      height: 96vh;
       background: #FFFFFF;
       border: 2px solid var(--brand-stone);
       border-radius: var(--radius-lg);
@@ -1710,8 +1784,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 14px 24px;
+      gap: 12px;
+      padding: 10px 20px;
       background: #FFFFFF;
       border-bottom: 2px solid var(--brand-stone);
       flex-shrink: 0;
@@ -1788,10 +1862,10 @@
     .tt-modal-body {
       flex: 1;
       min-height: 0;
-      padding: 16px 22px 20px;
+      padding: 10px 16px 12px;
       display: flex;
       flex-direction: column;
-      overflow: auto;
+      overflow: hidden;
       background: var(--bg-page);
     }
 
@@ -1802,7 +1876,7 @@
       background: #FFFFFF;
       border-radius: var(--radius-md);
       border: 1.5px solid var(--brand-stone);
-      overflow: hidden;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
     }
@@ -1815,34 +1889,44 @@
     }
 
     .tt-modal-table thead th {
-      height: 46px;
-      font-size: 15px;
+      height: 36px;
+      font-size: 14px;
     }
 
     .tt-modal-table tbody tr:not(.tr-lunch) td {
       height: auto;
+      padding: 3px 6px;
     }
 
     .tt-modal-table tbody tr.tr-lunch td {
-      height: 34px;
-      padding: 3px 8px;
+      height: 26px;
+      padding: 2px 8px;
     }
 
     .tt-modal-table .period-num {
-      font-size: 15px;
+      font-size: 14px;
+      line-height: 1.15;
     }
 
     .tt-modal-table .period-time {
-      font-size: 12.5px;
+      font-size: 12px;
+      margin-top: 1px;
     }
 
     .tt-modal-table .cell-main-text {
-      font-size: 17px;
+      font-size: 15px;
+      line-height: 1.18;
+    }
+
+    .tt-modal-table .cell-main-text.elective-group-highlight {
+      margin-bottom: 1px;
+      padding: 0 5px;
     }
 
     .tt-modal-table .cell-sub-info {
-      font-size: 13.5px;
-      margin-top: 5px;
+      font-size: 12.5px;
+      margin-top: 2px;
+      line-height: 1.15;
     }
 
     /* ==========================================================================
@@ -2134,11 +2218,184 @@
       background: #FEE2E2;
     }
 
+    /* ==========================================================================
+       8. 학생 시간표 포털 & 담임교사용 복수 학생 일괄 다운로드 전용 스타일
+       ========================================================================== */
+    .ac-badge.student-b {
+      background: #313339;
+      color: #FFFFFF;
+    }
+
+    .student-elective-summary-bar {
+      display: none;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: var(--main-tint-bg);
+      border: 1.5px solid var(--main-tint-border);
+      border-radius: var(--radius-md);
+    }
+
+    .student-elective-summary-bar.visible {
+      display: flex;
+    }
+
+    .student-elective-summary-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--main-color-dark);
+      margin-right: 4px;
+      white-space: nowrap;
+    }
+
+    .student-elective-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      background: #FFFFFF;
+      border: 1px solid #D1D5DB;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+
+    .student-elective-chip-grp {
+      font-weight: 800;
+      color: #FFFFFF;
+      background: var(--main-color);
+      border-radius: var(--radius-sm);
+      padding: 1px 5px;
+      font-size: 12px;
+    }
+
+    .student-elective-chip-subj {
+      font-weight: 700;
+      color: var(--ink-primary);
+    }
+
+    .student-portal-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .student-batch-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: nowrap;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #F9FAFB;
+      border: 1.5px solid #D1D5DB;
+      border-radius: var(--radius-md);
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .student-batch-toolbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .student-batch-left,
+    .student-batch-toolbar-left {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+      gap: 5px;
+    }
+
+    .student-batch-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-secondary);
+      margin-right: 2px;
+      white-space: nowrap;
+    }
+
+    .student-batch-right,
+    .student-batch-toolbar-right {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+      gap: 5px;
+    }
+
+    .student-batch-toolbar .util-btn {
+      height: 28px;
+      padding: 0 9px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .util-btn.student-batch-export-btn,
+    .batch-export-btn {
+      height: 28px;
+      padding: 0 9px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1.5px solid var(--main-color);
+      border-radius: var(--radius-md);
+      background: #FFFFFF;
+      color: var(--main-color-dark);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: all 0.12s ease;
+    }
+
+    .util-btn.student-batch-export-btn:hover:not(:disabled),
+    .batch-export-btn:hover:not(:disabled) {
+      background: var(--main-color);
+      color: #FFFFFF;
+    }
+
+    .util-btn.student-batch-export-btn:disabled,
+    .batch-export-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .student-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 5px;
+      width: 100%;
+    }
+
+    .q-chip.student-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .student-chip-text {
+      display: inline-block;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+
+    .student-batch-print-container {
+      display: none;
+    }
+
     @media print {
       body {
         background: #FFFFFF;
         padding: 0;
       }
+
       .control-bar-wrap,
       .quick-chips-bar-wrap,
       .perf-status-bar,
@@ -2148,77 +2405,128 @@
       .tt-modal-backdrop {
         display: none !important;
       }
+
       .sheet-container {
         max-width: 100%;
         margin: 0;
         padding: 0;
       }
+
       .timetable-card {
         border: none;
         box-shadow: none;
       }
+
       .tt-table thead th,
       .tt-table tbody td {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
+
+      body.is-batch-student-printing .sheet-container {
+        display: none !important;
+      }
+
+      body.is-batch-student-printing .student-batch-print-container {
+        display: block !important;
+        width: 100%;
+      }
+
+      .student-print-page {
+        page-break-after: always;
+        break-after: page;
+        padding: 0;
+        margin: 0;
+      }
+
+      .student-print-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
     }
 
     @media (max-width: 640px) {
+
       .grade-row-chips,
       .teacher-chips-wrap,
       .teacher-groups-wrap,
+      .student-chips-grid,
       .ff-results {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
+
       .free-modal-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
+
       .teaching-grade-cells {
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
+
       .card-inner {
         padding: 18px 14px;
       }
+
       .eh-year-text {
         font-size: 22px;
       }
+
       .eh-main-title {
         font-size: 24px;
       }
+
       .eh-school-class,
       .eh-teacher-homeroom {
         font-size: 22px;
       }
+
       .eh-school-class.is-subject-sub {
         font-size: 18px;
       }
+
       .tt-table col.col-period {
         width: 58px;
       }
+
       .tt-table col.col-day {
         width: calc((100% - 58px) / 5);
       }
+
       .cell-main-text {
         font-size: 13px;
       }
     }
   </style>
 </head>
-<body data-theme="green">
+
+<body data-theme="green" data-portal="teacher">
 
   <!-- ========================================================================
        상단 초고속 검색 & 뷰 컨트롤 바 (0ms In-Memory Search)
        ======================================================================== -->
   <header class="control-bar-wrap">
     <div class="control-bar">
+      <!-- 0행: 최상단 1×2 포털 선택 패널 ('교사 시간표' vs '학생 시간표') -->
+      <div class="portal-switch-bar" role="tablist" aria-label="교사 및 학생 시간표 포털 선택">
+        <button type="button" class="portal-switch-btn active" id="btnPortalTeacher" role="tab" aria-selected="true"
+          onclick="switchPortal('teacher')">
+          👨‍🏫 교사 시간표
+        </button>
+        <button type="button" class="portal-switch-btn" id="btnPortalStudent" role="tab" aria-selected="false"
+          onclick="switchPortal('student')">
+          🎓 학생 시간표
+        </button>
+      </div>
+
       <!-- 1행: 좌측(교사명, *표시 토글) + 중앙 초고속 초성 & 단축어 즉시 검색창 + 우측 년도·학기 드롭다운 -->
       <div class="control-row-search">
         <div class="top-toggle-group">
-          <button type="button" class="util-btn top-toggle-btn" id="btnToggleSubTeacher" aria-pressed="false" onclick="toggleShowTeacherInClass()" title="학급 시간표에서 담당 교사명 표시 전환">
+          <button type="button" class="util-btn top-toggle-btn" id="btnToggleSubTeacher" aria-pressed="false"
+            onclick="toggleShowTeacherInClass()" title="학급 시간표에서 담당 교사명 표시 전환">
             👤 교사명
           </button>
-          <button type="button" class="util-btn top-toggle-btn active-opt" id="btnToggleMask" aria-pressed="true" onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환">
+          <button type="button" class="util-btn top-toggle-btn active-opt" id="btnToggleMask" aria-pressed="true"
+            onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환">
             🔒 *표시
           </button>
         </div>
@@ -2226,22 +2534,11 @@
         <div class="search-box-container">
           <div class="search-input-wrap">
             <span class="search-icon">🔍</span>
-            <input
-              type="text"
-              id="searchInput"
-              class="search-input"
-              placeholder="학급(예: 1-1, 101) 또는 교사명·초성 즉시 검색..."
-              aria-label="학급 또는 교사 초성 검색"
-              autocomplete="off"
-            />
+            <input type="text" id="searchInput" class="search-input" placeholder="학급(예: 1-1, 101) 또는 교사명·초성 즉시 검색..."
+              aria-label="학급 또는 교사 초성 검색" autocomplete="off" />
             <span class="kbd-hint">/</span>
-            <button
-              type="button"
-              class="search-clear-btn"
-              id="searchClearBtn"
-              onclick="clearSearchInput()"
-              title="검색어 초기화 및 패널 다시 보기"
-            >
+            <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearchInput()"
+              title="검색어 초기화 및 패널 다시 보기">
               ✕ 초기화
             </button>
           </div>
@@ -2249,52 +2546,71 @@
         </div>
 
         <div class="project-bar-group">
-          <div class="project-select-wrap" title="년도·학기 선택 (20XX-X주간시간표 + 20XX-X학급시간표 시트 세트)">
+          <div class="project-select-wrap" title="년도·학기 선택 (주간 + 학급 + 선택과목 + 학생명렬 시트 세트)">
             <span class="project-select-icon">📅</span>
-            <select
-              id="projectSelect"
-              class="project-select"
-              onchange="handleProjectSelectChange(this.value)"
-              aria-label="년도 및 학기 선택"
-            >
+            <select id="projectSelect" class="project-select" onchange="handleProjectSelectChange(this.value)"
+              aria-label="년도 및 학기 선택">
               <option value="2025-2">2025년 2학기 (2025-2)</option>
               <option value="__OPEN_MODAL__">➕ 학기(엑셀) 등록/관리...</option>
             </select>
           </div>
+          <button type="button" class="util-btn top-toggle-btn" id="btnStudentTopSync" onclick="refreshFromSheet()"
+            title="스프레드시트 최신 데이터 동기화">
+            🔄 동기화
+          </button>
         </div>
       </div>
 
-      <!-- 2행: 좌측(교사 시간표 / 수업 교사 찾기 / 공강 교사 찾기 / 공유 공강 확인 / 학급 시간표) + 우측(동기화, HWPX, XLSX, PDF) -->
+      <!-- 2행: 좌측(교사 포털 5개 모드 탭 또는 학생 포털 2개 기능 탭) + 우측(동기화, HWPX, XLSX, PDF) -->
       <div class="control-row-actions">
-        <div class="mode-tabs" role="tablist">
-          <button type="button" class="mode-tab active" role="tab" aria-selected="true" id="tabTeacher" onclick="switchMode('teacher')">
+        <div class="mode-tabs" id="teacherModeTabs" role="tablist">
+          <button type="button" class="mode-tab active" role="tab" aria-selected="true" id="tabTeacher"
+            onclick="switchMode('teacher')">
             👨‍🏫 교사 시간표
           </button>
-          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabTeaching" onclick="switchMode('teaching')">
+          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabTeaching"
+            onclick="switchMode('teaching')">
             📖 수업 교사 찾기
           </button>
-          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabFree" onclick="switchMode('free')">
+          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabFree"
+            onclick="switchMode('free')">
             ✨ 공강 교사 찾기
           </button>
-          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabSharedFree" onclick="switchMode('shared_free')">
+          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabSharedFree"
+            onclick="switchMode('shared_free')">
             🤝 공유 공강 확인
           </button>
-          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabClass" onclick="switchMode('class')">
+          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabClass"
+            onclick="switchMode('class')">
             🏫 학급 시간표
           </button>
         </div>
 
+        <div class="mode-tabs" id="studentModeTabs" role="tablist" style="display: none;">
+          <button type="button" class="mode-tab active" role="tab" aria-selected="true" id="tabStudentSingle"
+            onclick="switchStudentSubMode('single')">
+            🎓 개인 시간표 조회 (학번·이름)
+          </button>
+          <button type="button" class="mode-tab" role="tab" aria-selected="false" id="tabStudentBatch"
+            onclick="switchStudentSubMode('batch')">
+            📋 복수 학생 선택 · 일괄 다운로드 (담임용)
+          </button>
+        </div>
+
         <div class="utility-btns">
-          <button type="button" class="util-btn" onclick="refreshFromSheet()" title="스프레드시트 주간시간표·학급시간표 최신 데이터 동기화">
+          <button type="button" class="util-btn" onclick="refreshFromSheet()" title="스프레드시트 최신 데이터 동기화">
             🔄 동기화
           </button>
-          <button type="button" class="util-btn" onclick="downloadHwpx()" title="편집 가능한 한글(HWPX) 파일 다운로드">
+          <button type="button" class="util-btn" id="btnTopDownloadHwpx" onclick="downloadHwpx()"
+            title="편집 가능한 한글(HWPX) 파일 다운로드">
             📄 HWPX
           </button>
-          <button type="button" class="util-btn" onclick="downloadXlsx()" title="편집 가능한 엑셀(XLSX) 파일 다운로드">
+          <button type="button" class="util-btn" id="btnTopDownloadXlsx" onclick="downloadXlsx()"
+            title="편집 가능한 엑셀(XLSX) 파일 다운로드">
             📊 XLSX
           </button>
-          <button type="button" class="util-btn" onclick="window.print()" title="A4 시간표 인쇄 및 PDF 저장">
+          <button type="button" class="util-btn" id="btnTopPrintPdf" onclick="handleTopPdfPrint()"
+            title="A4 시간표 인쇄 및 PDF 저장">
             🖨️ PDF
           </button>
         </div>
@@ -2302,13 +2618,13 @@
     </div>
   </header>
 
-  <!-- 통합 버튼 패널 (교사 시간표 / 공유 공강 확인 / 학급 시간표 세로 스크롤 연동 영역) -->
+  <!-- 통합 버튼 패널 (교사 시간표 / 공유 공강 확인 / 학급 시간표 / 학생 명단 세로 스크롤 연동 영역) -->
   <div class="quick-chips-bar-wrap" id="quickChipsBarWrap">
     <div class="quick-chips-bar" id="quickChipsBar"></div>
   </div>
 
   <!-- ========================================================================
-       메인 시간표 카드 (스프레드시트 주간시간표·학급시간표 실데이터 전용)
+       메인 시간표 카드 (스프레드시트 주간시간표·학급시간표·학생명렬 실데이터 전용)
        ======================================================================== -->
   <main class="sheet-container">
     <!-- 시트 미연결 또는 시트명 확인 필요 시 나타나는 설정 패널 -->
@@ -2318,17 +2634,13 @@
         스프레드시트의 <strong>[2025-2주간시간표]</strong> 시트와 <strong>[2025-2학급시간표]</strong> 시트 데이터를 불러옵니다.
       </div>
       <div class="setup-form-row">
-        <input
-          type="text"
-          id="spreadsheetUrlInput"
-          class="setup-url-input"
-          placeholder="구글 스프레드시트 주소(URL) 또는 문서 ID 붙여넣기..."
-          aria-label="구글 스프레드시트 URL 입력"
-        />
+        <input type="text" id="spreadsheetUrlInput" class="setup-url-input"
+          placeholder="구글 스프레드시트 주소(URL) 또는 문서 ID 붙여넣기..." aria-label="구글 스프레드시트 URL 입력" />
         <button type="button" class="setup-submit-btn" onclick="connectSpreadsheetUrl()">
           시트 연결 및 불러오기
         </button>
-        <button type="button" class="setup-submit-btn" style="background:var(--brand-stone)" onclick="openProjectModal()">
+        <button type="button" class="setup-submit-btn" style="background:var(--brand-stone)"
+          onclick="openProjectModal()">
           📂 엑셀(.xls/.xlsx) 세트 업로드
         </button>
       </div>
@@ -2346,15 +2658,10 @@
           <div class="eh-top-row">
             <div class="eh-year-text" id="headerSchoolYear">시간표</div>
             <div class="eh-right-meta-top">
-              <button
-                type="button"
-                class="eh-zoom-btn"
-                id="btnOpenZoomModal"
-                onclick="openTimetableModal()"
-                title="시간표 크게 보기 (모달창 열기)"
-                aria-label="시간표 크게 보기"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <button type="button" class="eh-zoom-btn" id="btnOpenZoomModal" onclick="openTimetableModal()"
+                title="시간표 크게 보기 (모달창 열기)" aria-label="시간표 크게 보기">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <circle cx="11" cy="11" r="7"></circle>
                   <line x1="21" y1="21" x2="16.35" y2="16.35"></line>
                   <line x1="11" y1="8" x2="11" y2="14"></line>
@@ -2371,6 +2678,8 @@
               <div class="eh-teacher-homeroom" id="headerSubRole"></div>
             </div>
           </div>
+
+          <div class="student-elective-summary-bar" id="studentElectiveSummaryBar"></div>
         </header>
 
         <!-- 주간 시간표 고정 격자 테이블 -->
@@ -2397,17 +2706,14 @@
     </div>
   </main>
 
+  <!-- 복수 학생 시간표 일괄 PDF 인쇄 전용 컨테이너 (1학생 = 1페이지) -->
+  <div id="studentBatchPrintContainer" class="student-batch-print-container"></div>
+
   <!-- ========================================================================
        시간표 전체화면 확대 모달창 (HWPX, XLSX, PDF, 닫기 버튼 포함)
        ======================================================================== -->
-  <div
-    class="tt-modal-backdrop"
-    id="timetableZoomModal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modalMainTitle"
-    onclick="handleModalBackdropClick(event)"
-  >
+  <div class="tt-modal-backdrop" id="timetableZoomModal" role="dialog" aria-modal="true"
+    aria-labelledby="modalMainTitle" onclick="handleModalBackdropClick(event)">
     <div class="tt-modal-dialog">
       <header class="tt-modal-header">
         <div class="tt-modal-title-group">
@@ -2422,7 +2728,7 @@
           <button type="button" class="util-btn" onclick="downloadXlsx()" title="편집 가능한 엑셀(XLSX) 파일 다운로드">
             📊 XLSX
           </button>
-          <button type="button" class="util-btn" onclick="window.print()" title="A4 시간표 인쇄 및 PDF 저장">
+          <button type="button" class="util-btn" onclick="handleTopPdfPrint()" title="A4 시간표 인쇄 및 PDF 저장">
             🖨️ PDF
           </button>
           <button type="button" class="tt-modal-close-btn" onclick="closeTimetableModal()" title="모달창 닫기 (Esc)">
@@ -2450,16 +2756,10 @@
   </div>
 
   <!-- ========================================================================
-       년도·학기 프로젝트(교사 시간표 + 주간 시간표 엑셀 세트) 업로드 및 관리 모달
+       년도·학기 프로젝트(6개 시트 세트) 업로드 및 관리 모달
        ======================================================================== -->
-  <div
-    class="tt-modal-backdrop"
-    id="projectManagerModal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="projModalTitle"
-    onclick="handleProjectModalBackdropClick(event)"
-  >
+  <div class="tt-modal-backdrop" id="projectManagerModal" role="dialog" aria-modal="true"
+    aria-labelledby="projModalTitle" onclick="handleProjectModalBackdropClick(event)">
     <div class="proj-modal-dialog">
       <header class="tt-modal-header">
         <div class="tt-modal-title-group">
@@ -2475,45 +2775,52 @@
       <div class="proj-modal-body">
         <section class="proj-section-card">
           <div class="proj-section-title">
-            <span>➕ 학기 시트 세트 추가 · 업데이트 (주간 + 학급 + 선택과목 2·3학년)</span>
+            <span>➕ 학기 시트 세트 추가 · 업데이트 (총 6개 파일: 주간 + 학급 + 선택과목 2·3학년 + 학생명렬 2·3학년)</span>
           </div>
           <div class="proj-section-desc">
-            <strong>주간시간표</strong>·<strong>학급시간표</strong> 및 <strong>선택과목2학년</strong>·<strong>선택과목3학년</strong> 파일(<code>.xls</code>, <code>.xlsx</code>, <code>.csv</code>)을 업로드하면 구글 스프레드시트에 <strong><code>20XX-X주간시간표</code></strong>, <strong><code>20XX-X학급시간표</code></strong>, <strong><code>20XX-X선택과목2학년</code></strong>, <strong><code>20XX-X선택과목3학년</code></strong> 시트(탭)로 저장되고 실제 수업 교실·교과·교사가 자동 매칭됩니다.
+            <strong>주간시간표</strong>·<strong>학급시간표</strong>, <strong>선택과목2학년</strong>·<strong>선택과목3학년</strong> 및
+            <strong>학생명렬2학년</strong>·<strong>학생명렬3학년</strong> 파일(<code>.xls</code>, <code>.xlsx</code>,
+            <code>.csv</code>)을 업로드하면 구글 스프레드시트에
+            <strong><code>20XX-X주간시간표</code></strong>, <strong><code>20XX-X학급시간표</code></strong>,
+            <strong><code>20XX-X선택과목2학년</code></strong>, <strong><code>20XX-X선택과목3학년</code></strong>,
+            <strong><code>20XX-X학생명렬2학년</code></strong>, <strong><code>20XX-X학생명렬3학년</code></strong> 시트(탭)로 저장되고 교사·학급·학생 개인 시간표가 자동 완성됩니다.
           </div>
 
           <div class="proj-name-row">
-            <label class="proj-field-label" for="projNameInput">년도·학기 선택 (시트명 자동 생성 규칙: <code>20XX-X주간시간표</code>, <code>20XX-X학급시간표</code>, <code>20XX-X선택과목2학년</code>, <code>20XX-X선택과목3학년</code>)</label>
+            <label class="proj-field-label" for="projNameInput">년도·학기 선택 (시트명 자동 생성 규칙: <code>20XX-X주간시간표</code>,
+              <code>20XX-X학급시간표</code>, <code>20XX-X선택과목2/3학년</code>, <code>20XX-X학생명렬2/3학년</code>)</label>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <select id="projYearSelect" class="proj-name-input" style="width:125px; cursor:pointer;" onchange="syncProjectNameFromSelects()">
+              <select id="projYearSelect" class="proj-name-input" style="width:125px; cursor:pointer;"
+                onchange="syncProjectNameFromSelects()">
                 <option value="2025년">2025년</option>
                 <option value="2026년" selected>2026년</option>
                 <option value="2027년">2027년</option>
                 <option value="2028년">2028년</option>
               </select>
-              <select id="projSemSelect" class="proj-name-input" style="width:115px; cursor:pointer;" onchange="syncProjectNameFromSelects()">
+              <select id="projSemSelect" class="proj-name-input" style="width:115px; cursor:pointer;"
+                onchange="syncProjectNameFromSelects()">
                 <option value="1학기" selected>1학기</option>
                 <option value="2학기">2학기</option>
               </select>
-              <input
-                type="text"
-                id="projNameInput"
-                class="proj-name-input"
-                style="flex:1; min-width:180px;"
-                value="2026-1"
-                placeholder="예: 2025-2, 2026-1"
-                oninput="updateSheetNamePreview_()"
-                autocomplete="off"
-              />
+              <input type="text" id="projNameInput" class="proj-name-input" style="flex:1; min-width:180px;"
+                value="2026-1" placeholder="예: 2025-2, 2026-1" oninput="updateSheetNamePreview_()" autocomplete="off" />
             </div>
             <div class="proj-preset-chips">
               <span class="chip-label">빠른 선택:</span>
-              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2025-1')">2025-1 (2025년 1학기)</button>
-              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2025-2')">2025-2 (2025년 2학기)</button>
-              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2026-1')">2026-1 (2026년 1학기)</button>
-              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2026-2')">2026-2 (2026년 2학기)</button>
+              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2025-1')">2025-1 (2025년
+                1학기)</button>
+              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2025-2')">2025-2 (2025년
+                2학기)</button>
+              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2026-1')">2026-1 (2026년
+                1학기)</button>
+              <button type="button" class="proj-preset-chip" onclick="fillPresetProjectName('2026-2')">2026-2 (2026년
+                2학기)</button>
             </div>
-            <div class="proj-file-sub" id="sheetNamePreview" style="font-weight:700; color:var(--main-color-dark); margin-top:2px;">
-              📌 생성될 스프레드시트 시트명: <strong>[2026-1주간시간표]</strong> · <strong>[2026-1학급시간표]</strong> · <strong>[2026-1선택과목2학년]</strong> · <strong>[2026-1선택과목3학년]</strong>
+            <div class="proj-file-sub" id="sheetNamePreview"
+              style="font-weight:700; color:var(--main-color-dark); margin-top:2px;">
+              📌 생성될 스프레드시트 시트명: <strong>[2026-1주간시간표]</strong> · <strong>[2026-1학급시간표]</strong> ·
+              <strong>[2026-1선택과목2학년]</strong> · <strong>[2026-1선택과목3학년]</strong> ·
+              <strong>[2026-1학생명렬2학년]</strong> · <strong>[2026-1학생명렬3학년]</strong>
             </div>
           </div>
 
@@ -2521,97 +2828,89 @@
             <label class="proj-file-box" id="boxWeeklyFile" for="fileWeeklyInput">
               <div class="proj-file-box-head">
                 <span class="proj-file-title">📅 [파일 1] 주간시간표 (.xls / .xlsx / .csv)</span>
-                <button
-                  type="button"
-                  class="proj-file-del-btn"
-                  id="btnDelWeeklyFile"
-                  onclick="handleDeleteProjectSlotFile(event, 'weekly')"
-                  title="주간시간표 업로드 파일/시트 삭제"
-                >
+                <button type="button" class="proj-file-del-btn" id="btnDelWeeklyFile"
+                  onclick="handleDeleteProjectSlotFile(event, 'weekly')" title="주간시간표 업로드 파일/시트 삭제">
                   삭제
                 </button>
               </div>
               <span class="proj-file-sub" id="subWeeklySheetLabel">스프레드시트 [2026-1주간시간표] 시트로 저장</span>
               <span class="proj-file-chosen" id="labelWeeklyFile">선택된 파일 없음</span>
-              <input
-                type="file"
-                id="fileWeeklyInput"
-                accept=".xls,.xlsx,.csv"
-                style="display:none"
-                onchange="handleProjectFileSelected('weekly', this)"
-              />
+              <input type="file" id="fileWeeklyInput" accept=".xls,.xlsx,.csv" style="display:none"
+                onchange="handleProjectFileSelected('weekly', this)" />
             </label>
 
             <label class="proj-file-box" id="boxClassFile" for="fileClassInput">
               <div class="proj-file-box-head">
                 <span class="proj-file-title">🏫 [파일 2] 학급시간표 (.xls / .xlsx / .csv)</span>
-                <button
-                  type="button"
-                  class="proj-file-del-btn"
-                  id="btnDelClassFile"
-                  onclick="handleDeleteProjectSlotFile(event, 'class')"
-                  title="학급시간표 업로드 파일/시트 삭제"
-                >
+                <button type="button" class="proj-file-del-btn" id="btnDelClassFile"
+                  onclick="handleDeleteProjectSlotFile(event, 'class')" title="학급시간표 업로드 파일/시트 삭제">
                   삭제
                 </button>
               </div>
               <span class="proj-file-sub" id="subClassSheetLabel">스프레드시트 [2026-1학급시간표] 시트로 저장</span>
               <span class="proj-file-chosen" id="labelClassFile">선택된 파일 없음</span>
-              <input
-                type="file"
-                id="fileClassInput"
-                accept=".xls,.xlsx,.csv"
-                style="display:none"
-                onchange="handleProjectFileSelected('class', this)"
-              />
+              <input type="file" id="fileClassInput" accept=".xls,.xlsx,.csv" style="display:none"
+                onchange="handleProjectFileSelected('class', this)" />
             </label>
 
             <label class="proj-file-box" id="boxElective2File" for="fileElective2Input">
               <div class="proj-file-box-head">
                 <span class="proj-file-title">📘 [파일 3] 선택과목2학년 (.xls / .xlsx / .csv)</span>
-                <button
-                  type="button"
-                  class="proj-file-del-btn"
-                  id="btnDelElective2File"
-                  onclick="handleDeleteProjectSlotFile(event, 'elective2')"
-                  title="선택과목2학년 업로드 파일/시트 삭제"
-                >
+                <button type="button" class="proj-file-del-btn" id="btnDelElective2File"
+                  onclick="handleDeleteProjectSlotFile(event, 'elective2')" title="선택과목2학년 업로드 파일/시트 삭제">
                   삭제
                 </button>
               </div>
-              <span class="proj-file-sub" id="subElective2SheetLabel">스프레드시트 [2026-1선택과목2학년] 시트로 저장 (301~309호·211·416·정보실)</span>
+              <span class="proj-file-sub" id="subElective2SheetLabel">스프레드시트 [2026-1선택과목2학년] 시트로 저장
+                (301~309호·211·416·정보실)</span>
               <span class="proj-file-chosen" id="labelElective2File">선택된 파일 없음 (선택 사항)</span>
-              <input
-                type="file"
-                id="fileElective2Input"
-                accept=".xls,.xlsx,.csv"
-                style="display:none"
-                onchange="handleProjectFileSelected('elective2', this)"
-              />
+              <input type="file" id="fileElective2Input" accept=".xls,.xlsx,.csv" style="display:none"
+                onchange="handleProjectFileSelected('elective2', this)" />
             </label>
 
             <label class="proj-file-box" id="boxElective3File" for="fileElective3Input">
               <div class="proj-file-box-head">
                 <span class="proj-file-title">📗 [파일 4] 선택과목3학년 (.xls / .xlsx / .csv)</span>
-                <button
-                  type="button"
-                  class="proj-file-del-btn"
-                  id="btnDelElective3File"
-                  onclick="handleDeleteProjectSlotFile(event, 'elective3')"
-                  title="선택과목3학년 업로드 파일/시트 삭제"
-                >
+                <button type="button" class="proj-file-del-btn" id="btnDelElective3File"
+                  onclick="handleDeleteProjectSlotFile(event, 'elective3')" title="선택과목3학년 업로드 파일/시트 삭제">
                   삭제
                 </button>
               </div>
-              <span class="proj-file-sub" id="subElective3SheetLabel">스프레드시트 [2026-1선택과목3학년] 시트로 저장 (401~409호·211·315·정보실)</span>
+              <span class="proj-file-sub" id="subElective3SheetLabel">스프레드시트 [2026-1선택과목3학년] 시트로 저장
+                (401~409호·211·315·정보실)</span>
               <span class="proj-file-chosen" id="labelElective3File">선택된 파일 없음 (선택 사항)</span>
-              <input
-                type="file"
-                id="fileElective3Input"
-                accept=".xls,.xlsx,.csv"
-                style="display:none"
-                onchange="handleProjectFileSelected('elective3', this)"
-              />
+              <input type="file" id="fileElective3Input" accept=".xls,.xlsx,.csv" style="display:none"
+                onchange="handleProjectFileSelected('elective3', this)" />
+            </label>
+
+            <label class="proj-file-box" id="boxStudent2File" for="fileStudent2Input">
+              <div class="proj-file-box-head">
+                <span class="proj-file-title">🎓 [파일 5] 학생명렬2학년 (.xls / .xlsx / .csv)</span>
+                <button type="button" class="proj-file-del-btn" id="btnDelStudent2File"
+                  onclick="handleDeleteProjectSlotFile(event, 'student2')" title="학생명렬2학년 업로드 파일/시트 삭제">
+                  삭제
+                </button>
+              </div>
+              <span class="proj-file-sub" id="subStudent2SheetLabel">스프레드시트 [2026-1학생명렬2학년] 시트로 저장
+                (2학년 학번·이름·선택과목 A~E)</span>
+              <span class="proj-file-chosen" id="labelStudent2File">선택된 파일 없음 (선택 사항)</span>
+              <input type="file" id="fileStudent2Input" accept=".xls,.xlsx,.csv" style="display:none"
+                onchange="handleProjectFileSelected('student2', this)" />
+            </label>
+
+            <label class="proj-file-box" id="boxStudent3File" for="fileStudent3Input">
+              <div class="proj-file-box-head">
+                <span class="proj-file-title">🎓 [파일 6] 학생명렬3학년 (.xls / .xlsx / .csv)</span>
+                <button type="button" class="proj-file-del-btn" id="btnDelStudent3File"
+                  onclick="handleDeleteProjectSlotFile(event, 'student3')" title="학생명렬3학년 업로드 파일/시트 삭제">
+                  삭제
+                </button>
+              </div>
+              <span class="proj-file-sub" id="subStudent3SheetLabel">스프레드시트 [2026-1학생명렬3학년] 시트로 저장
+                (3학년 학번·이름·선택과목 A~F·음/미)</span>
+              <span class="proj-file-chosen" id="labelStudent3File">선택된 파일 없음 (선택 사항)</span>
+              <input type="file" id="fileStudent3Input" accept=".xls,.xlsx,.csv" style="display:none"
+                onchange="handleProjectFileSelected('student3', this)" />
             </label>
           </div>
 
@@ -2636,29 +2935,17 @@
   <!-- ========================================================================
        공강 교사 찾기: 선택한 (요일 × 교시) 셀의 공강 교사 명단 모달창
        ======================================================================== -->
-  <div
-    class="tt-modal-backdrop"
-    id="freeTeachersModal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="freeModalTitle"
-    onclick="handleFreeModalBackdropClick(event)"
-  >
+  <div class="tt-modal-backdrop" id="freeTeachersModal" role="dialog" aria-modal="true" aria-labelledby="freeModalTitle"
+    onclick="handleFreeModalBackdropClick(event)">
     <div class="free-modal-dialog">
       <header class="tt-modal-header">
         <div class="tt-modal-title-group" style="align-items: center;">
           <span class="tt-modal-year-badge" id="freeModalBadge">공강 조회</span>
           <h2 class="tt-modal-main-title" id="freeModalTitle">공강 교사 명단</h2>
           <span class="tt-modal-sub-meta" id="freeModalSubMeta"></span>
-          <button
-            type="button"
-            class="util-btn top-toggle-btn active-opt"
-            id="btnFreeModalToggleMask"
-            aria-pressed="true"
-            onclick="toggleMaskTeacherName()"
-            title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환"
-            style="height: 36px; padding: 0 12px; font-size: 13.5px;"
-          >
+          <button type="button" class="util-btn top-toggle-btn active-opt" id="btnFreeModalToggleMask"
+            aria-pressed="true" onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환"
+            style="height: 36px; padding: 0 12px; font-size: 13.5px;">
             🔒 *표시
           </button>
         </div>
@@ -2680,29 +2967,17 @@
   <!-- ========================================================================
        수업 교사 찾기: 선택한 (요일 × 교시) 셀의 학급별 수업 교사 현황 모달창 (3×n 그리드 + 검색)
        ======================================================================== -->
-  <div
-    class="tt-modal-backdrop"
-    id="teachingTeachersModal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="teachingModalTitle"
-    onclick="handleTeachingModalBackdropClick(event)"
-  >
+  <div class="tt-modal-backdrop" id="teachingTeachersModal" role="dialog" aria-modal="true"
+    aria-labelledby="teachingModalTitle" onclick="handleTeachingModalBackdropClick(event)">
     <div class="teaching-modal-dialog">
       <header class="tt-modal-header">
         <div class="tt-modal-title-group" style="align-items: center;">
           <span class="tt-modal-year-badge" id="teachingModalBadge">수업 조회</span>
           <h2 class="tt-modal-main-title" id="teachingModalTitle">수업 교사 현황</h2>
           <span class="tt-modal-sub-meta" id="teachingModalSubMeta"></span>
-          <button
-            type="button"
-            class="util-btn top-toggle-btn active-opt"
-            id="btnTeachingModalToggleMask"
-            aria-pressed="true"
-            onclick="toggleMaskTeacherName()"
-            title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환"
-            style="height: 36px; padding: 0 12px; font-size: 13.5px;"
-          >
+          <button type="button" class="util-btn top-toggle-btn active-opt" id="btnTeachingModalToggleMask"
+            aria-pressed="true" onclick="toggleMaskTeacherName()" title="교사 성명 첫 글자·마지막 글자 * 마스킹 전환"
+            style="height: 36px; padding: 0 12px; font-size: 13.5px;">
             🔒 *표시
           </button>
         </div>
@@ -2715,23 +2990,12 @@
       <div class="teaching-modal-search-bar">
         <div class="teaching-search-input-wrap">
           <span class="search-icon" style="font-size: 15px; margin-right: 8px;">🔍</span>
-          <input
-            type="text"
-            id="teachingModalSearchInput"
-            class="teaching-search-input"
-            placeholder="교과명, 교사명(초성 지원) 또는 강의실(예: 301호, 정보실) 검색..."
-            aria-label="수업 모달 내 교과명, 교사명 또는 강의실 검색"
-            autocomplete="off"
-            oninput="handleTeachingModalSearch(this.value)"
-          />
-          <button
-            type="button"
-            class="search-clear-btn"
-            id="teachingModalSearchClearBtn"
-            onclick="clearTeachingModalSearch()"
-            title="검색어 초기화"
-            style="height: 26px; padding: 0 8px; font-size: 11.5px;"
-          >
+          <input type="text" id="teachingModalSearchInput" class="teaching-search-input"
+            placeholder="교과명, 교사명(초성 지원) 또는 강의실(예: 301호, 정보실) 검색..." aria-label="수업 모달 내 교과명, 교사명 또는 강의실 검색"
+            autocomplete="off" oninput="handleTeachingModalSearch(this.value)" />
+          <button type="button" class="search-clear-btn" id="teachingModalSearchClearBtn"
+            onclick="clearTeachingModalSearch()" title="검색어 초기화"
+            style="height: 26px; padding: 0 8px; font-size: 11.5px;">
             ✕ 초기화
           </button>
         </div>
@@ -2780,8 +3044,16 @@
           weekly: null,
           classFile: null,
           elective2File: null,
-          elective3File: null
+          elective3File: null,
+          student2File: null,
+          student3File: null
         },
+        portal: 'teacher',
+        studentSubMode: 'single',
+        currentStudentId: '',
+        studentBatchClassFilter: '',
+        selectedStudentClasses: [],
+        selectedStudentIds: [],
         theme: 'green',
         mode: 'teacher',
         currentKey: '',
@@ -2822,7 +3094,7 @@
       function formatTeacherName(name, forceFull) {
         var n = String(name || '').trim();
         if (!n) return '';
-        if (forceFull || !state.maskTeacherName) return n;
+        if (forceFull || state.portal === 'student' || !state.maskTeacherName) return n;
         if (n.length >= 2) {
           return '*' + n.slice(1, n.length - 1) + '*';
         }
@@ -2891,8 +3163,8 @@
               p === 3
                 ? lunchStart
                 : p + 1 < totalP
-                ? starts[p + 1]
-                : pStart + 60;
+                  ? starts[p + 1]
+                  : pStart + 60;
             if (nowMins >= pStart && nowMins < pEnd) {
               periodIdx = p;
               break;
@@ -2979,8 +3251,8 @@
           var itemTitle = c.isSpecialRoom
             ? (c.grade ? c.grade + '학년 ' : '') + c.label
             : roomName
-            ? c.label + ' (' + roomName + ')'
-            : c.label;
+              ? c.label + ' (' + roomName + ')'
+              : c.label;
 
           idx.push({
             orderIdx: idx.length,
@@ -3031,6 +3303,52 @@
             blob: searchBlob
           });
         });
+
+        var sList = getSortedStudentList_(data);
+        for (var si = 0; si < sList.length; si++) {
+          var st = sList[si];
+          if (!st || !st.id) continue;
+          var stName = st.name || st.n || '';
+          var stGrade = st.grade || st.g || 2;
+          var stClassNum = st.classNum || st.c || 1;
+          var stNum = st.num || st.no || 0;
+          var stCk = st.classKey || st.ck || (stGrade + '-' + stClassNum);
+          var stCho = extractChosung(stName);
+          var stClassLabel = stGrade + '학년 ' + stClassNum + '반';
+          var stSubLabel = stClassLabel + (stNum ? ' ' + stNum + '번' : '');
+          var stBlob = [
+            st.id,
+            stName,
+            stCho,
+            stCk,
+            stClassLabel,
+            stGrade + '0' + stClassNum
+          ]
+            .join('|')
+            .toLowerCase();
+
+          idx.push({
+            orderIdx: idx.length,
+            type: 'student',
+            key: st.id,
+            title: st.id + ' ' + stName,
+            studentName: stName,
+            studentClassKey: stCk,
+            sub: stSubLabel,
+            primaryFields: [
+              String(st.id || '').toLowerCase(),
+              String(stName || '').toLowerCase(),
+              String((st.id || '') + (stName || '')).toLowerCase(),
+              String((stName || '') + (st.id || '')).toLowerCase()
+            ].filter(Boolean),
+            secondaryFields: [
+              String(stCk || '').toLowerCase(),
+              String(stClassLabel || '').toLowerCase(),
+              String(stGrade + '0' + stClassNum).toLowerCase()
+            ].filter(Boolean),
+            blob: stBlob
+          });
+        }
 
         state.searchIndex = idx;
       }
@@ -3345,7 +3663,627 @@
           });
         }
 
+        normalizePayloadElectiveMetadata_(payload);
+        normalizePayloadStudents_(payload);
         normalizePayloadTeacherGroups_(payload);
+      }
+
+      /**
+       * 클라이언트 측 선택과목 슬롯(electiveGroupSlots) 및 코스(electiveCourses) 보정
+       */
+      function normalizePayloadElectiveMetadata_(payload) {
+        if (!payload) return;
+        var maxP = payload.maxPeriod || 7;
+        if (!payload.electiveGroupSlots) {
+          payload.electiveGroupSlots = { 2: {}, 3: {} };
+        }
+        if (!payload.electiveCourses) {
+          payload.electiveCourses = { 2: [], 3: [] };
+        }
+
+        [2, 3].forEach(function (gNum) {
+          var slotMap =
+            payload.electiveGroupSlots[gNum] || payload.electiveGroupSlots[String(gNum)] || {};
+          payload.electiveGroupSlots[gNum] = slotMap;
+
+          var courseList =
+            payload.electiveCourses[gNum] || payload.electiveCourses[String(gNum)] || [];
+
+          // 서버(Code.gs)에서 전달된 electiveGroups({ A: [...], B: [...] })를 electiveCourses 배열로 통합
+          var rawGroupObj =
+            payload.electiveGroups &&
+            (payload.electiveGroups[gNum] || payload.electiveGroups[String(gNum)]);
+          if (
+            (!Array.isArray(courseList) || courseList.length === 0) &&
+            rawGroupObj &&
+            typeof rawGroupObj === 'object'
+          ) {
+            courseList = [];
+            Object.keys(rawGroupObj).forEach(function (grpCode) {
+              var gArr = rawGroupObj[grpCode];
+              if (Array.isArray(gArr)) {
+                for (var ci = 0; ci < gArr.length; ci++) {
+                  var item = gArr[ci];
+                  if (!item) continue;
+                  if (!item.group) item.group = grpCode;
+                  courseList.push(item);
+                }
+              }
+            });
+          }
+          payload.electiveCourses[gNum] = courseList;
+
+          for (var p = 0; p < maxP; p++) {
+            for (var d = 0; d < 5; d++) {
+              var slotKey = p + '-' + d;
+              if (slotMap[slotKey]) continue;
+              var counts = {};
+              for (var cNum = 1; cNum <= 9; cNum++) {
+                var ck = gNum + '-' + cNum;
+                var cObj = payload.classes && payload.classes[ck];
+                var cell = cObj && cObj.grid && cObj.grid[p] ? cObj.grid[p][d] : null;
+                if (!cell) continue;
+                var eg = cell.eg || extractElectiveGroupHintClient_(cell.s || '');
+                if (eg) {
+                  counts[eg] = (counts[eg] || 0) + 1;
+                }
+              }
+              var bestEg = '';
+              var bestCnt = 0;
+              Object.keys(counts).forEach(function (k) {
+                if (counts[k] > bestCnt) {
+                  bestCnt = counts[k];
+                  bestEg = k;
+                }
+              });
+              if (bestEg) {
+                slotMap[slotKey] = bestEg;
+              }
+            }
+          }
+        });
+      }
+
+      function normalizeSingleStudentRecord_(raw, fallbackKey) {
+        if (!raw || typeof raw !== 'object') return null;
+        var sid = String(raw.id || fallbackKey || '')
+          .replace(/\.0+$/, '')
+          .replace(/[,\s]+/g, '');
+        if (!/^[123]\d{4}$/.test(sid)) return null;
+
+        var sName = String(raw.name || raw.n || '').trim();
+        if (/^\d+$/.test(sName) && raw.name && !/^\d+$/.test(String(raw.name).trim())) {
+          sName = String(raw.name).trim();
+        }
+        if (!sName || /^[\d.,\s+-]+$/.test(sName)) return null;
+
+        var gNum = parseInt(raw.grade || raw.g || sid.charAt(0), 10) || 2;
+        var cNum = parseInt(raw.classNum || raw.c || sid.substring(1, 3), 10) || 1;
+        var sNum = parseInt(raw.num || raw.no || sid.substring(3, 5), 10) || 1;
+        var cKey = String(raw.classKey || raw.ck || gNum + '-' + cNum).trim();
+
+        var rawChoices = raw.electives || raw.ch || {};
+        var choices = {};
+        if (rawChoices && typeof rawChoices === 'object') {
+          Object.keys(rawChoices).forEach(function (k) {
+            var v = String(rawChoices[k] || '').trim();
+            if (v && v !== '-' && v !== '—') {
+              choices[k] = v;
+            }
+          });
+        }
+
+        var artVal = String(raw.art || choices['음/미'] || choices.ART || '').trim();
+        if (artVal && artVal !== '-' && artVal !== '—') {
+          choices['음/미'] = artVal;
+          choices.ART = artVal;
+        } else {
+          artVal = '';
+        }
+
+        return {
+          id: sid,
+          name: sName,
+          n: sName,
+          grade: gNum,
+          g: gNum,
+          classNum: cNum,
+          c: cNum,
+          num: sNum,
+          no: sNum,
+          classKey: cKey,
+          ck: cKey,
+          electives: choices,
+          ch: choices,
+          art: artVal
+        };
+      }
+
+      function normalizePayloadStudents_(payload) {
+        if (!payload) return;
+        var rawStudents = payload.students;
+        var studentMap = {};
+        var list = [];
+        var classMap = {};
+
+        if (Array.isArray(rawStudents)) {
+          for (var i = 0; i < rawStudents.length; i++) {
+            var normItem = normalizeSingleStudentRecord_(rawStudents[i], '');
+            if (!normItem) continue;
+            if (!studentMap[normItem.id]) {
+              list.push(normItem);
+            }
+            studentMap[normItem.id] = normItem;
+          }
+        } else if (rawStudents && typeof rawStudents === 'object') {
+          Object.keys(rawStudents).forEach(function (k) {
+            var normItem = normalizeSingleStudentRecord_(rawStudents[k], k);
+            if (!normItem) return;
+            if (!studentMap[normItem.id]) {
+              list.push(normItem);
+            }
+            studentMap[normItem.id] = normItem;
+          });
+        }
+
+        list.sort(function (a, b) {
+          return String(a.id || '').localeCompare(String(b.id || ''), 'ko');
+        });
+        for (var j = 0; j < list.length; j++) {
+          var st = list[j];
+          if (!classMap[st.ck]) classMap[st.ck] = [];
+          classMap[st.ck].push(st.id);
+        }
+        payload.students = studentMap;
+        payload.studentList = list;
+        payload.studentClassMap = classMap;
+      }
+
+      function getSortedStudentList_(data) {
+        if (!data) return [];
+        if (Array.isArray(data.studentList) && data.studentList.length > 0) {
+          return data.studentList;
+        }
+        if (data.students && typeof data.students === 'object') {
+          normalizePayloadStudents_(data);
+          return data.studentList || [];
+        }
+        return [];
+      }
+
+      /**
+       * 학생 선택과목명 정규화 (특수기호 *, #, 괄호, 분반코드 E1/E2/F1/F2 제거)
+       */
+      function normalizeStudentSubjectForMatch_(subjStr) {
+        return stripElectiveGroupPrefixClient_(subjStr || '')
+          .replace(/[*#]+/g, '')
+          .replace(/\([^)]*\)/g, '')
+          .replace(/[A-H][1-9]$/i, '')
+          .replace(/\s+/g, '')
+          .replace(/Ⅰ/g, '1')
+          .replace(/Ⅱ/g, '2')
+          .trim();
+      }
+
+      function isStudentSubjectMatchClient_(chosenSubj, courseSubj) {
+        var a = normalizeStudentSubjectForMatch_(chosenSubj);
+        var b = normalizeStudentSubjectForMatch_(courseSubj);
+        if (!a || !b) return false;
+        if (a === b) return true;
+
+        var numA = a.match(/([12])$/);
+        var numB = b.match(/([12])$/);
+        if (numA && numB && numA[1] !== numB[1]) {
+          return false;
+        }
+
+        if (a.charAt(0) !== b.charAt(0)) {
+          return false;
+        }
+        if (a.indexOf(b) === 0 || b.indexOf(a) === 0) {
+          return true;
+        }
+
+        var shorter = a.length <= b.length ? a : b;
+        var longer = a.length <= b.length ? b : a;
+        if (shorter.length >= 2) {
+          var pos = 0;
+          var allFound = true;
+          for (var i = 0; i < shorter.length; i++) {
+            var idx = longer.indexOf(shorter.charAt(i), pos);
+            if (idx === -1) {
+              allFound = false;
+              break;
+            }
+            pos = idx + 1;
+          }
+          if (allFound) return true;
+        }
+        return false;
+      }
+
+      function isElectiveCourseActiveOnDayClient_(course, dayIdx) {
+        if (!course) return false;
+        if (Array.isArray(course.dayFilter) && course.dayFilter.length > 0) {
+          if (course.dayFilter.indexOf(dayIdx) === -1) return false;
+        }
+        if (Array.isArray(course.excludeDays) && course.excludeDays.length > 0) {
+          if (course.excludeDays.indexOf(dayIdx) !== -1) return false;
+        }
+        return true;
+      }
+
+      /**
+       * 학생이 선택한 그룹(A~F) 과목명(예: '윤리와 사상* E1', '사회문화F2', '환경, 논술')을
+       * 해당 요일(dayIdx)과 교시(periodIdx)에 운영되는 실제 수업(과목, 강의실, 담당교사)으로 매칭
+       */
+      function matchStudentElectiveCourse_(data, studentObj, groupCode, chosenRaw, dayIdx, periodIdx) {
+        var gNum = studentObj && Number(studentObj.g) === 3 ? 3 : 2;
+        var rawChoice = String(chosenRaw || '').trim();
+        if (!rawChoice) return null;
+
+        // 분반 코드 추출 (예: '윤리와 사상* E1' -> secIdx=0, '사회문화F2' -> secIdx=1)
+        var secMatch = rawChoice.match(/([A-H])([1-9])$/i);
+        var secCode = secMatch ? secMatch[1].toUpperCase() + secMatch[2] : '';
+        var secIdx = secMatch ? parseInt(secMatch[2], 10) - 1 : -1;
+
+        var allGradeCourses =
+          (data &&
+            data.electiveCourses &&
+            (data.electiveCourses[gNum] || data.electiveCourses[String(gNum)])) ||
+          [];
+
+        var dayGroupCourses = [];
+        for (var i = 0; i < allGradeCourses.length; i++) {
+          var c = allGradeCourses[i];
+          if (!c || c.group !== groupCode) continue;
+          if (!isElectiveCourseActiveOnDayClient_(c, dayIdx)) continue;
+          dayGroupCourses.push(c);
+        }
+
+        // 1순위: 요일 분리 복합 과목(예: '환경, 논술', '중국문화*, 논술', '프로그래밍*, 논술', '인문학적상상여행, 논술')
+        if (rawChoice.indexOf(',') !== -1) {
+          var normFullChoice = normalizeStudentSubjectForMatch_(rawChoice);
+          for (var fc = 0; fc < dayGroupCourses.length; fc++) {
+            var fCourse = dayGroupCourses[fc];
+            var normCourseFull = normalizeStudentSubjectForMatch_(
+              fCourse.fullRowSubject || fCourse.rawSubject || fCourse.subject || ''
+            );
+            if (normCourseFull && normCourseFull === normFullChoice) {
+              return {
+                subject: fCourse.subject,
+                teacher: fCourse.teacher || '',
+                room: fCourse.room || '',
+                group: groupCode
+              };
+            }
+          }
+          // fullRowSubject가 없는 경우 쉼표 분리된 개별 과목(예: ['환경', '논술']) 중 해당 요일에 개설된 과목 매칭
+          var splitChoices = rawChoice
+            .split(',')
+            .map(function (p) {
+              return p.trim();
+            })
+            .filter(Boolean);
+          for (var sp = 0; sp < splitChoices.length; sp++) {
+            for (var dc = 0; dc < dayGroupCourses.length; dc++) {
+              if (isStudentSubjectMatchClient_(splitChoices[sp], dayGroupCourses[dc].subject)) {
+                return {
+                  subject: dayGroupCourses[dc].subject,
+                  teacher: dayGroupCourses[dc].teacher || '',
+                  room: dayGroupCourses[dc].room || '',
+                  group: groupCode
+                };
+              }
+            }
+          }
+        }
+
+        // 2순위: 분반 코드(E1/E2, F1/F2)가 명시된 과목 매칭
+        var matchedGroupCourses = [];
+        for (var mc = 0; mc < dayGroupCourses.length; mc++) {
+          var cand = dayGroupCourses[mc];
+          if (secCode) {
+            var rawCandSubj = String(cand.rawSubject || cand.subject || '')
+              .replace(/\s+/g, '')
+              .toUpperCase();
+            if (rawCandSubj.indexOf(secCode) !== -1) {
+              return {
+                subject: cand.subject,
+                teacher: cand.teacher || '',
+                room: cand.room || '',
+                group: groupCode
+              };
+            }
+          }
+          if (isStudentSubjectMatchClient_(rawChoice, cand.subject)) {
+            matchedGroupCourses.push(cand);
+          }
+        }
+
+        if (matchedGroupCourses.length > 0) {
+          var picked =
+            secIdx >= 0 && secIdx < matchedGroupCourses.length
+              ? matchedGroupCourses[secIdx]
+              : matchedGroupCourses[0];
+          return {
+            subject: picked.subject,
+            teacher: picked.teacher || '',
+            room: picked.room || '',
+            group: groupCode
+          };
+        }
+
+        // 3순위: 학급시간표 및 특별실의 (periodIdx, dayIdx) 실시간 셀 스캔 폴백
+        var slotCandidates = [];
+        var cKeys = getSortedClassKeys(data && data.classes);
+        for (var ckIdx = 0; ckIdx < cKeys.length; ckIdx++) {
+          var cObj = data.classes[cKeys[ckIdx]];
+          if (!cObj || cObj.grade !== gNum || !cObj.grid || !cObj.grid[periodIdx]) continue;
+          var cCell = cObj.grid[periodIdx][dayIdx];
+          if (!cCell || !cCell.s) continue;
+          var cSubjClean = stripElectiveGroupPrefixClient_(cCell.s);
+          if (rawChoice.indexOf(',') !== -1) {
+            var parts = rawChoice.split(',');
+            for (var pi = 0; pi < parts.length; pi++) {
+              if (isStudentSubjectMatchClient_(parts[pi], cSubjClean)) {
+                slotCandidates.push({
+                  subject: cSubjClean,
+                  teacher: cCell.t || '',
+                  room: cCell.r || cObj.room || getDefaultRoomForClassKey_(cObj.key),
+                  group: groupCode
+                });
+              }
+            }
+          } else if (isStudentSubjectMatchClient_(rawChoice, cSubjClean)) {
+            slotCandidates.push({
+              subject: cSubjClean,
+              teacher: cCell.t || '',
+              room: cCell.r || cObj.room || getDefaultRoomForClassKey_(cObj.key),
+              group: groupCode
+            });
+          }
+        }
+
+        if (slotCandidates.length > 0) {
+          return secIdx >= 0 && secIdx < slotCandidates.length
+            ? slotCandidates[secIdx]
+            : slotCandidates[0];
+        }
+
+        // 매칭되는 개설 강좌가 없을 때 학생의 선택과목명 자체를 그대로 표시
+        return {
+          subject: rawChoice.replace(/[*#]+/g, '').trim(),
+          teacher: '',
+          room: '',
+          group: groupCode
+        };
+      }
+
+      /**
+       * 특정 학생(studentObj)의 소속 학급 기본 시간표와 선택과목(A~F, 음/미)을 합성하여
+       * 7교시 × 5요일 개인 맞춤형 시간표 그리드 생성
+       */
+      function buildStudentPersonalTimetable_(data, studentObj) {
+        if (!data || !studentObj) return null;
+        var maxP = data.maxPeriod || 7;
+        var gNum = Number(studentObj.grade || studentObj.g) === 3 ? 3 : 2;
+        var cKey = studentObj.classKey || studentObj.ck || gNum + '-' + (studentObj.classNum || studentObj.c || 1);
+        var baseClass = data.classes && data.classes[cKey] ? data.classes[cKey] : null;
+        var homeroomRoom = (baseClass && baseClass.room) || getDefaultRoomForClassKey_(cKey);
+        var slotMap =
+          (data.electiveGroupSlots &&
+            (data.electiveGroupSlots[gNum] || data.electiveGroupSlots[String(gNum)])) ||
+          {};
+        var choices = studentObj.electives || studentObj.ch || {};
+        var artChoice = choices['음/미'] || choices.ART || studentObj.art || '';
+        var electiveDetails = {};
+
+        var grid = [];
+        for (var p = 0; p < maxP; p++) {
+          var row = [];
+          for (var d = 0; d < 5; d++) {
+            var baseCell =
+              baseClass && baseClass.grid && baseClass.grid[p] ? baseClass.grid[p][d] : null;
+            var grp =
+              slotMap[p + '-' + d] ||
+              (baseCell && (baseCell.eg || extractElectiveGroupHintClient_(baseCell.s || ''))) ||
+              '';
+
+            if (grp && choices[grp]) {
+              var resolved = matchStudentElectiveCourse_(
+                data,
+                studentObj,
+                grp,
+                choices[grp],
+                d,
+                p
+              );
+              if (resolved) {
+                var resolvedRoom = resolved.room || homeroomRoom;
+                if (!electiveDetails[grp]) {
+                  electiveDetails[grp] = {
+                    subject: resolved.subject,
+                    teacher: resolved.teacher || '',
+                    room: resolvedRoom
+                  };
+                }
+                row.push({
+                  s: resolved.subject,
+                  t: resolved.teacher,
+                  c: cKey,
+                  r: resolvedRoom,
+                  eg: grp,
+                  st: baseCell && baseCell.st ? baseCell.st : '',
+                  cc: 0
+                });
+                continue;
+              }
+            }
+
+            if (baseCell && (baseCell.s || baseCell.c)) {
+              var baseSubj = String(baseCell.s || '').trim();
+              var baseTeacher = String(baseCell.t || '').trim();
+              var baseRoom = baseCell.r || homeroomRoom;
+
+              // 음악/미술 시간인데 학급 시간표 셀이 '음악/미술' 또는 '음/미' 등 통합 표기인 경우 학생 개인 선택 반영
+              if (
+                !grp &&
+                artChoice &&
+                (baseSubj.indexOf('음악') !== -1 ||
+                  baseSubj.indexOf('미술') !== -1 ||
+                  baseSubj.indexOf('음/미') !== -1)
+              ) {
+                baseSubj = artChoice;
+                if (!electiveDetails['음/미']) {
+                  electiveDetails['음/미'] = {
+                    subject: artChoice,
+                    teacher: baseTeacher,
+                    room: baseRoom
+                  };
+                }
+              }
+
+              row.push({
+                s: baseSubj,
+                t: baseTeacher,
+                c: cKey,
+                r: baseRoom,
+                eg: grp || '',
+                st: baseCell.st || '',
+                cc: baseCell.cc || 0
+              });
+            } else {
+              row.push(null);
+            }
+          }
+          grid.push(row);
+        }
+
+        return {
+          student: studentObj,
+          baseClass: baseClass,
+          homeroom: (baseClass && baseClass.homeroom) || '',
+          homeroomRoom: homeroomRoom,
+          electiveDetails: electiveDetails,
+          grid: grid
+        };
+      }
+
+      /**
+       * 학생 1명의 개인 시간표를 HWPX / XLSX / PDF 내보내기용 표준 모델로 변환
+       */
+      function buildStudentExportModel_(data, studentObj) {
+        if (!data || !studentObj) return null;
+        var personal = buildStudentPersonalTimetable_(data, studentObj);
+        if (!personal) return null;
+
+        var meta = data.meta || {};
+        var schoolYear = formatSchoolYearSemester_(meta, data);
+        var days = (data.days || ['월', '화', '수', '목', '금']).map(function (d) {
+          var s = String(d || '');
+          return s.indexOf('요일') !== -1 ? s : s + '요일';
+        });
+        var maxP = data.maxPeriod || 7;
+        var pTimes = meta.periodTimes || [];
+
+        var stGrade = studentObj.grade || studentObj.g || 2;
+        var stClass = studentObj.classNum || studentObj.c || 1;
+        var stNum = studentObj.num || studentObj.no || 0;
+        var stName = studentObj.name || studentObj.n || '';
+
+        var affiliation =
+          stGrade +
+          '학년 ' +
+          stClass +
+          '반 ' +
+          (stNum ? stNum + '번 ' : '') +
+          stName +
+          ' (' +
+          studentObj.id +
+          ')';
+
+        var subRoleParts = [];
+        if (personal.homeroom) {
+          subRoleParts.push('담임 | ' + formatTeacherName(personal.homeroom, false));
+        }
+        var ch = studentObj.electives || studentObj.ch || {};
+        var chSummary = [];
+        ['A', 'B', 'C', 'D', 'E', 'F'].forEach(function (gKey) {
+          if (ch[gKey]) {
+            chSummary.push(gKey + ':' + ch[gKey]);
+          }
+        });
+        var artTxt = ch['음/미'] || ch.ART || studentObj.art || '';
+        if (artTxt) {
+          chSummary.push('음/미:' + artTxt);
+        }
+        var subRole = subRoleParts.join(' · ');
+
+        var rows = [];
+        for (var p = 0; p < maxP; p++) {
+          var pLabel = (p + 1) + '교시';
+          var pTime = pTimes[p] || '';
+          var cells = [];
+
+          for (var col = 0; col < 5; col++) {
+            var cell = personal.grid[p] ? personal.grid[p][col] : null;
+            if (!cell || !cell.s) {
+              cells.push({ main: '—', main2: '', sub: '' });
+              continue;
+            }
+            if (cell.eg) {
+              var elecSubParts = [];
+              if (cell.r) elecSubParts.push(cell.r);
+              if (cell.t && !cell.cc) elecSubParts.push(formatTeacherName(cell.t, true));
+              var mainTxt = (cell.st ? '[' + cell.st + '] ' : '') + cell.eg + '_선택';
+              var cleanSubj = stripElectiveGroupPrefixClient_(cell.s);
+              cells.push({
+                main: mainTxt,
+                main2: cleanSubj,
+                sub: elecSubParts.join(' · ')
+              });
+            } else {
+              var regSubParts = [stGrade + '학년 ' + stClass + '반'];
+              if (cell.t && !cell.cc) regSubParts.push(formatTeacherName(cell.t, true));
+              var parsed = splitSubjectBracket(cell.s);
+              var mainRegular = (cell.st ? '[' + cell.st + '] ' : '') + parsed.main;
+              if (parsed.bracket) mainRegular += ' ' + parsed.bracket;
+              cells.push({
+                main: mainRegular,
+                main2: '',
+                sub: regSubParts.join(' · ')
+              });
+            }
+          }
+
+          rows.push({
+            periodLabel: pLabel,
+            periodTime: pTime,
+            cells: cells
+          });
+        }
+
+        var safeFileTag = String(studentObj.id + '_' + stName).replace(
+          /[\\/:*?"<>|\s]+/g,
+          '_'
+        );
+
+        return {
+          isStudentModel: true,
+          student: studentObj,
+          studentObj: studentObj,
+          personal: personal,
+          schoolYear: schoolYear,
+          mainTitle: '학생 개인 시간표',
+          affiliation: affiliation,
+          subRole: subRole,
+          electiveSummaryText: chSummary.join(' / '),
+          days: days,
+          rows: rows,
+          fileBaseName: safeFileTag + '_학생시간표',
+          sheetTabName: safeFileTag.slice(0, 31)
+        };
       }
 
       function getActiveGroupPrefix_(data) {
@@ -3382,7 +4320,7 @@
           var normPrefix = String(prefix || '2026-2').trim() || '2026-2';
           map[normPrefix] = Array.isArray(groups) ? groups : [];
           localStorage.setItem(TEACHER_GROUPS_STORAGE_KEY, JSON.stringify(map));
-        } catch (e) {}
+        } catch (e) { }
       }
 
       function sanitizeTeacherGroupsArray_(rawGroups) {
@@ -3629,6 +4567,192 @@
         var data = state.data;
         var html = '';
 
+        if (state.portal === 'student') {
+          var allStudents = getSortedStudentList_(data);
+          var validSelectedIds = (state.selectedStudentIds || []).filter(function (sid) {
+            return Boolean(data.students && data.students[sid]);
+          });
+          state.selectedStudentIds = validSelectedIds;
+
+          if (allStudents.length > 0) {
+            html += '<div class="student-portal-panel">';
+            var classCountMap = {};
+            var grade2Classes = [];
+            var grade3Classes = [];
+            for (var si = 0; si < allStudents.length; si++) {
+              var stItem = allStudents[si];
+              var ck = stItem.classKey || (stItem.grade + '-' + stItem.classNum);
+              if (!classCountMap[ck]) {
+                classCountMap[ck] = 0;
+                if (Number(stItem.grade) === 2) {
+                  grade2Classes.push(ck);
+                } else if (Number(stItem.grade) === 3) {
+                  grade3Classes.push(ck);
+                }
+              }
+              classCountMap[ck]++;
+            }
+
+            var validSelectedClasses = (state.selectedStudentClasses || []).filter(function (ck) {
+              return Boolean(classCountMap[ck]);
+            });
+            state.selectedStudentClasses = validSelectedClasses;
+            var selectedClassSet = {};
+            for (var sci = 0; sci < validSelectedClasses.length; sci++) {
+              selectedClassSet[validSelectedClasses[sci]] = true;
+            }
+
+            var maxClassCols = Math.max(1, grade2Classes.length, grade3Classes.length);
+            html += '<div class="class-grade-grid" style="--grade-chip-cols: ' + maxClassCols + ';">';
+
+            if (grade2Classes.length > 0) {
+              html += '<div class="grade-chip-row">';
+              html += '<span class="grade-row-badge">2학년</span>';
+              html += '<div class="grade-row-chips" style="--grade-chip-cols: ' + grade2Classes.length + ';">';
+              for (var g2i = 0; g2i < grade2Classes.length; g2i++) {
+                var cKey2 = grade2Classes[g2i];
+                var act2 = selectedClassSet[cKey2] ? ' active' : '';
+                html +=
+                  '<button type="button" class="q-chip class-grid-chip' +
+                  act2 +
+                  '" onclick="setStudentBatchClassFilter(\'' +
+                  escapeSingleQuote_(cKey2) +
+                  '\')">' +
+                  escapeHtml_(cKey2 + '반 (' + classCountMap[cKey2] + ')') +
+                  '</button>';
+              }
+              html += '</div></div>';
+            }
+
+            if (grade3Classes.length > 0) {
+              html += '<div class="grade-chip-row">';
+              html += '<span class="grade-row-badge">3학년</span>';
+              html += '<div class="grade-row-chips" style="--grade-chip-cols: ' + grade3Classes.length + ';">';
+              for (var g3i = 0; g3i < grade3Classes.length; g3i++) {
+                var cKey3 = grade3Classes[g3i];
+                var act3 = selectedClassSet[cKey3] ? ' active' : '';
+                html +=
+                  '<button type="button" class="q-chip class-grid-chip' +
+                  act3 +
+                  '" onclick="setStudentBatchClassFilter(\'' +
+                  escapeSingleQuote_(cKey3) +
+                  '\')">' +
+                  escapeHtml_(cKey3 + '반 (' + classCountMap[cKey3] + ')') +
+                  '</button>';
+              }
+              html += '</div></div>';
+            }
+            html += '</div>';
+
+            var filteredStudents =
+              validSelectedClasses.length > 0
+                ? allStudents.filter(function (st) {
+                    return Boolean(selectedClassSet[st.classKey]);
+                  })
+                : [];
+
+            var selCnt = validSelectedIds.length;
+            var exportTargetCnt = selCnt > 0 ? selCnt : (state.currentStudentId && data.students[state.currentStudentId] ? 1 : 0);
+            var exportBtnDisabled = exportTargetCnt === 0 ? ' disabled' : '';
+            var selectAllDisabled = filteredStudents.length === 0 ? ' disabled' : '';
+            var classScopeText =
+              validSelectedClasses.length === 0
+                ? '학급 미선택 · 선택 <strong>' + selCnt + '명</strong>'
+                : validSelectedClasses.length === 1
+                  ? validSelectedClasses[0] + '반 ' + filteredStudents.length + '명 중 <strong>' + selCnt + '명 선택됨</strong>'
+                  : validSelectedClasses.length + '개 학급 ' + filteredStudents.length + '명 중 <strong>' + selCnt + '명 선택됨</strong>';
+
+            html += '<div class="student-batch-toolbar">';
+            html += '<div class="student-batch-toolbar-left">';
+            html +=
+              '<span class="student-batch-title">🎓 학생 명단 (' +
+              classScopeText +
+              ')</span>';
+            html +=
+              '<button type="button" class="util-btn"' +
+              selectAllDisabled +
+              ' onclick="selectAllStudentsInCurrentFilter()" title="현재 선택된 학급 학생 전원을 일괄 선택합니다">✓ 현재 목록 전원 선택 (' +
+              filteredStudents.length +
+              '명)</button>';
+            if (selCnt > 0 || validSelectedClasses.length > 0) {
+              html +=
+                '<button type="button" class="util-btn chip-reset-btn" onclick="clearSelectedStudents()">✕ 선택 초기화</button>';
+            }
+            html += '</div>';
+
+            html += '<div class="student-batch-toolbar-right">';
+            html +=
+              '<button type="button" class="util-btn student-batch-export-btn"' +
+              exportBtnDisabled +
+              ' onclick="downloadBatchStudentHwpx()" title="선택된 학생들의 개인 시간표를 1인 1페이지 한글(.hwpx) 파일로 다운로드합니다">📄 선택 학생 HWPX (' +
+              exportTargetCnt +
+              '명)</button>';
+            html +=
+              '<button type="button" class="util-btn student-batch-export-btn"' +
+              exportBtnDisabled +
+              ' onclick="downloadBatchStudentXlsx()" title="선택된 학생들의 개인 시간표를 학생별 시트 탭으로 구성된 엑셀(.xlsx) 파일로 다운로드합니다">📊 선택 학생 XLSX (' +
+              exportTargetCnt +
+              '명)</button>';
+            html +=
+              '<button type="button" class="util-btn student-batch-export-btn"' +
+              exportBtnDisabled +
+              ' onclick="printBatchStudentPdf()" title="선택된 학생들의 개인 시간표를 1인 1페이지 A4 PDF로 인쇄/저장합니다">🖨️ 선택 학생 PDF (' +
+              exportTargetCnt +
+              '명)</button>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="student-chips-grid">';
+            for (var fIdx = 0; fIdx < filteredStudents.length; fIdx++) {
+              var stObj = filteredStudents[fIdx];
+              var isViewing = state.currentStudentId === stObj.id;
+              var isBatchChecked = validSelectedIds.indexOf(stObj.id) !== -1;
+              var chipCls = 'q-chip student-chip';
+              if (isViewing) chipCls += ' is-viewing';
+              if (isViewing || isBatchChecked) chipCls += ' active is-batch-checked';
+              var clickFn = "toggleStudentSelection('" + escapeSingleQuote_(stObj.id) + "')";
+              var chipTip =
+                stObj.id +
+                ' ' +
+                stObj.name +
+                ' (' +
+                stObj.grade +
+                '학년 ' +
+                stObj.classNum +
+                '반 ' +
+                stObj.num +
+                '번) — 클릭하여 학생 선택/해제 및 시간표 조회';
+              var stLabel = stObj.id + ' ' + stObj.name;
+              html +=
+                '<button type="button" class="' +
+                chipCls +
+                '" onclick="' +
+                clickFn +
+                '" title="' +
+                escapeHtml_(chipTip) +
+                '">' +
+                '<span class="student-chip-text">' +
+                escapeHtml_(stLabel) +
+                '</span>' +
+                '</button>';
+            }
+            html += '</div>';
+            html += '</div>';
+          }
+
+          bar.innerHTML = html;
+          var shouldHideStudent = Boolean(state.hideQuickChips || !html);
+          bar.classList.toggle('is-hidden', shouldHideStudent);
+          var wrapStudentEl = document.getElementById('quickChipsBarWrap');
+          if (wrapStudentEl) {
+            wrapStudentEl.classList.toggle('is-hidden', shouldHideStudent);
+          }
+          if (!shouldHideStudent) {
+            autoFitSingleLineCells_(bar);
+          }
+          return;
+        }
+
         if (state.mode === 'class') {
           var cKeys = getSortedClassKeys(data.classes);
           if (cKeys.length > 0) {
@@ -3844,11 +4968,11 @@
                 var grpTitle = state.isDeletingTeacherGroup
                   ? '[' + grp.name + '] 그룹 삭제하기'
                   : grp.name +
-                    ' (' +
-                    grpKeys.length +
-                    '명): ' +
-                    (grpMemberNames || '해당 학기 교사 없음') +
-                    ' — 클릭하여 일괄 선택/해제';
+                  ' (' +
+                  grpKeys.length +
+                  '명): ' +
+                  (grpMemberNames || '해당 학기 교사 없음') +
+                  ' — 클릭하여 일괄 선택/해제';
                 var grpAction = state.isDeletingTeacherGroup
                   ? "deleteTeacherGroup('" + escapeSingleQuote_(grp.name) + "')"
                   : "toggleTeacherGroup('" + escapeSingleQuote_(grp.name) + "')";
@@ -3941,11 +5065,11 @@
 
         var prefixSource = String(
           state.activeProjectId ||
-            (data && data.activeProjectId) ||
-            (data &&
-              data.foundSheets &&
-              (data.foundSheets.weekly || data.foundSheets.classSheet)) ||
-            ''
+          (data && data.activeProjectId) ||
+          (data &&
+            data.foundSheets &&
+            (data.foundSheets.weekly || data.foundSheets.classSheet)) ||
+          ''
         );
         var pMatch = prefixSource.match(/(20\d{2})-([12])/);
         if (!yearStr) {
@@ -3970,8 +5094,8 @@
         var cEntityRef = cell.c && data && data.classes ? data.classes[cell.c] : null;
         var isElectiveCell = Boolean(
           cell.eg ||
-            extractElectiveGroupHintClient_(cell.s || '') ||
-            (cEntityRef && cEntityRef.isSpecialRoom)
+          extractElectiveGroupHintClient_(cell.s || '') ||
+          (cEntityRef && cEntityRef.isSpecialRoom)
         );
         if (isElectiveCell) {
           var electiveRoom =
@@ -4003,7 +5127,7 @@
         if (!data) return;
 
         var setupPanel = document.getElementById('sheetSetupPanel');
-        if (data.ok === false) {
+        if (data.ok === false && state.portal !== 'student') {
           setupPanel.classList.add('active');
           document.getElementById('setupTitle').textContent = '⚠️ 스프레드시트 확인 필요';
           document.getElementById('setupDesc').textContent =
@@ -4013,36 +5137,14 @@
         }
 
         var meta = data.meta || {};
-        var sheetInfoText = '';
-        if (data.foundSheets) {
-          var foundArr = [];
-          if (data.foundSheets.weekly) foundArr.push('[' + data.foundSheets.weekly + ']');
-          if (data.foundSheets.classSheet) foundArr.push('[' + data.foundSheets.classSheet + ']');
-          if (data.foundSheets.elective2Sheet) {
-            foundArr.push('[' + data.foundSheets.elective2Sheet + ']');
-          }
-          if (data.foundSheets.elective3Sheet) {
-            foundArr.push('[' + data.foundSheets.elective3Sheet + ']');
-          }
-          if (
-            data.foundSheets.teacherGroupSheet &&
-            Array.isArray(data.teacherGroups) &&
-            data.teacherGroups.length > 0
-          ) {
-            foundArr.push('[' + data.foundSheets.teacherGroupSheet + ']');
-          }
-          if (foundArr.length > 0) {
-            sheetInfoText = '연동 시트: ' + foundArr.join(' · ');
-          }
-        }
-        document.getElementById('sloganText').textContent =
-          meta.slogan || sheetInfoText || '초고속 주간시간표 · 학급시간표 검색';
+        document.getElementById('sloganText').textContent = '';
 
         document.getElementById('headerSchoolYear').textContent =
           formatSchoolYearSemester_(meta, data);
 
         var cKeys = getSortedClassKeys(data.classes);
         var tKeys = getSortedTeacherKeys(data.teachers);
+        var sList = getSortedStudentList_(data);
 
         if (state.mode === 'class' && cKeys.length === 0 && tKeys.length > 0) {
           state.mode = 'teacher';
@@ -4057,9 +5159,9 @@
           (state.mode === 'teaching' &&
             Boolean(
               state.currentKey &&
-                data.classes &&
-                data.classes[state.currentKey] &&
-                (!data.teachers || !data.teachers[state.currentKey])
+              data.classes &&
+              data.classes[state.currentKey] &&
+              (!data.teachers || !data.teachers[state.currentKey])
             ));
         var targetObj = getActiveTargetObject_(data);
 
@@ -4071,7 +5173,263 @@
         var mainTitleEl = document.getElementById('headerMainTitle');
         var affEl = document.getElementById('headerAffiliation');
         var subRoleEl = document.getElementById('headerSubRole');
+        var summaryBarEl = document.getElementById('studentElectiveSummaryBar');
         subRoleEl.style.fontSize = '';
+
+        if (state.portal === 'student') {
+          var studentObj =
+            state.currentStudentId && data.students ? data.students[state.currentStudentId] : null;
+          if (!studentObj) {
+            state.currentStudentId = '';
+            mainTitleEl.textContent = '학생 개인 시간표';
+            affEl.classList.remove('is-subject-sub');
+            affEl.textContent = meta.schoolName ? meta.schoolName : '';
+            subRoleEl.style.fontSize = '18px';
+            subRoleEl.textContent =
+              sList.length > 0
+                ? '학번(예: 20101) 또는 학생 이름을 검색하거나 위 학생 명단에서 클릭하세요'
+                : '학번(예: 20101) 또는 학생 이름을 검색해 주세요';
+            if (summaryBarEl) {
+              summaryBarEl.classList.remove('active');
+              summaryBarEl.innerHTML = '';
+            }
+            renderEmptyGridTable_(days, maxP, pTimes, liveSlot);
+            syncModalTimetableView_();
+            renderQuickChips();
+
+            var elapsedStEmpty = (performance.now() - t0).toFixed(2);
+            document.getElementById('perfIndicator').textContent =
+              '⚡ 초고속 렌더링 완료 (' +
+              elapsedStEmpty +
+              'ms · 학급 ' +
+              cKeys.length +
+              '개 / 교사 ' +
+              tKeys.length +
+              '명 / 학생 ' +
+              sList.length +
+              '명)';
+            document.getElementById('versionIndicator').textContent =
+              '시트 동기화 버전: ' + (data.v || '-');
+            return;
+          }
+
+          var personal = buildStudentPersonalTimetable_(data, studentObj);
+          mainTitleEl.textContent = '학생 개인 시간표';
+          affEl.classList.remove('is-subject-sub');
+          affEl.textContent =
+            (meta.schoolName ? meta.schoolName + ' ' : '') +
+            studentObj.grade +
+            '학년 ' +
+            studentObj.classNum +
+            '반 ' +
+            (studentObj.num ? studentObj.num + '번 ' : '') +
+            studentObj.name +
+            ' (' +
+            studentObj.id +
+            ')';
+          if (personal && personal.homeroom) {
+            subRoleEl.innerHTML =
+              '담임 <span class="divider">|</span> ' +
+              escapeHtml_(formatTeacherName(personal.homeroom, false));
+          } else {
+            subRoleEl.textContent = '';
+          }
+
+          if (summaryBarEl) {
+            var groupOrder = ['A', 'B', 'C', 'D', 'E', 'F', '음/미'];
+            var summaryHtml = '';
+            for (var gi = 0; gi < groupOrder.length; gi++) {
+              var gCode = groupOrder[gi];
+              var rawChoice =
+                studentObj.electives && studentObj.electives[gCode]
+                  ? String(studentObj.electives[gCode]).trim()
+                  : '';
+              if (!rawChoice) continue;
+              var matchedMeta =
+                personal && personal.electiveDetails ? personal.electiveDetails[gCode] : null;
+              var metaParts = [];
+              if (matchedMeta && matchedMeta.room) metaParts.push(matchedMeta.room);
+              if (matchedMeta && matchedMeta.teacher) {
+                metaParts.push(formatTeacherName(matchedMeta.teacher, false));
+              }
+              summaryHtml +=
+                '<div class="student-elective-chip">' +
+                '<span class="sec-group">' +
+                escapeHtml_(gCode === '음/미' ? '음·미' : gCode + '군') +
+                '</span>' +
+                '<span class="sec-subj">' +
+                escapeHtml_(rawChoice) +
+                '</span>' +
+                (metaParts.length > 0
+                  ? '<span class="sec-meta">(' + escapeHtml_(metaParts.join('·')) + ')</span>'
+                  : '') +
+                '</div>';
+            }
+            summaryBarEl.innerHTML = summaryHtml;
+            summaryBarEl.classList.toggle('active', Boolean(summaryHtml));
+          }
+
+          var stTheadHtml = '<tr><th class="th-period-corner">교시</th>';
+          for (var std = 0; std < days.length; std++) {
+            var stTodayThCls = std === liveSlot.dayIdx ? ' class="th-today"' : '';
+            var stRawDay = String(days[std] || '');
+            var stDayLabel = stRawDay.indexOf('요일') !== -1 ? stRawDay : stRawDay + '요일';
+            stTheadHtml += '<th' + stTodayThCls + '>' + stDayLabel + '</th>';
+          }
+          stTheadHtml += '</tr>';
+          document.getElementById('ttThead').innerHTML = stTheadHtml;
+
+          var stTbodyHtml = '';
+          for (var stp = 0; stp < maxP; stp++) {
+            var stPLabel = (stp + 1) + '교시';
+            var stPTimeStr = pTimes[stp] || '';
+            var stIsCurrentPeriod = liveSlot.dayIdx !== -1 && stp === liveSlot.periodIdx;
+
+            stTbodyHtml += '<tr>';
+            stTbodyHtml +=
+              '<td class="td-period' +
+              (stIsCurrentPeriod ? ' is-current-period' : '') +
+              '">' +
+              '<div class="period-num">' +
+              stPLabel +
+              '</div>' +
+              (stPTimeStr ? '<div class="period-time">' + escapeHtml_(stPTimeStr) + '</div>' : '') +
+              '</td>';
+
+            for (var stCol = 0; stCol < 5; stCol++) {
+              var stCell =
+                personal && personal.grid && personal.grid[stp] ? personal.grid[stp][stCol] : null;
+              var stCellClasses = ['td-cell'];
+              if (stCol === liveSlot.dayIdx && stp === liveSlot.periodIdx) {
+                stCellClasses.push('is-current-slot');
+              }
+
+              if (!stCell || (!stCell.s && !stCell.c)) {
+                stTbodyHtml +=
+                  '<td class="' +
+                  stCellClasses.join(' ') +
+                  '"><span class="cell-empty-dash">—</span></td>';
+                continue;
+              }
+
+              var stParsedSubj = splitSubjectBracket(stCell.s || stCell.c || '');
+              var stStatusHtml = stCell.st
+                ? '<div><span class="status-pill">' + escapeHtml_(stCell.st) + '</span></div>'
+                : '';
+              var stMovedCls = stCell.st === '이동' ? ' is-moved-origin' : '';
+              var stEgCode = stCell.eg || '';
+
+              var stMainHtml = '';
+              var stBracketHtml = '';
+              var stSubInfoHtml = '';
+
+              if (stEgCode) {
+                stMainHtml =
+                  '<div class="cell-main-text elective-group-highlight' +
+                  stMovedCls +
+                  '">' +
+                  escapeHtml_(stEgCode + '_선택') +
+                  '</div>';
+                if (stParsedSubj.main) {
+                  stMainHtml +=
+                    '<div class="cell-main-text' +
+                    stMovedCls +
+                    '">' +
+                    escapeHtml_(stParsedSubj.main) +
+                    '</div>';
+                }
+                if (stParsedSubj.bracket) {
+                  stBracketHtml =
+                    '<div class="cell-bracket-sub">' +
+                    escapeHtml_(stParsedSubj.bracket) +
+                    '</div>';
+                }
+                var elecSubParts = [];
+                if (stCell.r) elecSubParts.push(stCell.r);
+                if (stCell.t && !stCell.cc) {
+                  elecSubParts.push(formatTeacherName(stCell.t, false));
+                }
+                if (elecSubParts.length > 0) {
+                  stSubInfoHtml =
+                    '<div class="cell-sub-info">' +
+                    escapeHtml_(elecSubParts.join(' · ')) +
+                    '</div>';
+                }
+              } else {
+                stMainHtml =
+                  '<div class="cell-main-text' +
+                  stMovedCls +
+                  '">' +
+                  escapeHtml_(stParsedSubj.main) +
+                  '</div>';
+                stBracketHtml = stParsedSubj.bracket
+                  ? '<div class="cell-bracket-sub">' + escapeHtml_(stParsedSubj.bracket) + '</div>'
+                  : '';
+                var regSubParts = [studentObj.grade + '학년 ' + studentObj.classNum + '반'];
+                if (stCell.t && !stCell.cc) {
+                  regSubParts.push(formatTeacherName(stCell.t, true));
+                }
+                if (regSubParts.length > 0) {
+                  stSubInfoHtml =
+                    '<div class="cell-sub-info">' +
+                    escapeHtml_(regSubParts.join(' · ')) +
+                    '</div>';
+                }
+              }
+
+              stTbodyHtml +=
+                '<td class="' +
+                stCellClasses.join(' ') +
+                '">' +
+                stStatusHtml +
+                stMainHtml +
+                stBracketHtml +
+                stSubInfoHtml +
+                '</td>';
+            }
+
+            stTbodyHtml += '</tr>';
+
+            if (stp === 3 && maxP > 4) {
+              var stLunchCls =
+                liveSlot.dayIdx !== -1 && liveSlot.isLunch
+                  ? ' class="tr-lunch is-current-lunch"'
+                  : ' class="tr-lunch"';
+              stTbodyHtml +=
+                '<tr' +
+                stLunchCls +
+                '>' +
+                '<td class="td-period td-lunch-period"><div class="period-num">점심</div></td>' +
+                '<td class="td-cell td-lunch-cell" colspan="5">점심 시간</td>' +
+                '</tr>';
+            }
+          }
+
+          document.getElementById('ttTbody').innerHTML = stTbodyHtml;
+          syncModalTimetableView_();
+          autoFitSingleLineCells_(document.getElementById('ttTbody'));
+          renderQuickChips();
+
+          var elapsedSt = (performance.now() - t0).toFixed(2);
+          document.getElementById('perfIndicator').textContent =
+            '⚡ 초고속 렌더링 완료 (' +
+            elapsedSt +
+            'ms · 학급 ' +
+            cKeys.length +
+            '개 / 교사 ' +
+            tKeys.length +
+            '명 / 학생 ' +
+            sList.length +
+            '명)';
+          document.getElementById('versionIndicator').textContent =
+            '시트 동기화 버전: ' + (data.v || '-');
+          return;
+        }
+
+        if (summaryBarEl) {
+          summaryBarEl.classList.remove('active');
+          summaryBarEl.innerHTML = '';
+        }
 
         if (state.mode === 'shared_free') {
           var selectedKeys = (state.sharedFreeTeachers || []).filter(function (tk) {
@@ -4667,7 +6025,7 @@
       function autoFitSingleLineCells_(containerEl) {
         if (!containerEl) return;
         var targets = containerEl.querySelectorAll(
-          '.tcc-subject, .tcc-bracket, .tcc-teacher, .tcc-class-label, .cell-main-text, .cell-bracket-sub, .cell-sub-info'
+          '.tcc-subject, .tcc-bracket, .tcc-teacher, .tcc-class-label, .cell-main-text, .cell-bracket-sub, .cell-sub-info, .student-chip-text'
         );
         if (!targets || targets.length === 0) return;
 
@@ -4677,13 +6035,15 @@
           el.style.letterSpacing = '';
           el.style.transform = '';
 
-          var cellEl = el.closest('.teaching-class-cell, .td-cell') || el.parentElement;
+          var cellEl =
+            el.closest('.teaching-class-cell, .td-cell, .student-chip') || el.parentElement;
           if (!cellEl) continue;
           var cellW = cellEl.clientWidth;
           if (!cellW || cellW <= 16) continue;
 
           var isTcc = cellEl.classList.contains('teaching-class-cell');
-          var availW = Math.max(24, cellW - (isTcc ? 8 : 12));
+          var isStChip = cellEl.classList.contains('student-chip');
+          var availW = Math.max(20, cellW - (isStChip ? 10 : isTcc ? 8 : 12));
           var textW = el.offsetWidth || el.scrollWidth;
           if (textW <= availW) continue;
 
@@ -4694,8 +6054,8 @@
 
           // 2단계: 가용 폭 대비 텍스트 폭 비율로 폰트 크기 동적 축소
           var computed = window.getComputedStyle(el);
-          var baseFont = parseFloat(computed.fontSize) || (isTcc ? 14 : 15);
-          var minFont = isTcc ? 8.5 : 9.5;
+          var baseFont = parseFloat(computed.fontSize) || (isStChip ? 12 : isTcc ? 14 : 15);
+          var minFont = isStChip ? 8 : isTcc ? 8.5 : 9.5;
           var ratio = (availW - 1) / textW;
           var nextFont = Math.max(minFont, Math.floor(baseFont * ratio * 10) / 10);
           el.style.fontSize = nextFont + 'px';
@@ -4709,7 +6069,7 @@
             guard++;
           }
 
-          // 3단계: 최소 폰트에서도 폭을 초과하는 초장문 과목명은 가로 스케일(scaleX)로 1행 완벽 수용
+          // 3단계: 최소 폰트에서도 폭을 초과하는 초장문 텍스트는 가로 스케일(scaleX)로 1행 완벽 수용
           if (textW > availW && textW > 0) {
             var scaleX = Math.max(0.55, Math.floor(((availW - 1) / textW) * 1000) / 1000);
             el.style.transformOrigin = 'center center';
@@ -4720,6 +6080,7 @@
 
       window.addEventListener('resize', function () {
         autoFitSingleLineCells_(document.getElementById('ttTbody'));
+        autoFitSingleLineCells_(document.getElementById('quickChipsBar'));
         var zoomModal = document.getElementById('timetableZoomModal');
         if (zoomModal && zoomModal.classList.contains('open')) {
           autoFitSingleLineCells_(document.getElementById('ttModalTbody'));
@@ -4851,11 +6212,21 @@
         state.lastSearchQuery = q;
 
         var altQ = decomposeTrailingImeQuery_(q);
-        var preferredType = state.mode === 'class' ? 'class' : 'teacher';
+        var isStudentPortal = state.portal === 'student';
+        var preferredType = isStudentPortal
+          ? 'student'
+          : state.mode === 'class'
+            ? 'class'
+            : 'teacher';
         var scored = [];
 
         for (var i = 0; i < state.searchIndex.length; i++) {
           var item = state.searchIndex[i];
+          if (isStudentPortal) {
+            if (item.type !== 'student') continue;
+          } else {
+            if (item.type === 'student') continue;
+          }
           var rank = scoreSearchItem_(item, q, altQ);
           if (rank > 0) {
             scored.push({
@@ -4880,17 +6251,31 @@
         state.acSelectedIdx = matches.length > 0 ? 0 : -1;
 
         if (matches.length === 0) {
-          state.currentKey = '';
+          if (isStudentPortal) {
+            state.currentStudentId = '';
+          } else {
+            state.currentKey = '';
+          }
           renderTimetable();
           listEl.innerHTML =
-            '<div class="ac-item"><span class="ac-sub">일치하는 학급이나 교사가 없습니다.</span></div>';
+            '<div class="ac-item"><span class="ac-sub">' +
+            (isStudentPortal
+              ? '일치하는 학번이나 학생 이름이 없습니다.'
+              : '일치하는 학급이나 교사가 없습니다.') +
+            '</span></div>';
           listEl.classList.add('open');
           return;
         }
 
         var topHit = matches[0];
-        state.mode = topHit.type;
-        state.currentKey = topHit.key;
+        if (isStudentPortal) {
+          state.currentStudentId = topHit.key;
+          state.selectedStudentIds = [topHit.key];
+          syncStudentClassFilterByStudentId_(topHit.key);
+        } else {
+          state.mode = topHit.type;
+          state.currentKey = topHit.key;
+        }
         syncModeTabsUI();
         renderTimetable();
 
@@ -4903,8 +6288,14 @@
         var html = state.acFiltered
           .map(function (item, i) {
             var selCls = i === state.acSelectedIdx ? ' selected' : '';
-            var badgeCls = item.type === 'class' ? 'class-b' : 'teacher-b';
-            var badgeLabel = item.type === 'class' ? '학급' : '교사';
+            var badgeCls =
+              item.type === 'student'
+                ? 'student-b'
+                : item.type === 'class'
+                  ? 'class-b'
+                  : 'teacher-b';
+            var badgeLabel =
+              item.type === 'student' ? '학생' : item.type === 'class' ? '학급' : '교사';
             var displayTitle =
               item.type === 'teacher' ? formatTeacherName(item.title, false) : item.title;
             var displaySub =
@@ -4952,10 +6343,65 @@
         if (typeof idx === 'number') {
           state.acSelectedIdx = idx;
         }
-        window.selectTarget(type, key, true);
+        if (type === 'student') {
+          window.selectStudentTarget(key, true);
+        } else {
+          window.selectTarget(type, key, true);
+        }
       };
 
       function syncModeTabsUI() {
+        var isStudentPortal = state.portal === 'student';
+        if (document.body) {
+          document.body.setAttribute('data-portal', isStudentPortal ? 'student' : 'teacher');
+        }
+
+        var btnPortalTeacherEl = document.getElementById('btnPortalTeacher');
+        var btnPortalStudentEl = document.getElementById('btnPortalStudent');
+        if (btnPortalTeacherEl) {
+          btnPortalTeacherEl.classList.toggle('active', !isStudentPortal);
+          btnPortalTeacherEl.setAttribute('aria-selected', !isStudentPortal ? 'true' : 'false');
+        }
+        if (btnPortalStudentEl) {
+          btnPortalStudentEl.classList.toggle('active', isStudentPortal);
+          btnPortalStudentEl.setAttribute('aria-selected', isStudentPortal ? 'true' : 'false');
+        }
+
+        var teacherTabsEl = document.getElementById('teacherModeTabs');
+        var studentTabsEl = document.getElementById('studentModeTabs');
+        if (teacherTabsEl) {
+          teacherTabsEl.style.display = isStudentPortal ? 'none' : '';
+        }
+        if (studentTabsEl) {
+          studentTabsEl.style.display = 'none';
+        }
+
+        var tabStudentSingleEl = document.getElementById('tabStudentSingle');
+        var tabStudentBatchEl = document.getElementById('tabStudentBatch');
+        if (tabStudentSingleEl) {
+          tabStudentSingleEl.classList.toggle('active', state.studentSubMode === 'single');
+          tabStudentSingleEl.setAttribute(
+            'aria-selected',
+            state.studentSubMode === 'single' ? 'true' : 'false'
+          );
+        }
+        if (tabStudentBatchEl) {
+          tabStudentBatchEl.classList.toggle('active', state.studentSubMode === 'batch');
+          tabStudentBatchEl.setAttribute(
+            'aria-selected',
+            state.studentSubMode === 'batch' ? 'true' : 'false'
+          );
+        }
+
+        var searchInputEl = document.getElementById('searchInput');
+        if (searchInputEl) {
+          searchInputEl.placeholder = isStudentPortal
+            ? '학번(예: 20101, 30101) 또는 학생 이름(초성 ㄱㅊㅎ)·학급(2-1) 입력...'
+            : '학급(1-1, 101) 또는 교사 성명(초성 ㄱㅇㅅ) 입력...';
+        }
+
+        renderProjectSelectUI_();
+
         var tabClassEl = document.getElementById('tabClass');
         var tabTeacherEl = document.getElementById('tabTeacher');
         var tabTeachingEl = document.getElementById('tabTeaching');
@@ -5036,12 +6482,204 @@
         state.lastSearchQuery = '';
         state.acFiltered = [];
         state.acSelectedIdx = -1;
-        state.currentKey = '';
+        if (state.portal === 'student') {
+          state.currentStudentId = '';
+        } else {
+          state.currentKey = '';
+        }
         setQuickChipsVisible_(true);
         renderTimetable();
       };
 
+      window.switchPortal = function (portalMode) {
+        var nextPortal = portalMode === 'student' ? 'student' : 'teacher';
+        var inputEl = document.getElementById('searchInput');
+        if (inputEl) {
+          inputEl.value = '';
+          inputEl.blur();
+        }
+        var listEl = document.getElementById('autocompleteList');
+        if (listEl) {
+          listEl.classList.remove('open');
+        }
+        state.portal = nextPortal;
+        state.lastSearchQuery = '';
+        state.acFiltered = [];
+        state.acSelectedIdx = -1;
+        state.hideQuickChips = false;
+        syncModeTabsUI();
+        renderTimetable();
+      };
+
+      window.switchStudentSubMode = function (subMode) {
+        state.portal = 'student';
+        state.studentSubMode = subMode === 'batch' ? 'batch' : 'single';
+        state.hideQuickChips = false;
+        syncModeTabsUI();
+        renderTimetable();
+      };
+
+      function syncStudentClassFilterByStudentId_(studentId) {
+        var sid = String(studentId || '').trim();
+        if (!sid || !state.data || !state.data.students) return;
+        var stObj = state.data.students[sid];
+        if (stObj) {
+          var ck =
+            stObj.classKey ||
+            (stObj.grade && stObj.classNum ? stObj.grade + '-' + stObj.classNum : '');
+          if (ck) {
+            state.studentBatchClassFilter = ck;
+            if (!Array.isArray(state.selectedStudentClasses)) {
+              state.selectedStudentClasses = [];
+            }
+            if (state.selectedStudentClasses.indexOf(ck) === -1) {
+              state.selectedStudentClasses = [ck];
+            }
+          }
+        }
+      }
+
+      window.selectStudentTarget = function (studentId, fromSearch) {
+        state.portal = 'student';
+        var sid = String(studentId || '').trim();
+        if (!fromSearch) {
+          window.toggleStudentSelection(sid);
+          return;
+        }
+        state.currentStudentId = sid;
+        syncStudentClassFilterByStudentId_(sid);
+        if (sid) {
+          if (!Array.isArray(state.selectedStudentIds)) {
+            state.selectedStudentIds = [];
+          }
+          if (state.selectedStudentIds.indexOf(sid) === -1) {
+            state.selectedStudentIds = [sid];
+          }
+        }
+        var listEl = document.getElementById('autocompleteList');
+        if (listEl) {
+          listEl.classList.remove('open');
+        }
+        state.hideQuickChips = false;
+        syncModeTabsUI();
+        renderTimetable();
+      };
+
+      window.setStudentBatchClassFilter = function (classKey) {
+        if (!classKey || classKey === 'ALL') return;
+        if (!Array.isArray(state.selectedStudentClasses)) {
+          state.selectedStudentClasses = [];
+        }
+        var idx = state.selectedStudentClasses.indexOf(classKey);
+        if (idx === -1) {
+          state.selectedStudentClasses.push(classKey);
+          state.studentBatchClassFilter = classKey;
+        } else {
+          state.selectedStudentClasses.splice(idx, 1);
+          state.studentBatchClassFilter =
+            state.selectedStudentClasses.length > 0
+              ? state.selectedStudentClasses[state.selectedStudentClasses.length - 1]
+              : '';
+          if (state.data && state.data.students && Array.isArray(state.selectedStudentIds)) {
+            state.selectedStudentIds = state.selectedStudentIds.filter(function (sid) {
+              var st = state.data.students[sid];
+              return !st || st.classKey !== classKey;
+            });
+            if (state.currentStudentId) {
+              var curSt = state.data.students[state.currentStudentId];
+              if (curSt && curSt.classKey === classKey) {
+                state.currentStudentId =
+                  state.selectedStudentIds.length > 0
+                    ? state.selectedStudentIds[state.selectedStudentIds.length - 1]
+                    : '';
+              }
+            }
+          }
+        }
+        renderTimetable();
+      };
+
+      window.toggleStudentSelection = function (studentId) {
+        var sid = String(studentId || '').trim();
+        if (!sid) return;
+        if (!Array.isArray(state.selectedStudentIds)) {
+          state.selectedStudentIds = [];
+        }
+        var idx = state.selectedStudentIds.indexOf(sid);
+        if (idx === -1) {
+          state.selectedStudentIds.push(sid);
+          state.currentStudentId = sid;
+        } else {
+          state.selectedStudentIds.splice(idx, 1);
+          if (state.currentStudentId === sid) {
+            state.currentStudentId =
+              state.selectedStudentIds.length > 0
+                ? state.selectedStudentIds[state.selectedStudentIds.length - 1]
+                : '';
+          }
+        }
+        renderTimetable();
+      };
+
+      window.selectAllStudentsInCurrentFilter = function () {
+        var data = state.data;
+        if (!data || !data.students) return;
+        var selectedClasses = Array.isArray(state.selectedStudentClasses)
+          ? state.selectedStudentClasses
+          : [];
+        if (selectedClasses.length === 0) return;
+        var selectedClassSet = {};
+        for (var c = 0; c < selectedClasses.length; c++) {
+          selectedClassSet[selectedClasses[c]] = true;
+        }
+        var allStudents = getSortedStudentList_(data);
+        var filtered = allStudents.filter(function (st) {
+          return Boolean(selectedClassSet[st.classKey]);
+        });
+        if (!Array.isArray(state.selectedStudentIds)) {
+          state.selectedStudentIds = [];
+        }
+        var existingSet = {};
+        for (var i = 0; i < state.selectedStudentIds.length; i++) {
+          existingSet[state.selectedStudentIds[i]] = true;
+        }
+        var allAlreadySelected = filtered.length > 0 && filtered.every(function (st) {
+          return Boolean(existingSet[st.id]);
+        });
+        if (allAlreadySelected) {
+          var removeSet = {};
+          filtered.forEach(function (st) {
+            removeSet[st.id] = true;
+          });
+          state.selectedStudentIds = state.selectedStudentIds.filter(function (id) {
+            return !removeSet[id];
+          });
+        } else {
+          filtered.forEach(function (st) {
+            if (!existingSet[st.id]) {
+              existingSet[st.id] = true;
+              state.selectedStudentIds.push(st.id);
+            }
+          });
+          if (!state.currentStudentId && filtered.length > 0) {
+            state.currentStudentId = filtered[0].id;
+          }
+        }
+        state.studentSubMode = 'batch';
+        syncModeTabsUI();
+        renderTimetable();
+      };
+
+      window.clearSelectedStudents = function () {
+        state.selectedStudentIds = [];
+        state.selectedStudentClasses = [];
+        state.studentBatchClassFilter = '';
+        state.currentStudentId = '';
+        renderTimetable();
+      };
+
       window.switchMode = function (newMode) {
+        state.portal = 'teacher';
         var inputEl = document.getElementById('searchInput');
         if (inputEl) {
           inputEl.value = '';
@@ -5062,6 +6700,7 @@
       };
 
       window.selectTarget = function (type, key, forceSelect) {
+        state.portal = 'teacher';
         if (!forceSelect && state.mode === type && state.currentKey === key) {
           state.currentKey = '';
         } else {
@@ -5296,7 +6935,7 @@
                 var titleTip =
                   targetType === 'teacher'
                     ? formatTeacherName(data.teachers[targetKey].name, false) +
-                      ' 교사 시간표 보기'
+                    ' 교사 시간표 보기'
                     : item.label + ' 학급 시간표 보기';
                 clickAttr =
                   ' tabindex="0" role="button" onclick="selectTeachingTargetFromModal(\'' +
@@ -5312,8 +6951,8 @@
               var headerBadgeLabel = item.isSpecialRoom
                 ? itemRoom || item.label || item.key
                 : itemRoom
-                ? (item.key || item.label) + ' (' + itemRoom + ')'
-                : item.key || item.label;
+                  ? (item.key || item.label) + ' (' + itemRoom + ')'
+                  : item.key || item.label;
 
               html += '<div class="' + cellClasses.join(' ') + '"' + clickAttr + '>';
               html +=
@@ -5710,7 +7349,7 @@
         saveTeacherGroupsToLocal_(prefix, groups);
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {}
+        } catch (e) { }
 
         state.teacherGroupDraftName = '';
         state.isDeletingTeacherGroup = false;
@@ -5742,11 +7381,11 @@
                       saveTeacherGroupsToLocal_(prefix, synced);
                       try {
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-                      } catch (e2) {}
+                      } catch (e2) { }
                     }
                     renderTimetable();
                   }
-                } catch (parseErr) {}
+                } catch (parseErr) { }
               })
               .withFailureHandler(function (err) {
                 state.teacherGroupFeedback =
@@ -5762,7 +7401,7 @@
                   teachers: selectedKeys
                 })
               );
-          } catch (rpcErr) {}
+          } catch (rpcErr) { }
         }
       };
 
@@ -5792,7 +7431,7 @@
         saveTeacherGroupsToLocal_(prefix, filtered);
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {}
+        } catch (e) { }
 
         state.teacherGroupFeedback =
           '🗑️ [' + groupName + '] 그룹이 [' + sheetName + '] 시트에서 삭제되었습니다.';
@@ -5812,11 +7451,11 @@
                       saveTeacherGroupsToLocal_(prefix, synced);
                       try {
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-                      } catch (e2) {}
+                      } catch (e2) { }
                     }
                     renderTimetable();
                   }
-                } catch (parseErr) {}
+                } catch (parseErr) { }
               })
               .deleteTeacherGroupOnServer(
                 JSON.stringify({
@@ -5824,7 +7463,7 @@
                   groupName: groupName
                 })
               );
-          } catch (rpcErr) {}
+          } catch (rpcErr) { }
         }
       };
 
@@ -6025,6 +7664,20 @@
       function getCurrentExportModel_() {
         var data = state.data;
         if (!data) return null;
+        if (state.portal === 'student') {
+          if (state.currentStudentId && data.students && data.students[state.currentStudentId]) {
+            return buildStudentExportModel_(data, data.students[state.currentStudentId]);
+          }
+          if (Array.isArray(state.selectedStudentIds) && state.selectedStudentIds.length > 0) {
+            for (var si = 0; si < state.selectedStudentIds.length; si++) {
+              var stCand = data.students && data.students[state.selectedStudentIds[si]];
+              if (stCand) {
+                return buildStudentExportModel_(data, stCand);
+              }
+            }
+          }
+          return null;
+        }
         var meta = data.meta || {};
         var schoolYear = formatSchoolYearSemester_(meta, data);
         var days = (data.days || ['월', '화', '수', '목', '금']).map(function (d) {
@@ -6083,9 +7736,9 @@
           (state.mode === 'teaching' &&
             Boolean(
               state.currentKey &&
-                data.classes &&
-                data.classes[state.currentKey] &&
-                (!data.teachers || !data.teachers[state.currentKey])
+              data.classes &&
+              data.classes[state.currentKey] &&
+              (!data.teachers || !data.teachers[state.currentKey])
             ));
         var targetObj = getActiveTargetObject_(data);
         if (!targetObj) return null;
@@ -6093,17 +7746,17 @@
         var mainTitle = isClassMode ? '학급 시간표' : '주간 시간표';
         var affiliation = isClassMode
           ? (meta.schoolName ? meta.schoolName + ' ' : '') +
-            (targetObj.isSpecialRoom && targetObj.grade
-              ? targetObj.grade + '학년 ' + targetObj.label
-              : targetObj.label)
+          (targetObj.isSpecialRoom && targetObj.grade
+            ? targetObj.grade + '학년 ' + targetObj.label
+            : targetObj.label)
           : meta.schoolName || '';
         var subRole = isClassMode
           ? targetObj.homeroom
             ? '담임 | ' + formatTeacherName(targetObj.homeroom, false)
             : ''
           : '교사 | ' +
-            formatTeacherName(targetObj.name, false) +
-            (targetObj.homeroomOf ? ' (' + targetObj.homeroomOf + ' 담임)' : '');
+          formatTeacherName(targetObj.name, false) +
+          (targetObj.homeroomOf ? ' (' + targetObj.homeroomOf + ' 담임)' : '');
 
         var rows = [];
         for (var p = 0; p < maxP; p++) {
@@ -6170,13 +7823,50 @@
         };
       }
 
-      /**
-       * 편집 가능한 엑셀(.xlsx) 다운로드 (OpenXML 스타일·테두리·병합 완비)
-       */
-      window.downloadXlsx = function () {
-        var model = getCurrentExportModel_();
-        if (!model) return;
+      function getTargetStudentModelsForBatchExport_() {
+        var data = state.data;
+        if (!data || !data.students) return [];
+        var allStudents = getSortedStudentList_(data);
+        var selectedSet = {};
+        if (Array.isArray(state.selectedStudentIds)) {
+          for (var i = 0; i < state.selectedStudentIds.length; i++) {
+            selectedSet[state.selectedStudentIds[i]] = true;
+          }
+        }
+        var targetStudents = allStudents.filter(function (st) {
+          return Boolean(selectedSet[st.id]);
+        });
+        if (targetStudents.length === 0 && state.currentStudentId && data.students[state.currentStudentId]) {
+          targetStudents = [data.students[state.currentStudentId]];
+        }
+        var models = [];
+        for (var j = 0; j < targetStudents.length; j++) {
+          var m = buildStudentExportModel_(data, targetStudents[j]);
+          if (m) models.push(m);
+        }
+        return models;
+      }
 
+      function getBatchStudentExportBaseName_(models) {
+        if (!models || models.length === 0) return '학생_시간표';
+        if (models.length === 1) return models[0].fileBaseName || '학생_시간표';
+        var prefixLabel =
+          state.studentBatchClassFilter && state.studentBatchClassFilter !== 'ALL'
+            ? state.studentBatchClassFilter + '반_'
+            : '';
+        return (
+          prefixLabel +
+          models[0].studentObj.id +
+          '_' +
+          models[0].studentObj.name +
+          '_외_' +
+          (models.length - 1) +
+          '명_학생시간표'
+        ).replace(/[\\/:*?"<>|\s]+/g, '_');
+      }
+
+      function exportModelsToXlsx_(models, fileBaseName, isStudentTheme) {
+        if (!models || models.length === 0) return;
         var colLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
         function xmlEsc(s) {
           return String(s || '')
@@ -6186,111 +7876,183 @@
             .replace(/"/g, '&quot;');
         }
 
-        var sheetRowsXml = '';
-        // Row 1: 학년도 (A1:F1)
-        sheetRowsXml +=
-          '<row r="1" ht="28" customHeight="1">' +
-          '<c r="A1" s="1" t="inlineStr"><is><t>' +
-          xmlEsc(model.schoolYear) +
-          '</t></is></c>' +
-          '<c r="B1" s="1"/><c r="C1" s="1"/><c r="D1" s="1"/><c r="E1" s="1"/><c r="F1" s="1"/>' +
-          '</row>';
+        var xmlDecl = '<' + '?xml version="1.0" encoding="UTF-8" standalone="yes"?' + '>';
+        var themeColorRgb = isStudentTheme ? 'FF313339' : 'FF027046';
+        var periodFillRgb = isStudentTheme ? 'FFF4F4F5' : 'FFEAF6F0';
+        var periodFontRgb = isStudentTheme ? 'FF27272A' : 'FF015434';
 
-        // Row 2: 메인 타이틀 (A2:D2) & 소속/교사 (E2:F2)
-        var rightMeta = [model.affiliation, model.subRole].filter(Boolean).join(' · ');
-        sheetRowsXml +=
-          '<row r="2" ht="34" customHeight="1">' +
-          '<c r="A2" s="3" t="inlineStr"><is><t>' +
-          xmlEsc(model.mainTitle) +
-          '</t></is></c>' +
-          '<c r="B2" s="3"/><c r="C2" s="3"/><c r="D2" s="3"/>' +
-          '<c r="E2" s="4" t="inlineStr"><is><t>' +
-          xmlEsc(rightMeta) +
-          '</t></is></c>' +
-          '<c r="F2" s="4"/>' +
-          '</row>';
+        var usedTabNames = {};
+        var sheetEntries = [];
+        var workbookSheetsXml = '';
+        var workbookRelsItemsXml = '';
+        var contentTypesOverridesXml = '';
 
-        // Row 3: 여백 행
-        sheetRowsXml += '<row r="3" ht="10" customHeight="1"/>';
-
-        // Row 4: 테이블 헤더 (교시 | 월요일 ~ 금요일)
-        sheetRowsXml +=
-          '<row r="4" ht="30" customHeight="1">' +
-          '<c r="A4" s="5" t="inlineStr"><is><t>교시</t></is></c>';
-        for (var d = 0; d < 5; d++) {
+        for (var mIdx = 0; mIdx < models.length; mIdx++) {
+          var model = models[mIdx];
+          var sheetRowsXml = '';
+          // Row 1: 학년도 (A1:F1)
           sheetRowsXml +=
-            '<c r="' +
-            colLetters[d + 1] +
-            '4" s="6" t="inlineStr"><is><t>' +
-            xmlEsc(model.days[d]) +
-            '</t></is></c>';
-        }
-        sheetRowsXml += '</row>';
+            '<row r="1" ht="28" customHeight="1">' +
+            '<c r="A1" s="1" t="inlineStr"><is><t>' +
+            xmlEsc(model.schoolYear) +
+            '</t></is></c>' +
+            '<c r="B1" s="1"/><c r="C1" s="1"/><c r="D1" s="1"/><c r="E1" s="1"/><c r="F1" s="1"/>' +
+            '</row>';
 
-        // Rows 5+: 1교시 ~ N교시 (4교시와 5교시 사이에 높이 1/2 점심 시간 행 포함)
-        var currentExcelRow = 5;
-        var lunchExcelRow = -1;
-        for (var r = 0; r < model.rows.length; r++) {
-          var rowNum = currentExcelRow++;
-          var rObj = model.rows[r];
-          var pText = rObj.periodLabel + (rObj.periodTime ? '\n' + rObj.periodTime : '');
+          // Row 2: 메인 타이틀 (A2:C2) & 소속/교사 (D2:F2)
+          var rightMeta = [model.affiliation, model.subRole].filter(Boolean).join(' · ');
           sheetRowsXml +=
-            '<row r="' +
-            rowNum +
-            '" ht="46" customHeight="1">' +
-            '<c r="A' +
-            rowNum +
-            '" s="7" t="inlineStr"><is><t>' +
-            xmlEsc(pText) +
-            '</t></is></c>';
+            '<row r="2" ht="34" customHeight="1">' +
+            '<c r="A2" s="3" t="inlineStr"><is><t>' +
+            xmlEsc(model.mainTitle) +
+            '</t></is></c>' +
+            '<c r="B2" s="3"/><c r="C2" s="3"/>' +
+            '<c r="D2" s="4" t="inlineStr"><is><t>' +
+            xmlEsc(rightMeta) +
+            '</t></is></c>' +
+            '<c r="E2" s="4"/><c r="F2" s="4"/>' +
+            '</row>';
 
-          for (var c = 0; c < 5; c++) {
-            var cellObj = rObj.cells[c];
-            var cellText = [cellObj.main, cellObj.main2, cellObj.sub].filter(Boolean).join('\n');
+          // Row 3: 여백 행
+          sheetRowsXml += '<row r="3" ht="10" customHeight="1"/>';
+
+          // Row 4: 테이블 헤더 (교시 | 월요일 ~ 금요일)
+          sheetRowsXml +=
+            '<row r="4" ht="30" customHeight="1">' +
+            '<c r="A4" s="5" t="inlineStr"><is><t>교시</t></is></c>';
+          for (var d = 0; d < 5; d++) {
             sheetRowsXml +=
               '<c r="' +
-              colLetters[c + 1] +
-              rowNum +
-              '" s="8" t="inlineStr"><is><t>' +
-              xmlEsc(cellText) +
+              colLetters[d + 1] +
+              '4" s="6" t="inlineStr"><is><t>' +
+              xmlEsc(model.days[d]) +
               '</t></is></c>';
           }
           sheetRowsXml += '</row>';
 
-          if (r === 3 && model.rows.length > 4) {
-            lunchExcelRow = currentExcelRow++;
+          var currentExcelRow = 5;
+          var lunchExcelRow = -1;
+          for (var r = 0; r < model.rows.length; r++) {
+            var rowNum = currentExcelRow++;
+            var rObj = model.rows[r];
+            var pText = rObj.periodLabel + (rObj.periodTime ? '\n' + rObj.periodTime : '');
             sheetRowsXml +=
               '<row r="' +
-              lunchExcelRow +
-              '" ht="23" customHeight="1">' +
+              rowNum +
+              '" ht="48" customHeight="1">' +
               '<c r="A' +
-              lunchExcelRow +
-              '" s="7" t="inlineStr"><is><t>점심</t></is></c>' +
-              '<c r="B' +
-              lunchExcelRow +
-              '" s="7" t="inlineStr"><is><t>점심 시간</t></is></c>' +
-              '<c r="C' +
-              lunchExcelRow +
-              '" s="7"/><c r="D' +
-              lunchExcelRow +
-              '" s="7"/><c r="E' +
-              lunchExcelRow +
-              '" s="7"/><c r="F' +
-              lunchExcelRow +
-              '" s="7"/>' +
-              '</row>';
+              rowNum +
+              '" s="7" t="inlineStr"><is><t>' +
+              xmlEsc(pText) +
+              '</t></is></c>';
+
+            for (var c = 0; c < 5; c++) {
+              var cellObj = rObj.cells[c];
+              var cellText = [cellObj.main, cellObj.main2, cellObj.sub].filter(Boolean).join('\n');
+              sheetRowsXml +=
+                '<c r="' +
+                colLetters[c + 1] +
+                rowNum +
+                '" s="8" t="inlineStr"><is><t>' +
+                xmlEsc(cellText) +
+                '</t></is></c>';
+            }
+            sheetRowsXml += '</row>';
+
+            if (r === 3 && model.rows.length > 4) {
+              lunchExcelRow = currentExcelRow++;
+              sheetRowsXml +=
+                '<row r="' +
+                lunchExcelRow +
+                '" ht="23" customHeight="1">' +
+                '<c r="A' +
+                lunchExcelRow +
+                '" s="7" t="inlineStr"><is><t>점심</t></is></c>' +
+                '<c r="B' +
+                lunchExcelRow +
+                '" s="7" t="inlineStr"><is><t>점심 시간</t></is></c>' +
+                '<c r="C' +
+                lunchExcelRow +
+                '" s="7"/><c r="D' +
+                lunchExcelRow +
+                '" s="7"/><c r="E' +
+                lunchExcelRow +
+                '" s="7"/><c r="F' +
+                lunchExcelRow +
+                '" s="7"/>' +
+                '</row>';
+            }
           }
+
+          var sheetXml =
+            xmlDecl +
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+            '<cols>' +
+            '<col min="1" max="1" width="13" customWidth="1"/>' +
+            '<col min="2" max="6" width="20" customWidth="1"/>' +
+            '</cols>' +
+            '<sheetData>' +
+            sheetRowsXml +
+            '</sheetData>' +
+            '<mergeCells count="' +
+            (lunchExcelRow !== -1 ? '4' : '3') +
+            '">' +
+            '<mergeCell ref="A1:F1"/>' +
+            '<mergeCell ref="A2:C2"/>' +
+            '<mergeCell ref="D2:F2"/>' +
+            (lunchExcelRow !== -1
+              ? '<mergeCell ref="B' + lunchExcelRow + ':F' + lunchExcelRow + '"/>'
+              : '') +
+            '</mergeCells>' +
+            '</worksheet>';
+
+          var rawTabName =
+            models.length === 1 && !model.sheetTabName
+              ? '시간표'
+              : String(model.sheetTabName || '시간표_' + (mIdx + 1))
+                .replace(/[\\/?*[\]:]/g, '_')
+                .slice(0, 28);
+          var tabName = rawTabName || '시간표_' + (mIdx + 1);
+          var dupIdx = 2;
+          while (usedTabNames[tabName]) {
+            tabName = rawTabName.slice(0, 25) + '_' + dupIdx;
+            dupIdx++;
+          }
+          usedTabNames[tabName] = true;
+
+          var sheetNum = mIdx + 1;
+          sheetEntries.push({
+            name: 'xl/worksheets/sheet' + sheetNum + '.xml',
+            data: sheetXml
+          });
+          workbookSheetsXml +=
+            '<sheet name="' +
+            xmlEsc(tabName) +
+            '" sheetId="' +
+            sheetNum +
+            '" r:id="rId' +
+            sheetNum +
+            '"/>';
+          workbookRelsItemsXml +=
+            '<Relationship Id="rId' +
+            sheetNum +
+            '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' +
+            sheetNum +
+            '.xml"/>';
+          contentTypesOverridesXml +=
+            '<Override PartName="/xl/worksheets/sheet' +
+            sheetNum +
+            '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
         }
 
-        var xmlDecl = '<' + '?xml version="1.0" encoding="UTF-8" standalone="yes"?' + '>';
-
+        var stylesRelId = models.length + 1;
         var contentTypesXml =
           xmlDecl +
           '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
           '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
           '<Default Extension="xml" ContentType="application/xml"/>' +
           '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
-          '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+          contentTypesOverridesXml +
           '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
           '</Types>';
 
@@ -6303,14 +8065,18 @@
         var workbookXml =
           xmlDecl +
           '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-          '<sheets><sheet name="시간표" sheetId="1" r:id="rId1"/></sheets>' +
+          '<sheets>' +
+          workbookSheetsXml +
+          '</sheets>' +
           '</workbook>';
 
         var workbookRelsXml =
           xmlDecl +
           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
-          '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+          workbookRelsItemsXml +
+          '<Relationship Id="rId' +
+          stylesRelId +
+          '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
           '</Relationships>';
 
         var stylesXml =
@@ -6320,18 +8086,28 @@
           '<font><sz val="11"/><name val="맑은 고딕"/></font>' +
           '<font><b/><sz val="16"/><color rgb="FF313339"/><name val="맑은 고딕"/></font>' +
           '<font><b/><sz val="10"/><color rgb="FF52525B"/><name val="맑은 고딕"/></font>' +
-          '<font><b/><sz val="20"/><color rgb="FF027046"/><name val="맑은 고딕"/></font>' +
-          '<font><b/><sz val="11"/><color rgb="FF027046"/><name val="맑은 고딕"/></font>' +
+          '<font><b/><sz val="20"/><color rgb="' +
+          themeColorRgb +
+          '"/><name val="맑은 고딕"/></font>' +
+          '<font><b/><sz val="11"/><color rgb="' +
+          themeColorRgb +
+          '"/><name val="맑은 고딕"/></font>' +
           '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="맑은 고딕"/></font>' +
-          '<font><b/><sz val="11"/><color rgb="FF015434"/><name val="맑은 고딕"/></font>' +
+          '<font><b/><sz val="11"/><color rgb="' +
+          periodFontRgb +
+          '"/><name val="맑은 고딕"/></font>' +
           '<font><b/><sz val="11"/><color rgb="FF111827"/><name val="맑은 고딕"/></font>' +
           '</fonts>' +
           '<fills count="5">' +
           '<fill><patternFill patternType="none"/></fill>' +
           '<fill><patternFill patternType="gray125"/></fill>' +
           '<fill><patternFill patternType="solid"><fgColor rgb="FF313339"/><bgColor indexed="64"/></patternFill></fill>' +
-          '<fill><patternFill patternType="solid"><fgColor rgb="FF027046"/><bgColor indexed="64"/></patternFill></fill>' +
-          '<fill><patternFill patternType="solid"><fgColor rgb="FFEAF6F0"/><bgColor indexed="64"/></patternFill></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="' +
+          themeColorRgb +
+          '"/><bgColor indexed="64"/></patternFill></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="' +
+          periodFillRgb +
+          '"/><bgColor indexed="64"/></patternFill></fill>' +
           '</fills>' +
           '<borders count="3">' +
           '<border><left/><right/><top/><bottom/><diagonal/></border>' +
@@ -6358,49 +8134,48 @@
           '</cellXfs>' +
           '</styleSheet>';
 
-        var sheetXml =
-          xmlDecl +
-          '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-          '<cols>' +
-          '<col min="1" max="1" width="13" customWidth="1"/>' +
-          '<col min="2" max="6" width="20" customWidth="1"/>' +
-          '</cols>' +
-          '<sheetData>' +
-          sheetRowsXml +
-          '</sheetData>' +
-          '<mergeCells count="' +
-          (lunchExcelRow !== -1 ? '4' : '3') +
-          '">' +
-          '<mergeCell ref="A1:F1"/>' +
-          '<mergeCell ref="A2:D2"/>' +
-          '<mergeCell ref="E2:F2"/>' +
-          (lunchExcelRow !== -1
-            ? '<mergeCell ref="B' + lunchExcelRow + ':F' + lunchExcelRow + '"/>'
-            : '') +
-          '</mergeCells>' +
-          '</worksheet>';
+        var zipEntries = [
+          { name: '[Content_Types].xml', data: contentTypesXml },
+          { name: '_rels/.rels', data: relsXml },
+          { name: 'xl/workbook.xml', data: workbookXml },
+          { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
+          { name: 'xl/styles.xml', data: stylesXml }
+        ].concat(sheetEntries);
 
         buildZipBlobAsync_(
-          [
-            { name: '[Content_Types].xml', data: contentTypesXml },
-            { name: '_rels/.rels', data: relsXml },
-            { name: 'xl/workbook.xml', data: workbookXml },
-            { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
-            { name: 'xl/styles.xml', data: stylesXml },
-            { name: 'xl/worksheets/sheet1.xml', data: sheetXml }
-          ],
+          zipEntries,
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         ).then(function (blob) {
-          triggerBlobDownload_(blob, model.fileBaseName + '.xlsx');
+          triggerBlobDownload_(blob, (fileBaseName || '시간표') + '.xlsx');
         });
-      };
+      }
 
       /**
-       * 편집 가능한 한컴오피스 한글(.hwpx) 다운로드 (KS X 6101 OWPML 표준 컨테이너)
+       * 편집 가능한 엑셀(.xlsx) 다운로드 (OpenXML 스타일·테두리·병합 완비)
        */
-      window.downloadHwpx = function () {
+      window.downloadXlsx = function () {
+        if (
+          state.portal === 'student' &&
+          Array.isArray(state.selectedStudentIds) &&
+          state.selectedStudentIds.length > 0
+        ) {
+          window.downloadBatchStudentXlsx();
+          return;
+        }
         var model = getCurrentExportModel_();
         if (!model) return;
+        exportModelsToXlsx_([model], model.fileBaseName, state.portal === 'student');
+      };
+
+      window.downloadBatchStudentXlsx = function () {
+        var models = getTargetStudentModelsForBatchExport_();
+        if (models.length === 0) return;
+        var baseName = getBatchStudentExportBaseName_(models);
+        exportModelsToXlsx_(models, baseName, true);
+      };
+
+      function exportModelsToHwpx_(models, fileBaseName, isStudentTheme) {
+        if (!models || models.length === 0) return;
 
         function xmlEsc(s) {
           return String(s || '')
@@ -6411,6 +8186,10 @@
         }
 
         var xmlDecl = '<' + '?xml version="1.0" encoding="UTF-8" standalone="yes" ?' + '>';
+        var themeHex = isStudentTheme ? '#313339' : '#027046';
+        var periodFillHex = isStudentTheme ? '#F4F4F5' : '#EAF6F0';
+        var periodBorderHex = isStudentTheme ? '#D4D4D8' : '#B6E2CE';
+        var periodFontHex = isStudentTheme ? '#27272A' : '#015434';
 
         var versionXml =
           xmlDecl +
@@ -6451,7 +8230,7 @@
           '<opf:package xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" xmlns:hp10="http://www.hancom.co.kr/hwpml/2016/paragraph" xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core" xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head" xmlns:hhs="http://www.hancom.co.kr/hwpml/2011/history" xmlns:hm="http://www.hancom.co.kr/hwpml/2011/master-page" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf/" xmlns:ooxmlchart="http://www.hancom.co.kr/hwpml/2016/ooxmlchart" xmlns:hwpunitchar="http://www.hancom.co.kr/hwpml/2016/HwpUnitChar" xmlns:epub="http://www.idpf.org/2007/ops" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0" version="" unique-identifier="" id="">' +
           '<opf:metadata>' +
           '<opf:title>' +
-          xmlEsc(model.mainTitle) +
+          xmlEsc(models[0].mainTitle) +
           '</opf:title>' +
           '<opf:language>ko</opf:language>' +
           '<opf:meta name="creator" content="text">Timetable WebApp</opf:meta>' +
@@ -6485,8 +8264,8 @@
         function makeBorderFill_(id, bType, bWidth, bColor, fillHex) {
           var fillTag = fillHex
             ? '<hc:fillBrush><hc:winBrush faceColor="' +
-              fillHex +
-              '" hatchColor="#999999" alpha="0"/></hc:fillBrush>'
+            fillHex +
+            '" hatchColor="#999999" alpha="0"/></hc:fillBrush>'
             : '';
           return (
             '<hh:borderFill id="' +
@@ -6528,15 +8307,14 @@
           );
         }
 
-        // borderFill: 1=없음, 2=투명, 3=일반셀(흰색), 4=교시코너(#313339), 5=요일헤더(#027046), 6=교시열(#EAF6F0)
         var borderFillsXml =
           '<hh:borderFills itemCnt="6">' +
           makeBorderFill_(1, 'NONE', '0.1 mm', '#000000', '') +
           makeBorderFill_(2, 'NONE', '0.1 mm', '#000000', 'none') +
           makeBorderFill_(3, 'SOLID', '0.15 mm', '#9CA3AF', '#FFFFFF') +
           makeBorderFill_(4, 'SOLID', '0.15 mm', '#313339', '#313339') +
-          makeBorderFill_(5, 'SOLID', '0.15 mm', '#027046', '#027046') +
-          makeBorderFill_(6, 'SOLID', '0.15 mm', '#B6E2CE', '#EAF6F0') +
+          makeBorderFill_(5, 'SOLID', '0.15 mm', themeHex, themeHex) +
+          makeBorderFill_(6, 'SOLID', '0.15 mm', periodBorderHex, periodFillHex) +
           '</hh:borderFills>';
 
         function makeCharPr_(id, height, color, isBold) {
@@ -6562,15 +8340,14 @@
           );
         }
 
-        // charPr: 0=기본10pt, 1=학년도15pt, 2=메인타이틀20pt(#027046), 3=소속11pt(#027046), 4=테이블헤더11pt(흰색굵게), 5=교시번호10.5pt(#015434굵게), 6=과목명11pt(검정굵게), 7=부가정보9pt(#52525B)
         var charPropertiesXml =
           '<hh:charProperties itemCnt="8">' +
           makeCharPr_(0, 1000, '#111827', false) +
           makeCharPr_(1, 1500, '#313339', true) +
-          makeCharPr_(2, 2000, '#027046', true) +
-          makeCharPr_(3, 1100, '#027046', true) +
+          makeCharPr_(2, 2000, themeHex, true) +
+          makeCharPr_(3, 1100, themeHex, true) +
           makeCharPr_(4, 1100, '#FFFFFF', true) +
-          makeCharPr_(5, 1050, '#015434', true) +
+          makeCharPr_(5, 1050, periodFontHex, true) +
           makeCharPr_(6, 1100, '#111827', true) +
           makeCharPr_(7, 900, '#52525B', false) +
           '</hh:charProperties>';
@@ -6605,7 +8382,6 @@
           );
         }
 
-        // paraPr: 0=LEFT, 1=CENTER, 2=RIGHT
         var paraPropertiesXml =
           '<hh:paraProperties itemCnt="3">' +
           makeParaPr_(0, 'LEFT', 140) +
@@ -6631,16 +8407,6 @@
           '<hh:docOption><hh:linkinfo path="" pageInherit="0" footnoteInherit="0"/></hh:docOption>' +
           '<hh:trackchageConfig flags="56"/>' +
           '</hh:head>';
-
-        var hasLunchRow = model.rows.length > 4;
-        var totalRowCnt = model.rows.length + 1 + (hasLunchRow ? 1 : 0);
-        var colW0 = 5520;
-        var colWDay = 7400;
-        var totalW = colW0 + colWDay * 5; // 42520 HWPUNIT (~150mm A4 본문 폭)
-        var headerH = 3200;
-        var bodyRowH = 5200;
-        var lunchRowH = 2600; // 세로 높이 1/2
-        var totalH = headerH + bodyRowH * model.rows.length + (hasLunchRow ? lunchRowH : 0);
 
         function makeTcXml_(colAddr, rowAddr, width, height, borderFillId, paragraphs, colSpan) {
           var pXml = '';
@@ -6684,59 +8450,7 @@
           );
         }
 
-        var trXml = '<hp:tr>';
-        trXml += makeTcXml_(0, 0, colW0, headerH, 4, [{ text: '교시', paraPr: 1, charPr: 4 }], 1);
-        for (var dIdx = 0; dIdx < 5; dIdx++) {
-          trXml += makeTcXml_(dIdx + 1, 0, colWDay, headerH, 5, [
-            { text: model.days[dIdx], paraPr: 1, charPr: 4 }
-          ], 1);
-        }
-        trXml += '</hp:tr>';
-
-        var currentHwpRowAddr = 1;
-        for (var rIdx = 0; rIdx < model.rows.length; rIdx++) {
-          var rData = model.rows[rIdx];
-          var rowAddr = currentHwpRowAddr++;
-          trXml += '<hp:tr>';
-          var periodParas = [{ text: rData.periodLabel, paraPr: 1, charPr: 5 }];
-          if (rData.periodTime) {
-            periodParas.push({ text: rData.periodTime, paraPr: 1, charPr: 7 });
-          }
-          trXml += makeTcXml_(0, rowAddr, colW0, bodyRowH, 6, periodParas, 1);
-
-          for (var cIdx = 0; cIdx < 5; cIdx++) {
-            var cData = rData.cells[cIdx];
-            var cellParas = [{ text: cData.main, paraPr: 1, charPr: 6 }];
-            if (cData.main2) {
-              cellParas.push({ text: cData.main2, paraPr: 1, charPr: 6 });
-            }
-            if (cData.sub) {
-              cellParas.push({ text: cData.sub, paraPr: 1, charPr: 7 });
-            }
-            trXml += makeTcXml_(cIdx + 1, rowAddr, colWDay, bodyRowH, 3, cellParas, 1);
-          }
-          trXml += '</hp:tr>';
-
-          if (rIdx === 3 && hasLunchRow) {
-            var lunchRowAddr = currentHwpRowAddr++;
-            trXml += '<hp:tr>';
-            trXml += makeTcXml_(0, lunchRowAddr, colW0, lunchRowH, 6, [
-              { text: '점심', paraPr: 1, charPr: 5 }
-            ], 1);
-            trXml += makeTcXml_(1, lunchRowAddr, colWDay * 5, lunchRowH, 6, [
-              { text: '점심 시간', paraPr: 1, charPr: 5 }
-            ], 5);
-            trXml += '</hp:tr>';
-          }
-        }
-
-        var rightInfoLine = [model.affiliation, model.subRole].filter(Boolean).join('  |  ');
-
-        var section0Xml =
-          xmlDecl +
-          '<hs:sec xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" xmlns:hp10="http://www.hancom.co.kr/hwpml/2016/paragraph" xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core" xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head" xmlns:hhs="http://www.hancom.co.kr/hwpml/2011/history" xmlns:hm="http://www.hancom.co.kr/hwpml/2011/master-page" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf/" xmlns:ooxmlchart="http://www.hancom.co.kr/hwpml/2016/ooxmlchart" xmlns:hwpunitchar="http://www.hancom.co.kr/hwpml/2016/HwpUnitChar" xmlns:epub="http://www.idpf.org/2007/ops" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0">' +
-          '<hp:p id="1001" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' +
-          '<hp:run charPrIDRef="1">' +
+        var secPrCtrlXml =
           '<hp:secPr id="" textDirection="HORIZONTAL" spaceColumns="1134" tabStop="8000" tabStopVal="4000" tabStopUnit="HWPUNIT" outlineShapeIDRef="1" memoShapeIDRef="0" textVerticalWidthHead="0" masterPageCnt="0">' +
           '<hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0"/>' +
           '<hp:startNum pageStartsOn="BOTH" page="0" pic="0" tbl="0" equation="0"/>' +
@@ -6751,46 +8465,129 @@
           '<hp:pageBorderFill type="EVEN" borderFillIDRef="1" textBorder="PAPER" headerInside="0" footerInside="0" fillArea="PAPER"><hp:offset left="1417" right="1417" top="1417" bottom="1417"/></hp:pageBorderFill>' +
           '<hp:pageBorderFill type="ODD" borderFillIDRef="1" textBorder="PAPER" headerInside="0" footerInside="0" fillArea="PAPER"><hp:offset left="1417" right="1417" top="1417" bottom="1417"/></hp:pageBorderFill>' +
           '</hp:secPr>' +
-          '<hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/></hp:ctrl>' +
-          '<hp:t>' +
-          xmlEsc(model.schoolYear) +
-          '</hp:t>' +
-          '</hp:run>' +
-          '</hp:p>' +
-          '<hp:p id="1002" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' +
-          '<hp:run charPrIDRef="2"><hp:t>' +
-          xmlEsc(model.mainTitle) +
-          '</hp:t></hp:run>' +
-          '<hp:run charPrIDRef="3"><hp:t>' +
-          xmlEsc(rightInfoLine ? '   —   ' + rightInfoLine : '') +
-          '</hp:t></hp:run>' +
-          '</hp:p>' +
-          '<hp:p id="1003" paraPrIDRef="1" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' +
-          '<hp:run charPrIDRef="0">' +
-          '<hp:tbl id="2001" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="1" rowCnt="' +
-          totalRowCnt +
-          '" colCnt="6" cellSpacing="0" borderFillIDRef="3" noAdjust="0">' +
-          '<hp:sz width="' +
-          totalW +
-          '" widthRelTo="ABSOLUTE" height="' +
-          totalH +
-          '" heightRelTo="ABSOLUTE" protect="0"/>' +
-          '<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>' +
-          '<hp:outMargin left="0" right="0" top="283" bottom="283"/>' +
-          '<hp:inMargin left="283" right="283" top="141" bottom="141"/>' +
-          trXml +
-          '</hp:tbl>' +
-          '</hp:run>' +
-          '</hp:p>' +
+          '<hp:ctrl><hp:colPr id="" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/></hp:ctrl>';
+
+        var colW0 = 5520;
+        var colWDay = 7400;
+        var totalW = colW0 + colWDay * 5;
+        var headerH = 3200;
+        var bodyRowH = 5200;
+        var lunchRowH = 2600;
+
+        var sectionBodyXml = '';
+        var prvLines = [];
+
+        for (var mIdx = 0; mIdx < models.length; mIdx++) {
+          var model = models[mIdx];
+          var hasLunchRow = model.rows.length > 4;
+          var totalRowCnt = model.rows.length + 1 + (hasLunchRow ? 1 : 0);
+          var totalH = headerH + bodyRowH * model.rows.length + (hasLunchRow ? lunchRowH : 0);
+
+          var trXml = '<hp:tr>';
+          trXml += makeTcXml_(0, 0, colW0, headerH, 4, [{ text: '교시', paraPr: 1, charPr: 4 }], 1);
+          for (var dIdx = 0; dIdx < 5; dIdx++) {
+            trXml += makeTcXml_(dIdx + 1, 0, colWDay, headerH, 5, [
+              { text: model.days[dIdx], paraPr: 1, charPr: 4 }
+            ], 1);
+          }
+          trXml += '</hp:tr>';
+
+          var currentHwpRowAddr = 1;
+          for (var rIdx = 0; rIdx < model.rows.length; rIdx++) {
+            var rData = model.rows[rIdx];
+            var rowAddr = currentHwpRowAddr++;
+            trXml += '<hp:tr>';
+            var periodParas = [{ text: rData.periodLabel, paraPr: 1, charPr: 5 }];
+            if (rData.periodTime) {
+              periodParas.push({ text: rData.periodTime, paraPr: 1, charPr: 7 });
+            }
+            trXml += makeTcXml_(0, rowAddr, colW0, bodyRowH, 6, periodParas, 1);
+
+            for (var cIdx = 0; cIdx < 5; cIdx++) {
+              var cData = rData.cells[cIdx];
+              var cellParas = [{ text: cData.main, paraPr: 1, charPr: 6 }];
+              if (cData.main2) {
+                cellParas.push({ text: cData.main2, paraPr: 1, charPr: 6 });
+              }
+              if (cData.sub) {
+                cellParas.push({ text: cData.sub, paraPr: 1, charPr: 7 });
+              }
+              trXml += makeTcXml_(cIdx + 1, rowAddr, colWDay, bodyRowH, 3, cellParas, 1);
+            }
+            trXml += '</hp:tr>';
+
+            if (rIdx === 3 && hasLunchRow) {
+              var lunchRowAddr = currentHwpRowAddr++;
+              trXml += '<hp:tr>';
+              trXml += makeTcXml_(0, lunchRowAddr, colW0, lunchRowH, 6, [
+                { text: '점심', paraPr: 1, charPr: 5 }
+              ], 1);
+              trXml += makeTcXml_(1, lunchRowAddr, colWDay * 5, lunchRowH, 6, [
+                { text: '점심 시간', paraPr: 1, charPr: 5 }
+              ], 5);
+              trXml += '</hp:tr>';
+            }
+          }
+
+          var rightInfoLine = [model.affiliation, model.subRole].filter(Boolean).join('  |  ');
+          var basePid = 1000 + mIdx * 10;
+          var tblId = 2001 + mIdx;
+
+          sectionBodyXml +=
+            '<hp:p id="' +
+            (basePid + 1) +
+            '" paraPrIDRef="0" styleIDRef="0" pageBreak="' +
+            (mIdx === 0 ? '0' : '1') +
+            '" columnBreak="0" merged="0">' +
+            '<hp:run charPrIDRef="1">' +
+            (mIdx === 0 ? secPrCtrlXml : '') +
+            '<hp:t>' +
+            xmlEsc(model.schoolYear) +
+            '</hp:t>' +
+            '</hp:run>' +
+            '</hp:p>' +
+            '<hp:p id="' +
+            (basePid + 2) +
+            '" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' +
+            '<hp:run charPrIDRef="2"><hp:t>' +
+            xmlEsc(model.mainTitle) +
+            '</hp:t></hp:run>' +
+            '<hp:run charPrIDRef="3"><hp:t>' +
+            xmlEsc(rightInfoLine ? '   —   ' + rightInfoLine : '') +
+            '</hp:t></hp:run>' +
+            '</hp:p>' +
+            '<hp:p id="' +
+            (basePid + 3) +
+            '" paraPrIDRef="1" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">' +
+            '<hp:run charPrIDRef="0">' +
+            '<hp:tbl id="' +
+            tblId +
+            '" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="1" rowCnt="' +
+            totalRowCnt +
+            '" colCnt="6" cellSpacing="0" borderFillIDRef="3" noAdjust="0">' +
+            '<hp:sz width="' +
+            totalW +
+            '" widthRelTo="ABSOLUTE" height="' +
+            totalH +
+            '" heightRelTo="ABSOLUTE" protect="0"/>' +
+            '<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>' +
+            '<hp:outMargin left="0" right="0" top="283" bottom="283"/>' +
+            '<hp:inMargin left="283" right="283" top="141" bottom="141"/>' +
+            trXml +
+            '</hp:tbl>' +
+            '</hp:run>' +
+            '</hp:p>';
+
+          prvLines.push(model.schoolYear + ' ' + model.mainTitle + ' ' + rightInfoLine);
+        }
+
+        var section0Xml =
+          xmlDecl +
+          '<hs:sec xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" xmlns:hp10="http://www.hancom.co.kr/hwpml/2016/paragraph" xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core" xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head" xmlns:hhs="http://www.hancom.co.kr/hwpml/2011/history" xmlns:hm="http://www.hancom.co.kr/hwpml/2011/master-page" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf/" xmlns:ooxmlchart="http://www.hancom.co.kr/hwpml/2016/ooxmlchart" xmlns:hwpunitchar="http://www.hancom.co.kr/hwpml/2016/HwpUnitChar" xmlns:epub="http://www.idpf.org/2007/ops" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0">' +
+          sectionBodyXml +
           '</hs:sec>';
 
-        var prvText =
-          model.schoolYear +
-          ' ' +
-          model.mainTitle +
-          ' ' +
-          rightInfoLine +
-          '\r\n';
+        var prvText = prvLines.join('\r\n') + '\r\n';
 
         buildZipBlobAsync_(
           [
@@ -6807,8 +8604,180 @@
           ],
           'application/hwp+zip'
         ).then(function (blob) {
-          triggerBlobDownload_(blob, model.fileBaseName + '.hwpx');
+          triggerBlobDownload_(blob, (fileBaseName || '시간표') + '.hwpx');
         });
+      }
+
+      /**
+       * 편집 가능한 한컴오피스 한글(.hwpx) 다운로드 (KS X 6101 OWPML 표준 컨테이너)
+       */
+      window.downloadHwpx = function () {
+        if (
+          state.portal === 'student' &&
+          Array.isArray(state.selectedStudentIds) &&
+          state.selectedStudentIds.length > 0
+        ) {
+          window.downloadBatchStudentHwpx();
+          return;
+        }
+        var model = getCurrentExportModel_();
+        if (!model) return;
+        exportModelsToHwpx_([model], model.fileBaseName, state.portal === 'student');
+      };
+
+      window.downloadBatchStudentHwpx = function () {
+        var models = getTargetStudentModelsForBatchExport_();
+        if (models.length === 0) return;
+        var baseName = getBatchStudentExportBaseName_(models);
+        exportModelsToHwpx_(models, baseName, true);
+      };
+
+      window.handleTopPdfPrint = function () {
+        if (
+          state.portal === 'student' &&
+          Array.isArray(state.selectedStudentIds) &&
+          state.selectedStudentIds.length > 0
+        ) {
+          window.printBatchStudentPdf();
+          return;
+        }
+        window.print();
+      };
+
+      window.printBatchStudentPdf = function () {
+        var models = getTargetStudentModelsForBatchExport_();
+        if (models.length === 0) return;
+        var container = document.getElementById('studentBatchPrintContainer');
+        if (!container) {
+          window.print();
+          return;
+        }
+
+        var html = '';
+        for (var i = 0; i < models.length; i++) {
+          var m = models[i];
+          var stObj = m.studentObj || m.student || {};
+          var personal = m.personal || {};
+          html += '<div class="student-print-page">';
+          html += '<div class="timetable-card"><div class="card-inner">';
+          html += '<header class="editorial-header">';
+          html += '<div class="eh-top-row">';
+          html += '<div class="eh-year-text">' + escapeHtml_(m.schoolYear) + '</div>';
+          html += '</div>';
+          html += '<div class="eh-bottom-row">';
+          html += '<h1 class="eh-main-title">' + escapeHtml_(m.mainTitle) + '</h1>';
+          html += '<div class="eh-affiliation-box">';
+          html += '<div class="eh-school-class">' + escapeHtml_(m.affiliation) + '</div>';
+          if (m.subRole) {
+            html += '<div class="eh-teacher-homeroom">' + escapeHtml_(m.subRole) + '</div>';
+          }
+          html += '</div></div>';
+
+          if (stObj.electives) {
+            var groupOrder = ['A', 'B', 'C', 'D', 'E', 'F', '음/미'];
+            var summaryChips = '';
+            for (var gi = 0; gi < groupOrder.length; gi++) {
+              var gCode = groupOrder[gi];
+              var rawChoice = stObj.electives[gCode] ? String(stObj.electives[gCode]).trim() : '';
+              if (!rawChoice) continue;
+              var matchedMeta =
+                personal && personal.electiveDetails ? personal.electiveDetails[gCode] : null;
+              var metaParts = [];
+              if (matchedMeta && matchedMeta.room) metaParts.push(matchedMeta.room);
+              if (matchedMeta && matchedMeta.teacher) {
+                metaParts.push(formatTeacherName(matchedMeta.teacher, false));
+              }
+              summaryChips +=
+                '<div class="student-elective-chip">' +
+                '<span class="sec-group">' +
+                escapeHtml_(gCode === '음/미' ? '음·미' : gCode + '군') +
+                '</span>' +
+                '<span class="sec-subj">' +
+                escapeHtml_(rawChoice) +
+                '</span>' +
+                (metaParts.length > 0
+                  ? '<span class="sec-meta">(' + escapeHtml_(metaParts.join('·')) + ')</span>'
+                  : '') +
+                '</div>';
+            }
+            if (summaryChips) {
+              html += '<div class="student-elective-summary-bar active">' + summaryChips + '</div>';
+            }
+          }
+          html += '</header>';
+
+          html += '<div class="timetable-table-wrap"><table class="tt-table"><colgroup><col class="col-period" /><col class="col-day" /><col class="col-day" /><col class="col-day" /><col class="col-day" /><col class="col-day" /></colgroup><thead><tr><th class="th-period-corner">교시</th>';
+          for (var d = 0; d < m.days.length; d++) {
+            html += '<th>' + escapeHtml_(m.days[d]) + '</th>';
+          }
+          html += '</tr></thead><tbody>';
+
+          for (var r = 0; r < m.rows.length; r++) {
+            var rObj = m.rows[r];
+            html += '<tr>';
+            html +=
+              '<td class="td-period"><div class="period-num">' +
+              escapeHtml_(rObj.periodLabel) +
+              '</div>' +
+              (rObj.periodTime
+                ? '<div class="period-time">' + escapeHtml_(rObj.periodTime) + '</div>'
+                : '') +
+              '</td>';
+            for (var c = 0; c < 5; c++) {
+              var cellObj = rObj.cells[c];
+              if (!cellObj || cellObj.main === '—') {
+                html += '<td class="td-cell"><span class="cell-empty-dash">—</span></td>';
+              } else if (cellObj.main2) {
+                html +=
+                  '<td class="td-cell">' +
+                  '<div class="cell-main-text elective-group-highlight">' +
+                  escapeHtml_(cellObj.main) +
+                  '</div>' +
+                  '<div class="cell-main-text">' +
+                  escapeHtml_(cellObj.main2) +
+                  '</div>' +
+                  (cellObj.sub
+                    ? '<div class="cell-sub-info">' + escapeHtml_(cellObj.sub) + '</div>'
+                    : '') +
+                  '</td>';
+              } else {
+                html +=
+                  '<td class="td-cell">' +
+                  '<div class="cell-main-text">' +
+                  escapeHtml_(cellObj.main) +
+                  '</div>' +
+                  (cellObj.sub
+                    ? '<div class="cell-sub-info">' + escapeHtml_(cellObj.sub) + '</div>'
+                    : '') +
+                  '</td>';
+              }
+            }
+            html += '</tr>';
+
+            if (r === 3 && m.rows.length > 4) {
+              html +=
+                '<tr class="tr-lunch">' +
+                '<td class="td-period td-lunch-period"><div class="period-num">점심</div></td>' +
+                '<td class="td-cell td-lunch-cell" colspan="5">점심 시간</td>' +
+                '</tr>';
+            }
+          }
+          html += '</tbody></table></div></div></div></div>';
+        }
+
+        container.innerHTML = html;
+        document.body.classList.add('is-batch-student-printing');
+
+        var cleanupBatchPrint = function () {
+          document.body.classList.remove('is-batch-student-printing');
+          container.innerHTML = '';
+          window.removeEventListener('afterprint', cleanupBatchPrint);
+        };
+        window.addEventListener('afterprint', cleanupBatchPrint);
+        setTimeout(function () {
+          window.print();
+          setTimeout(cleanupBatchPrint, 1500);
+        }, 60);
       };
 
       function parseServerPayload_(raw) {
@@ -6834,7 +8803,10 @@
         var mCompact = s.match(/^(20\d{2})0?([12])$/);
         if (mCompact) return mCompact[1] + '-' + mCompact[2];
         var cleaned = s
-          .replace(/(?:주간\s*시간표|학급\s*시간표|반별\s*시간표|선택\s*과목\s*[23]\s*학년)$/g, '')
+          .replace(
+            /(?:주간\s*시간표|학급\s*시간표|반별\s*시간표|선택\s*과목\s*[23]\s*학년|학생\s*명렬\s*[23]?\s*학년)$/g,
+            ''
+          )
           .replace(/[-_.\s]+$/g, '')
           .trim();
         return cleaned || '2025-2';
@@ -6857,6 +8829,8 @@
         var cSheetName = prefix + '학급시간표';
         var e2SheetName = prefix + '선택과목2학년';
         var e3SheetName = prefix + '선택과목3학년';
+        var s2SheetName = prefix + '학생명렬2학년';
+        var s3SheetName = prefix + '학생명렬3학년';
 
         var previewEl = document.getElementById('sheetNamePreview');
         if (previewEl) {
@@ -6869,6 +8843,10 @@
             escapeHtml_(e2SheetName) +
             ']</strong> · <strong>[' +
             escapeHtml_(e3SheetName) +
+            ']</strong> · <strong>[' +
+            escapeHtml_(s2SheetName) +
+            ']</strong> · <strong>[' +
+            escapeHtml_(s3SheetName) +
             ']</strong>';
         }
         var subW = document.getElementById('subWeeklySheetLabel');
@@ -6887,6 +8865,14 @@
         if (subE3) {
           subE3.textContent = '스프레드시트 [' + e3SheetName + '] 시트로 저장 (401~409호·211·315·정보실)';
         }
+        var subS2 = document.getElementById('subStudent2SheetLabel');
+        if (subS2) {
+          subS2.textContent = '스프레드시트 [' + s2SheetName + '] 시트로 저장 (신학번·성명·A~E·음/미)';
+        }
+        var subS3 = document.getElementById('subStudent3SheetLabel');
+        if (subS3) {
+          subS3.textContent = '스프레드시트 [' + s3SheetName + '] 시트로 저장 (신학번·성명·A~F)';
+        }
         refreshProjectFileSlotBoxesUI_();
       };
 
@@ -6901,7 +8887,7 @@
         }
         var activeDataMatch =
           state.data &&
-          normalizeClientSemesterPrefix_(state.data.activePrefix || state.activeProjectId) === normPref
+            normalizeClientSemesterPrefix_(state.data.activePrefix || state.activeProjectId) === normPref
             ? state.data
             : null;
         var found = (activeDataMatch && activeDataMatch.foundSheets) || (proj && proj.payload && proj.payload.foundSheets) || {};
@@ -6925,6 +8911,16 @@
           var e3Sheet = (found && found.elective3Sheet) || (proj && proj.elective3SheetName) || '';
           var e3File = (proj && proj.elective3FileName) || '';
           return { sheetName: e3Sheet, fileName: e3File };
+        }
+        if (slotType === 'student2') {
+          var s2Sheet = (found && found.student2Sheet) || (proj && proj.student2SheetName) || '';
+          var s2File = (proj && proj.student2FileName) || '';
+          return { sheetName: s2Sheet, fileName: s2File };
+        }
+        if (slotType === 'student3') {
+          var s3Sheet = (found && found.student3Sheet) || (proj && proj.student3SheetName) || '';
+          var s3File = (proj && proj.student3FileName) || '';
+          return { sheetName: s3Sheet, fileName: s3File };
         }
         return { sheetName: '', fileName: '' };
       }
@@ -6961,6 +8957,20 @@
             boxId: 'boxElective3File',
             labelId: 'labelElective3File',
             emptyText: '선택된 파일 없음 (선택 사항)'
+          },
+          {
+            slotType: 'student2',
+            pendingKey: 'student2File',
+            boxId: 'boxStudent2File',
+            labelId: 'labelStudent2File',
+            emptyText: '선택된 파일 없음 (학생 시간표용)'
+          },
+          {
+            slotType: 'student3',
+            pendingKey: 'student3File',
+            boxId: 'boxStudent3File',
+            labelId: 'labelStudent3File',
+            emptyText: '선택된 파일 없음 (학생 시간표용)'
           }
         ];
 
@@ -7000,8 +9010,11 @@
             classSheetName: '2025-2학급시간표',
             elective2SheetName: '',
             elective3SheetName: '',
+            student2SheetName: '',
+            student3SheetName: '',
             classCount: 0,
             teacherCount: 0,
+            studentCount: 0,
             payload: null
           });
         }
@@ -7023,13 +9036,18 @@
                   classSheetName: p.classSheetName || pref + '학급시간표',
                   elective2SheetName: p.elective2SheetName || '',
                   elective3SheetName: p.elective3SheetName || '',
+                  student2SheetName: p.student2SheetName || '',
+                  student3SheetName: p.student3SheetName || '',
                   weeklyFileName: p.weeklyFileName || '',
                   classFileName: p.classFileName || '',
                   elective2FileName: p.elective2FileName || '',
                   elective3FileName: p.elective3FileName || '',
+                  student2FileName: p.student2FileName || '',
+                  student3FileName: p.student3FileName || '',
                   updatedAt: p.updatedAt || '',
                   classCount: p.classCount || 0,
                   teacherCount: p.teacherCount || 0,
+                  studentCount: p.studentCount || 0,
                   payload: p.payload || null
                 };
               });
@@ -7038,24 +9056,48 @@
               state.activeProjectId = normalizeClientSemesterPrefix_(parsed.activeProjectId);
             }
           }
-        } catch (e) {}
+        } catch (e) { }
         ensureDefault2025_2InProjects_();
       }
 
       function saveProjectsToLocalStorage_() {
         try {
+          var lightProjects = state.projects.map(function (p) {
+            return {
+              id: p.id,
+              prefix: p.prefix,
+              name: p.name,
+              weeklySheetName: p.weeklySheetName || '',
+              classSheetName: p.classSheetName || '',
+              elective2SheetName: p.elective2SheetName || '',
+              elective3SheetName: p.elective3SheetName || '',
+              student2SheetName: p.student2SheetName || '',
+              student3SheetName: p.student3SheetName || '',
+              weeklyFileName: p.weeklyFileName || '',
+              classFileName: p.classFileName || '',
+              elective2FileName: p.elective2FileName || '',
+              elective3FileName: p.elective3FileName || '',
+              student2FileName: p.student2FileName || '',
+              student3FileName: p.student3FileName || '',
+              updatedAt: p.updatedAt || '',
+              classCount: p.classCount || 0,
+              teacherCount: p.teacherCount || 0,
+              studentCount: p.studentCount || 0
+            };
+          });
           localStorage.setItem(
             PROJECTS_STORAGE_KEY,
             JSON.stringify({
               activeProjectId: state.activeProjectId,
-              projects: state.projects
+              projects: lightProjects
             })
           );
-        } catch (e) {}
+        } catch (e) { }
       }
 
       function syncSemesterSetsFromPayload_(payload) {
         if (!payload || typeof payload !== 'object') return;
+        normalizePayloadStudents_(payload);
         var activePref = normalizeClientSemesterPrefix_(payload.activePrefix || state.activeProjectId || '2025-2');
         state.activeProjectId = activePref;
 
@@ -7078,8 +9120,11 @@
                 classSheetName: sset.classSheetName || '',
                 elective2SheetName: sset.elective2SheetName || '',
                 elective3SheetName: sset.elective3SheetName || '',
+                student2SheetName: sset.student2SheetName || '',
+                student3SheetName: sset.student3SheetName || '',
                 classCount: 0,
                 teacherCount: 0,
+                studentCount: 0,
                 payload: null
               });
             } else {
@@ -7087,6 +9132,8 @@
               if (sset.classSheetName !== undefined) existing.classSheetName = sset.classSheetName || '';
               if (sset.elective2SheetName !== undefined) existing.elective2SheetName = sset.elective2SheetName || '';
               if (sset.elective3SheetName !== undefined) existing.elective3SheetName = sset.elective3SheetName || '';
+              if (sset.student2SheetName !== undefined) existing.student2SheetName = sset.student2SheetName || '';
+              if (sset.student3SheetName !== undefined) existing.student3SheetName = sset.student3SheetName || '';
             }
           });
         }
@@ -7098,11 +9145,14 @@
             state.projects[j].payload = payload;
             state.projects[j].classCount = Object.keys(payload.classes || {}).length;
             state.projects[j].teacherCount = Object.keys(payload.teachers || {}).length;
+            state.projects[j].studentCount = Object.keys(payload.students || {}).length;
             if (payload.foundSheets) {
               state.projects[j].weeklySheetName = payload.foundSheets.weekly || '';
               state.projects[j].classSheetName = payload.foundSheets.classSheet || '';
               state.projects[j].elective2SheetName = payload.foundSheets.elective2Sheet || '';
               state.projects[j].elective3SheetName = payload.foundSheets.elective3Sheet || '';
+              state.projects[j].student2SheetName = payload.foundSheets.student2Sheet || '';
+              state.projects[j].student3SheetName = payload.foundSheets.student3Sheet || '';
             }
             break;
           }
@@ -7143,8 +9193,11 @@
                   classSheetName: sset.classSheetName || '',
                   elective2SheetName: sset.elective2SheetName || '',
                   elective3SheetName: sset.elective3SheetName || '',
+                  student2SheetName: sset.student2SheetName || '',
+                  student3SheetName: sset.student3SheetName || '',
                   classCount: 0,
                   teacherCount: 0,
+                  studentCount: 0,
                   payload: null
                 });
               } else {
@@ -7152,6 +9205,8 @@
                 if (sset.classSheetName !== undefined) existing.classSheetName = sset.classSheetName || '';
                 if (sset.elective2SheetName !== undefined) existing.elective2SheetName = sset.elective2SheetName || '';
                 if (sset.elective3SheetName !== undefined) existing.elective3SheetName = sset.elective3SheetName || '';
+                if (sset.student2SheetName !== undefined) existing.student2SheetName = sset.student2SheetName || '';
+                if (sset.student3SheetName !== undefined) existing.student3SheetName = sset.student3SheetName || '';
               }
             });
           }
@@ -7186,7 +9241,9 @@
             escapeHtml_(optLabel) +
             '</option>';
         }
-        html += '<option value="__OPEN_MODAL__">➕ 학기(엑셀) 등록/관리...</option>';
+        if (state.portal !== 'student') {
+          html += '<option value="__OPEN_MODAL__">➕ 학기(엑셀) 등록/관리...</option>';
+        }
         selectEl.innerHTML = html;
 
         var hasActiveInList = state.projects.some(function (p) {
@@ -7221,18 +9278,33 @@
             p.elective3SheetName ||
             (p.payload && p.payload.foundSheets && p.payload.foundSheets.elective3Sheet) ||
             '';
+          var s2Sheet =
+            p.student2SheetName ||
+            (p.payload && p.payload.foundSheets && p.payload.foundSheets.student2Sheet) ||
+            '';
+          var s3Sheet =
+            p.student3SheetName ||
+            (p.payload && p.payload.foundSheets && p.payload.foundSheets.student3Sheet) ||
+            '';
           var sheetTags = [];
           if (wSheet) sheetTags.push('<strong>[' + escapeHtml_(wSheet) + ']</strong>');
           if (cSheet) sheetTags.push('<strong>[' + escapeHtml_(cSheet) + ']</strong>');
           if (e2Sheet) sheetTags.push('<strong>[' + escapeHtml_(e2Sheet) + ']</strong>');
           if (e3Sheet) sheetTags.push('<strong>[' + escapeHtml_(e3Sheet) + ']</strong>');
+          if (s2Sheet) sheetTags.push('<strong>[' + escapeHtml_(s2Sheet) + ']</strong>');
+          if (s3Sheet) sheetTags.push('<strong>[' + escapeHtml_(s3Sheet) + ']</strong>');
           if (sheetTags.length === 0) {
             sheetTags.push('<span>등록된 시트 없음</span>');
           }
 
           var countMeta =
-            p.classCount || p.teacherCount
-              ? ' · 학급 ' + (p.classCount || 0) + '개 / 교사 ' + (p.teacherCount || 0) + '명'
+            p.classCount || p.teacherCount || p.studentCount
+              ? ' · 학급 ' +
+              (p.classCount || 0) +
+              '개 / 교사 ' +
+              (p.teacherCount || 0) +
+              '명' +
+              (p.studentCount ? ' / 학생 ' + p.studentCount + '명' : '')
               : '';
 
           html +=
@@ -7262,8 +9334,8 @@
             '</button>' +
             (state.projects.length > 1
               ? '<button type="button" class="proj-del-btn" onclick="deleteSavedProject(\'' +
-                escapeSingleQuote_(p.id) +
-                '\')">삭제</button>'
+              escapeSingleQuote_(p.id) +
+              '\')">삭제</button>'
               : '') +
             '</div>' +
             '</div>';
@@ -7352,6 +9424,10 @@
           state.pendingFiles.elective2File = file;
         } else if (slotType === 'elective3') {
           state.pendingFiles.elective3File = file;
+        } else if (slotType === 'student2') {
+          state.pendingFiles.student2File = file;
+        } else if (slotType === 'student3') {
+          state.pendingFiles.student3File = file;
         }
         refreshProjectFileSlotBoxesUI_();
       };
@@ -7400,6 +9476,24 @@
             sheetProp: 'elective3SheetName',
             fileProp: 'elective3FileName',
             foundProp: 'elective3Sheet'
+          },
+          student2: {
+            pendingKey: 'student2File',
+            inputId: 'fileStudent2Input',
+            sheetSuffix: '학생명렬2학년',
+            sheetProp: 'student2SheetName',
+            fileProp: 'student2FileName',
+            foundProp: 'student2Sheet',
+            gradeNum: 2
+          },
+          student3: {
+            pendingKey: 'student3File',
+            inputId: 'fileStudent3Input',
+            sheetSuffix: '학생명렬3학년',
+            sheetProp: 'student3SheetName',
+            fileProp: 'student3FileName',
+            foundProp: 'student3Sheet',
+            gradeNum: 3
           }
         };
 
@@ -7438,10 +9532,21 @@
         }
         if (
           state.data &&
-          normalizeClientSemesterPrefix_(state.data.activePrefix || state.activeProjectId) === prefix &&
-          state.data.foundSheets
+          normalizeClientSemesterPrefix_(state.data.activePrefix || state.activeProjectId) === prefix
         ) {
-          state.data.foundSheets[meta.foundProp] = null;
+          if (state.data.foundSheets) {
+            state.data.foundSheets[meta.foundProp] = null;
+          }
+          if (meta.gradeNum && state.data.students) {
+            Object.keys(state.data.students).forEach(function (sid) {
+              var st = state.data.students[sid];
+              if (st && Number(st.grade) === meta.gradeNum) {
+                delete state.data.students[sid];
+              }
+            });
+            buildInMemorySearchIndex(state.data);
+            renderTimetable();
+          }
         }
 
         saveProjectsToLocalStorage_();
@@ -7608,7 +9713,7 @@
         if (text.indexOf('\ufffd') !== -1 || /charset\s*=\s*(?:euc-kr|ks_c_5601|cp949)/i.test(text)) {
           try {
             text = new TextDecoder('euc-kr').decode(uint8);
-          } catch (e) {}
+          } catch (e) { }
         }
         if (text.toLowerCase().indexOf('<table') === -1) {
           return null;
@@ -7697,7 +9802,7 @@
         if (text.indexOf('\ufffd') !== -1) {
           try {
             text = new TextDecoder('euc-kr').decode(uint8);
-          } catch (e) {}
+          } catch (e) { }
         }
         text = text.replace(/^\uFEFF/, '');
         var rows = [];
@@ -7848,6 +9953,243 @@
         return roleHint === 'teacher' ? 'teacher' : 'class';
       }
 
+      function parseStudentElectiveRowsClient_(rows, gradeFallback, targetMap) {
+        if (!Array.isArray(rows) || rows.length < 2 || !targetMap) return 0;
+        var headerRowIdx = -1;
+        var studentIdCol = -1;
+        var nameCol = -1;
+        var gradeCol = -1;
+        var classCol = -1;
+        var numCol = -1;
+
+        for (var r = 0; r < Math.min(rows.length, 12); r++) {
+          var row = rows[r] || [];
+          var candIdCol = -1;
+          var candNameCol = -1;
+          var candGradeCol = -1;
+          var candClassCol = -1;
+          var candNumCol = -1;
+
+          for (var c = 0; c < row.length; c++) {
+            var h = String(row[c] || '').replace(/\s+/g, '');
+            if (!h) continue;
+            if (h === '신학번' || (h === '학번' && candIdCol === -1)) {
+              candIdCol = c;
+            } else if (h === '이름' || h === '성명' || h === '학생명' || h === '학생성명') {
+              if (candNameCol === -1) candNameCol = c;
+            } else if (h === '학년') {
+              candGradeCol = c;
+            } else if (h === '반' || h === '학급') {
+              if (candClassCol === -1) candClassCol = c;
+            } else if (h === '번호' || h === '출석번호') {
+              if (candNumCol === -1) candNumCol = c;
+            }
+          }
+
+          if (candNameCol !== -1 && (candIdCol !== -1 || candClassCol !== -1)) {
+            headerRowIdx = r;
+            studentIdCol = candIdCol;
+            nameCol = candNameCol;
+            gradeCol = candGradeCol;
+            classCol = candClassCol;
+            numCol = candNumCol;
+            break;
+          }
+        }
+
+        if (headerRowIdx === -1 || nameCol === -1) return 0;
+
+        var headerRow = rows[headerRowIdx] || [];
+        var groupSummaryCols = {};
+        var artCols = [];
+        var firstGroupSummaryCol = headerRow.length;
+
+        for (var col = 0; col < headerRow.length; col++) {
+          var rawH = String(headerRow[col] || '').trim();
+          var cleanH = rawH.replace(/\s+/g, '');
+          if (!cleanH) continue;
+
+          var mGrp = cleanH.match(/^([A-H])(?:_?선택|군|그룹)?$/i);
+          if (mGrp && col > nameCol) {
+            var grpLetter = mGrp[1].toUpperCase();
+            if (groupSummaryCols[grpLetter] === undefined) {
+              groupSummaryCols[grpLetter] = col;
+              if (col < firstGroupSummaryCol) {
+                firstGroupSummaryCol = col;
+              }
+            }
+            continue;
+          }
+
+          if (
+            cleanH.indexOf('음악/미술') !== -1 ||
+            cleanH.indexOf('음/미') !== -1 ||
+            cleanH === '예술' ||
+            cleanH === '음미'
+          ) {
+            artCols.push(col);
+          }
+        }
+
+        var ignoredMetaHeaders = {
+          '순번': true,
+          '연번': true,
+          '학년': true,
+          '반': true,
+          '학급': true,
+          '번호': true,
+          '출석번호': true,
+          '신학번': true,
+          '학번': true,
+          '구학번': true,
+          '이름': true,
+          '성명': true,
+          '학생명': true,
+          '성적': true,
+          '석차': true,
+          '총점': true,
+          '평균': true,
+          '사회반': true,
+          '위탁': true,
+          '비고': true,
+          '전입': true
+        };
+
+        var subjectMatrixCols = [];
+        var matrixStartCol = Math.max(studentIdCol, nameCol) + 1;
+        for (var mCol = matrixStartCol; mCol < firstGroupSummaryCol; mCol++) {
+          var subjHeader = String(headerRow[mCol] || '').trim();
+          var cleanSubjH = subjHeader.replace(/\s+/g, '');
+          if (!cleanSubjH || ignoredMetaHeaders[cleanSubjH]) continue;
+          subjectMatrixCols.push({
+            colIdx: mCol,
+            subjectName: subjHeader
+          });
+        }
+
+        var count = 0;
+        for (var rIdx = headerRowIdx + 1; rIdx < rows.length; rIdx++) {
+          var dRow = rows[rIdx] || [];
+          var rawName = String(dRow[nameCol] || '').trim();
+          if (!rawName) continue;
+          if (
+            /^[\d.,\s+-]+$/.test(rawName) ||
+            rawName === '이름' ||
+            rawName === '성명' ||
+            rawName === '합계' ||
+            rawName === '계'
+          ) {
+            continue;
+          }
+
+          var rawId =
+            studentIdCol !== -1
+              ? String(dRow[studentIdCol] || '')
+                  .replace(/\.0+$/, '')
+                  .replace(/[,\s]+/g, '')
+              : '';
+          var grade = Number(gradeFallback) === 3 ? 3 : Number(gradeFallback) === 2 ? 2 : 0;
+          var classNo = 0;
+          var studentNo = 0;
+          var studentId = '';
+
+          var m5 = rawId.match(/^([123])(\d{2})(\d{2})$/);
+          var m4 = !m5 ? rawId.match(/^([123])([1-9])(\d{2})$/) : null;
+
+          if (m5) {
+            grade = parseInt(m5[1], 10);
+            classNo = parseInt(m5[2], 10);
+            studentNo = parseInt(m5[3], 10);
+            studentId =
+              grade +
+              (classNo < 10 ? '0' + classNo : String(classNo)) +
+              (studentNo < 10 ? '0' + studentNo : String(studentNo));
+          } else if (m4) {
+            grade = parseInt(m4[1], 10);
+            classNo = parseInt(m4[2], 10);
+            studentNo = parseInt(m4[3], 10);
+            studentId = grade + '0' + classNo + (studentNo < 10 ? '0' + studentNo : String(studentNo));
+          } else if (classCol !== -1 && numCol !== -1) {
+            var cVal = parseInt(String(dRow[classCol] || '').trim(), 10);
+            var nVal = parseInt(String(dRow[numCol] || '').trim(), 10);
+            var gVal = gradeCol !== -1 ? parseInt(String(dRow[gradeCol] || '').trim(), 10) : grade;
+            if (gVal >= 1 && gVal <= 3 && cVal >= 1 && cVal <= 15 && nVal >= 1 && nVal <= 50) {
+              grade = gVal;
+              classNo = cVal;
+              studentNo = nVal;
+              studentId =
+                grade +
+                (classNo < 10 ? '0' + classNo : String(classNo)) +
+                (studentNo < 10 ? '0' + studentNo : String(studentNo));
+            }
+          }
+
+          if (!studentId || !grade || !classNo || !studentNo) continue;
+
+          var choices = {};
+          var grpKeys = Object.keys(groupSummaryCols);
+          for (var gi = 0; gi < grpKeys.length; gi++) {
+            var gk = grpKeys[gi];
+            var sVal = String(dRow[groupSummaryCols[gk]] || '').trim();
+            if (sVal && sVal !== '-' && sVal !== '—') {
+              choices[gk] = sVal;
+            }
+          }
+
+          var artChoice = '';
+          for (var ai = 0; ai < artCols.length; ai++) {
+            var aVal = String(dRow[artCols[ai]] || '').trim();
+            if (aVal && aVal !== '-' && aVal !== '—') {
+              artChoice = aVal;
+              break;
+            }
+          }
+
+          for (var mi = 0; mi < subjectMatrixCols.length; mi++) {
+            var mItem = subjectMatrixCols[mi];
+            var marker = String(dRow[mItem.colIdx] || '').trim().toUpperCase();
+            if (!marker) continue;
+            if (/^[A-H]$/.test(marker)) {
+              if (!choices[marker]) {
+                choices[marker] = mItem.subjectName;
+              }
+            } else if (marker === '1' && !artChoice) {
+              if (
+                mItem.subjectName.indexOf('음악') !== -1 ||
+                mItem.subjectName.indexOf('미술') !== -1
+              ) {
+                artChoice = mItem.subjectName;
+              }
+            }
+          }
+
+          if (artChoice) {
+            choices['음/미'] = artChoice;
+            choices.ART = artChoice;
+          }
+
+          var classKey = grade + '-' + classNo;
+          targetMap[studentId] = {
+            id: studentId,
+            name: rawName,
+            n: rawName,
+            grade: grade,
+            g: grade,
+            classNum: classNo,
+            c: classNo,
+            num: studentNo,
+            no: studentNo,
+            classKey: classKey,
+            ck: classKey,
+            electives: choices,
+            ch: choices,
+            art: artChoice
+          };
+          count++;
+        }
+        return count;
+      }
+
       window.saveAndLoadUploadedProject = function () {
         var statusEl = document.getElementById('projUploadStatus');
         var projNameEl = document.getElementById('projNameInput');
@@ -7865,15 +10207,19 @@
         var classSheetName = prefix + '학급시간표';
         var elective2SheetName = prefix + '선택과목2학년';
         var elective3SheetName = prefix + '선택과목3학년';
+        var student2SheetName = prefix + '학생명렬2학년';
+        var student3SheetName = prefix + '학생명렬3학년';
 
         var wFile = state.pendingFiles.weekly;
         var cFile = state.pendingFiles.classFile;
         var e2File = state.pendingFiles.elective2File;
         var e3File = state.pendingFiles.elective3File;
+        var s2File = state.pendingFiles.student2File;
+        var s3File = state.pendingFiles.student3File;
 
-        if (!wFile && !cFile && !e2File && !e3File) {
+        if (!wFile && !cFile && !e2File && !e3File && !s2File && !s3File) {
           statusEl.textContent =
-            '⚠️ 업로드할 파일(주간시간표, 학급시간표, 선택과목2학년, 선택과목3학년 중 1개 이상)을 선택해 주세요.';
+            '⚠️ 업로드할 파일(주간시간표, 학급시간표, 선택과목2·3학년, 학생명렬2·3학년 중 1개 이상)을 선택해 주세요.';
           statusEl.classList.add('is-error');
           return;
         }
@@ -7883,6 +10229,8 @@
         if (cFile) uploadingLabels.push('[' + classSheetName + ']');
         if (e2File) uploadingLabels.push('[' + elective2SheetName + ']');
         if (e3File) uploadingLabels.push('[' + elective3SheetName + ']');
+        if (s2File) uploadingLabels.push('[' + student2SheetName + ']');
+        if (s3File) uploadingLabels.push('[' + student3SheetName + ']');
 
         statusEl.textContent =
           '⏳ 파일 데이터를 분석하여 ' + uploadingLabels.join(', ') + ' 시트를 반영하는 중...';
@@ -7896,13 +10244,21 @@
         var pElective3 = e3File
           ? readExcelFileToSheetsAsync_(e3File, 'elective3')
           : Promise.resolve([]);
+        var pStudent2 = s2File
+          ? readExcelFileToSheetsAsync_(s2File, 'student2')
+          : Promise.resolve([]);
+        var pStudent3 = s3File
+          ? readExcelFileToSheetsAsync_(s3File, 'student3')
+          : Promise.resolve([]);
 
-        Promise.all([pWeekly, pClass, pElective2, pElective3])
+        Promise.all([pWeekly, pClass, pElective2, pElective3, pStudent2, pStudent3])
           .then(function (results) {
             var weeklySheets = results[0] || [];
             var classSheets = results[1] || [];
             var elective2Sheets = results[2] || [];
             var elective3Sheets = results[3] || [];
+            var student2Sheets = results[4] || [];
+            var student3Sheets = results[5] || [];
             var allSheetItems = weeklySheets.concat(classSheets);
 
             var combinedWeeklyRows = [];
@@ -7924,14 +10280,39 @@
             elective3Sheets.forEach(function (s) {
               combinedElective3Rows = combinedElective3Rows.concat(s.rows || []);
             });
+            var combinedStudent2Rows = [];
+            student2Sheets.forEach(function (s) {
+              combinedStudent2Rows = combinedStudent2Rows.concat(s.rows || []);
+            });
+            var combinedStudent3Rows = [];
+            student3Sheets.forEach(function (s) {
+              combinedStudent3Rows = combinedStudent3Rows.concat(s.rows || []);
+            });
 
             if (
               combinedWeeklyRows.length === 0 &&
               combinedClassRows.length === 0 &&
               combinedElective2Rows.length === 0 &&
-              combinedElective3Rows.length === 0
+              combinedElective3Rows.length === 0 &&
+              combinedStudent2Rows.length === 0 &&
+              combinedStudent3Rows.length === 0
             ) {
               throw new Error('업로드한 파일에서 유효한 셀 데이터를 찾지 못했습니다.');
+            }
+
+            // 로컬 데이터에도 즉시 학생명렬 반영 (오프라인 또는 서버 응답 전 즉각 조회 지원)
+            if (state.data && (combinedStudent2Rows.length > 0 || combinedStudent3Rows.length > 0)) {
+              if (!state.data.students || typeof state.data.students !== 'object') {
+                state.data.students = {};
+              }
+              if (combinedStudent2Rows.length > 0) {
+                parseStudentElectiveRowsClient_(combinedStudent2Rows, 2, state.data.students);
+                if (state.data.foundSheets) state.data.foundSheets.student2Sheet = student2SheetName;
+              }
+              if (combinedStudent3Rows.length > 0) {
+                parseStudentElectiveRowsClient_(combinedStudent3Rows, 3, state.data.students);
+                if (state.data.foundSheets) state.data.foundSheets.student3Sheet = student3SheetName;
+              }
             }
 
             var existingIdx = -1;
@@ -7971,6 +10352,14 @@
                 combinedElective3Rows.length > 0
                   ? elective3SheetName
                   : (prevRecord && prevRecord.elective3SheetName) || '',
+              student2SheetName:
+                combinedStudent2Rows.length > 0
+                  ? student2SheetName
+                  : (prevRecord && prevRecord.student2SheetName) || '',
+              student3SheetName:
+                combinedStudent3Rows.length > 0
+                  ? student3SheetName
+                  : (prevRecord && prevRecord.student3SheetName) || '',
               updatedAt: updatedAt,
               weeklyFileName: wFile ? wFile.name : (prevRecord && prevRecord.weeklyFileName) || '',
               classFileName: cFile ? cFile.name : (prevRecord && prevRecord.classFileName) || '',
@@ -7980,8 +10369,18 @@
               elective3FileName: e3File
                 ? e3File.name
                 : (prevRecord && prevRecord.elective3FileName) || '',
+              student2FileName: s2File
+                ? s2File.name
+                : (prevRecord && prevRecord.student2FileName) || '',
+              student3FileName: s3File
+                ? s3File.name
+                : (prevRecord && prevRecord.student3FileName) || '',
               classCount: (prevRecord && prevRecord.classCount) || 0,
               teacherCount: (prevRecord && prevRecord.teacherCount) || 0,
+              studentCount:
+                (state.data && state.data.students ? Object.keys(state.data.students).length : 0) ||
+                (prevRecord && prevRecord.studentCount) ||
+                0,
               payload: (prevRecord && prevRecord.payload) || null
             };
 
@@ -7997,14 +10396,21 @@
                 weekly: null,
                 classFile: null,
                 elective2File: null,
-                elective3File: null
+                elective3File: null,
+                student2File: null,
+                student3File: null
               };
-              ['fileWeeklyInput', 'fileClassInput', 'fileElective2Input', 'fileElective3Input'].forEach(
-                function (inpId) {
-                  var inp = document.getElementById(inpId);
-                  if (inp) inp.value = '';
-                }
-              );
+              [
+                'fileWeeklyInput',
+                'fileClassInput',
+                'fileElective2Input',
+                'fileElective3Input',
+                'fileStudent2Input',
+                'fileStudent3Input'
+              ].forEach(function (inpId) {
+                var inp = document.getElementById(inpId);
+                if (inp) inp.value = '';
+              });
               refreshProjectFileSlotBoxesUI_();
             }
 
@@ -8031,6 +10437,8 @@
                     Object.keys(serverData.classes || {}).length +
                     '개 · 교사 ' +
                     Object.keys(serverData.teachers || {}).length +
+                    '명 · 학생 ' +
+                    Object.keys(serverData.students || {}).length +
                     '명)';
                   setTimeout(function () {
                     window.closeProjectModal();
@@ -8049,14 +10457,21 @@
                     classRows: combinedClassRows,
                     elective2Rows: combinedElective2Rows,
                     elective3Rows: combinedElective3Rows,
+                    student2Rows: combinedStudent2Rows,
+                    student3Rows: combinedStudent3Rows,
                     weeklyFileName: record.weeklyFileName,
                     classFileName: record.classFileName,
                     elective2FileName: record.elective2FileName,
-                    elective3FileName: record.elective3FileName
+                    elective3FileName: record.elective3FileName,
+                    student2FileName: record.student2FileName,
+                    student3FileName: record.student3FileName
                   })
                 );
             } else {
               clearPendingFileInputsAfterSave_();
+              if (state.data) {
+                applyLoadedData(state.data, true);
+              }
               saveProjectsToLocalStorage_();
               renderProjectSelectUI_();
               renderSavedProjectsList_();
@@ -8153,6 +10568,14 @@
         } else if (state.mode === 'teacher' && tKeys.length === 0 && cKeys.length > 0) {
           state.mode = 'class';
         }
+        if (state.currentStudentId && (!payload.students || !payload.students[state.currentStudentId])) {
+          state.currentStudentId = '';
+        }
+        if (Array.isArray(state.selectedStudentIds)) {
+          state.selectedStudentIds = state.selectedStudentIds.filter(function (sid) {
+            return Boolean(payload.students && payload.students[sid]);
+          });
+        }
         if (!preserveSelection) {
           state.currentKey = '';
           state.lastSearchQuery = '';
@@ -8185,8 +10608,16 @@
         buildInMemorySearchIndex(payload);
         if (saveToStorage && payload.ok) {
           try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-          } catch (e) {}
+            localStorage.setItem(
+              STORAGE_KEY,
+              JSON.stringify(payload, function (k, v) {
+                if (k === 'studentList' || k === 'studentClassMap' || k === 'electiveCourses') {
+                  return undefined;
+                }
+                return v;
+              })
+            );
+          } catch (e) { }
         }
         renderTimetable();
       }
@@ -8222,7 +10653,7 @@
           state.sheetBackupData = inlineData;
           syncSemesterSetsFromPayload_(inlineData);
           applyLoadedData(inlineData, true);
-          setTimeout(revalidateSheetInBackground_, 150);
+          setTimeout(revalidateSheetInBackground_, 600);
         } else {
           var activeSavedProj = state.projects.filter(function (p) {
             return p.id === state.activeProjectId && p.payload;
@@ -8234,7 +10665,7 @@
             var cachedStr = null;
             try {
               cachedStr = localStorage.getItem(STORAGE_KEY);
-            } catch (e) {}
+            } catch (e) { }
 
             var renderedFromLocal = false;
             if (cachedStr) {
@@ -8246,7 +10677,7 @@
                   applyLoadedData(parsedLocal, false);
                   renderedFromLocal = true;
                 }
-              } catch (err) {}
+              } catch (err) { }
             }
             if (!renderedFromLocal) {
               renderEmptyGridTable_(['월', '화', '수', '목', '금'], 7);
@@ -8254,8 +10685,6 @@
           }
           window.refreshFromSheet(true);
         }
-
-        setTimeout(syncProjectsFromServerInBackground_, 200);
 
         var inputEl = document.getElementById('searchInput');
         inputEl.addEventListener('focus', function () {
@@ -8290,8 +10719,13 @@
             state.acSelectedIdx = (state.acSelectedIdx + 1) % state.acFiltered.length;
             var downHit = state.acFiltered[state.acSelectedIdx];
             if (downHit) {
-              state.mode = downHit.type;
-              state.currentKey = downHit.key;
+              if (downHit.type === 'student') {
+                state.currentStudentId = downHit.key;
+                syncStudentClassFilterByStudentId_(downHit.key);
+              } else {
+                state.mode = downHit.type;
+                state.currentKey = downHit.key;
+              }
               syncModeTabsUI();
               renderTimetable();
             }
@@ -8302,8 +10736,13 @@
               (state.acSelectedIdx - 1 + state.acFiltered.length) % state.acFiltered.length;
             var upHit = state.acFiltered[state.acSelectedIdx];
             if (upHit) {
-              state.mode = upHit.type;
-              state.currentKey = upHit.key;
+              if (upHit.type === 'student') {
+                state.currentStudentId = upHit.key;
+                syncStudentClassFilterByStudentId_(upHit.key);
+              } else {
+                state.mode = upHit.type;
+                state.currentKey = upHit.key;
+              }
               syncModeTabsUI();
               renderTimetable();
             }
@@ -8312,7 +10751,11 @@
             e.preventDefault();
             var chosen = state.acFiltered[state.acSelectedIdx] || state.acFiltered[0];
             if (chosen) {
-              window.selectTarget(chosen.type, chosen.key, true);
+              if (chosen.type === 'student') {
+                window.selectStudentTarget(chosen.key, true);
+              } else {
+                window.selectTarget(chosen.type, chosen.key, true);
+              }
               inputEl.blur();
             }
           } else if (e.key === 'Escape') {
@@ -8361,4 +10804,5 @@
     })();
   </script>
 </body>
+
 </html>

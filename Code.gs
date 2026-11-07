@@ -5,9 +5,10 @@
  */
 
 var CACHE_KEY_TIMETABLE = 'TIMETABLE_REAL_SHEETS_V5';
-var CACHE_KEY_PREFIX = 'TT_FAST_V6_';
-var CACHE_CHUNK_SIZE = 80000; // 단일 키 100KB 제한을 안전하게 회피하는 80KB 청크
+var CACHE_KEY_PREFIX = 'TT_FAST_V7_';
+var CACHE_CHUNK_SIZE = 30000; // 한글(UTF-8 3B/글자) 포함 시에도 단일 키 100KB(102,400B) 제한을 100% 안전 통과하는 3만 글자 청크
 var CACHE_TTL_SECONDS = 21600; // 6시간 캐싱
+var CACHE_FRESH_VERIFY_TTL_SEC = 180; // 최근 3분 내 검증된 캐시는 불필요한 시트 전체 재파싱 생략
 var PROP_VERSION_KEY = 'TIMETABLE_VERSION_HASH_V5';
 var PROP_SS_ID_KEY = 'SPREADSHEET_ID';
 
@@ -24,7 +25,7 @@ function doGet(e) {
 
   return template
     .evaluate()
-    .setTitle('교사·학급 시간표 검색')
+    .setTitle('교사·학생 시간표 검색')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -80,9 +81,9 @@ function getCachedJsonFast_() {
 }
 
 /**
- * JSON 문자열을 80KB 청크로 분할하여 CacheService에 일괄 저장(putAll)합니다.
+ * JSON 문자열을 3만 글자(~45~60KB UTF-8) 청크로 분할하여 CacheService에 일괄 저장(putAll)합니다.
  */
-function putCachedJson_(jsonStr) {
+function putCachedJson_(jsonStr, optSig) {
   if (!jsonStr) return;
   try {
     var cache = CacheService.getScriptCache();
@@ -90,6 +91,10 @@ function putCachedJson_(jsonStr) {
     var count = Math.ceil(totalLen / CACHE_CHUNK_SIZE);
     var batch = {};
     batch[CACHE_KEY_PREFIX + 'META'] = String(count);
+    batch[CACHE_KEY_PREFIX + 'TS'] = String(Date.now());
+    if (optSig) {
+      batch[CACHE_KEY_PREFIX + 'SIG'] = String(optSig);
+    }
     for (var i = 0; i < count; i++) {
       batch[CACHE_KEY_PREFIX + i] = jsonStr.substring(
         i * CACHE_CHUNK_SIZE,
@@ -106,17 +111,24 @@ function putCachedJson_(jsonStr) {
 function clearTimetableCache_() {
   try {
     var cache = CacheService.getScriptCache();
-    cache.removeAll([
+    var keysToRemove = [
       CACHE_KEY_PREFIX + 'META',
-      CACHE_KEY_PREFIX + '0',
-      CACHE_KEY_PREFIX + '1',
-      CACHE_KEY_PREFIX + '2',
-      CACHE_KEY_PREFIX + '3',
-      CACHE_KEY_PREFIX + '4',
+      CACHE_KEY_PREFIX + 'TS',
+      CACHE_KEY_PREFIX + 'SIG',
+      'TT_FAST_V6_META',
+      'TT_FAST_V6_0',
+      'TT_FAST_V6_1',
+      'TT_FAST_V6_2',
+      'TT_FAST_V6_3',
+      'TT_FAST_V6_4',
       CACHE_KEY_TIMETABLE,
       'FAST_TIMETABLE_PAYLOAD_V1',
       'TIMETABLE_REAL_SHEETS_V2'
-    ]);
+    ];
+    for (var i = 0; i < 15; i++) {
+      keysToRemove.push(CACHE_KEY_PREFIX + i);
+    }
+    cache.removeAll(keysToRemove);
   } catch (e) {}
 }
 
@@ -154,7 +166,7 @@ function getTimetableJsonString(forceRefresh) {
   var serialized = JSON.stringify(payload);
 
   if (payload && payload.ok) {
-    putCachedJson_(serialized);
+    putCachedJson_(serialized, payload.sig);
   }
 
   return serialized;
@@ -181,7 +193,7 @@ function getTimetableData(forceRefresh) {
 
   if (payload && payload.ok) {
     try {
-      putCachedJson_(JSON.stringify(payload));
+      putCachedJson_(JSON.stringify(payload), payload.sig);
     } catch (cacheErr) {}
   }
 
@@ -204,12 +216,33 @@ function onChange(e) {
  * 데이터가 1글자라도 변경되었을 때만 최신 JSON 문자열을 반환합니다. (Stale-While-Revalidate)
  */
 function checkAndRefreshIfChanged(clientSig) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var metaMap = cache.getAll([
+      CACHE_KEY_PREFIX + 'SIG',
+      CACHE_KEY_PREFIX + 'TS'
+    ]);
+    var cachedSig = metaMap ? metaMap[CACHE_KEY_PREFIX + 'SIG'] : '';
+    var cachedTs = metaMap ? parseInt(metaMap[CACHE_KEY_PREFIX + 'TS'] || '0', 10) : 0;
+
+    if (cachedSig && clientSig && cachedSig === clientSig) {
+      if (cachedTs > 0 && Date.now() - cachedTs < CACHE_FRESH_VERIFY_TTL_SEC * 1000) {
+        return { changed: false };
+      }
+    } else if (cachedSig && (!clientSig || cachedSig !== clientSig)) {
+      var fastJson = getCachedJsonFast_();
+      if (fastJson && cachedTs > 0 && Date.now() - cachedTs < CACHE_FRESH_VERIFY_TTL_SEC * 1000) {
+        return { changed: true, json: fastJson };
+      }
+    }
+  } catch (e) {}
+
   var payload = buildTimetablePayloadFromRealSheets_();
   if (!payload || !payload.ok) {
     return { changed: false };
   }
   var serialized = JSON.stringify(payload);
-  putCachedJson_(serialized);
+  putCachedJson_(serialized, payload.sig);
 
   if (clientSig && payload.sig && clientSig === payload.sig) {
     return { changed: false, v: payload.v };
@@ -217,7 +250,7 @@ function checkAndRefreshIfChanged(clientSig) {
   return { changed: true, json: serialized };
 }
 
-function computePayloadSignature_(classes, teachers, meta, teacherGroups, gradeSpecialRooms) {
+function computePayloadSignature_(classes, teachers, meta, teacherGroups, gradeSpecialRooms, students) {
   try {
     var digest = Utilities.computeDigest(
       Utilities.DigestAlgorithm.MD5,
@@ -226,7 +259,10 @@ function computePayloadSignature_(classes, teachers, meta, teacherGroups, gradeS
         t: teachers,
         m: meta,
         g: teacherGroups || [],
-        sr: gradeSpecialRooms || {}
+        sr: gradeSpecialRooms || {},
+        stCnt: Array.isArray(students) ? students.length : 0,
+        stFirst: Array.isArray(students) && students.length > 0 ? students[0] : null,
+        stLast: Array.isArray(students) && students.length > 0 ? students[students.length - 1] : null
       }),
       Utilities.Charset.UTF_8
     );
@@ -289,7 +325,10 @@ function buildEmptyErrorPayload_(errorMsg, sheetNames) {
     maxPeriod: 7,
     classes: {},
     teachers: {},
-    teacherGroups: []
+    teacherGroups: [],
+    students: [],
+    electiveGroups: {},
+    electiveGroupSlots: {}
   };
 }
 
@@ -305,14 +344,11 @@ function buildTimetablePayloadFromRealSheets_() {
     );
   }
 
-  ensureDefaultSemesterSheetNames_(ss);
+  var sheetCatalog = ensureDefaultSemesterSheetNames_(ss);
+  var allSheets = sheetCatalog.sheets;
+  var allSheetNames = sheetCatalog.names;
 
-  var allSheets = ss.getSheets();
-  var allSheetNames = allSheets.map(function (s) {
-    return s.getName();
-  });
-
-  var semesterSets = discoverSemesterSheetSets_(ss);
+  var semesterSets = discoverSemesterSheetSets_(ss, allSheets, allSheetNames);
   var props = PropertiesService.getScriptProperties();
   var savedActivePrefix = props.getProperty(PROP_ACTIVE_PROJECT_KEY) || '';
   var targetPrefix = normalizeSemesterPrefix_(savedActivePrefix || '2025-2');
@@ -376,6 +412,8 @@ function buildTimetablePayloadFromRealSheets_() {
     classes: {},
     teachers: {},
     gradeSpecialRooms: {},
+    electiveGroups: {},
+    electiveGroupSlots: {},
     hasTeacherInClassCells: false
   };
 
@@ -407,6 +445,15 @@ function buildTimetablePayloadFromRealSheets_() {
 
   applyElectiveSheetsToStore_(store, elective2Sheet, elective3Sheet);
 
+  // 3-3. 학생명렬2학년 · 학생명렬3학년 시트 탐색 및 학생별 선택과목 파싱
+  var student2Sheet =
+    (selectedSet && selectedSet.student2Sheet) ||
+    findStudentSheetByGrade_(allSheets, allSheetNames, targetPrefix, 2);
+  var student3Sheet =
+    (selectedSet && selectedSet.student3Sheet) ||
+    findStudentSheetByGrade_(allSheets, allSheetNames, targetPrefix, 3);
+  var students = parseStudentRosterSheets_(student2Sheet, student3Sheet);
+
   var classCount = Object.keys(store.classes).length;
   var teacherCount = Object.keys(store.teachers).length;
 
@@ -433,7 +480,8 @@ function buildTimetablePayloadFromRealSheets_() {
     store.teachers,
     meta,
     teacherGroups,
-    store.gradeSpecialRooms
+    store.gradeSpecialRooms,
+    students
   );
 
   var serializedSets = semesterSets.map(function (item) {
@@ -444,7 +492,9 @@ function buildTimetablePayloadFromRealSheets_() {
       weeklySheetName: item.weeklySheet ? item.weeklySheetName : '',
       classSheetName: item.classSheet ? item.classSheetName : '',
       elective2SheetName: item.elective2Sheet ? item.elective2SheetName : '',
-      elective3SheetName: item.elective3Sheet ? item.elective3SheetName : ''
+      elective3SheetName: item.elective3Sheet ? item.elective3SheetName : '',
+      student2SheetName: item.student2Sheet ? item.student2SheetName : '',
+      student3SheetName: item.student3Sheet ? item.student3SheetName : ''
     };
   });
 
@@ -461,6 +511,8 @@ function buildTimetablePayloadFromRealSheets_() {
       classSheet: classSheet ? classSheet.getName() : null,
       elective2Sheet: elective2Sheet ? elective2Sheet.getName() : null,
       elective3Sheet: elective3Sheet ? elective3Sheet.getName() : null,
+      student2Sheet: student2Sheet ? student2Sheet.getName() : null,
+      student3Sheet: student3Sheet ? student3Sheet.getName() : null,
       teacherGroupSheet: teacherGroupSheet
         ? teacherGroupSheet.getName()
         : getTeacherGroupSheetName_(targetPrefix)
@@ -472,6 +524,9 @@ function buildTimetablePayloadFromRealSheets_() {
     classes: store.classes,
     teachers: store.teachers,
     gradeSpecialRooms: store.gradeSpecialRooms || {},
+    electiveGroups: store.electiveGroups || {},
+    electiveGroupSlots: store.electiveGroupSlots || {},
+    students: students,
     teacherGroups: teacherGroups
   };
 }
@@ -2102,7 +2157,10 @@ function normalizeSemesterPrefix_(rawInput) {
   var mCompact = s.match(/^(20\d{2})0?([12])$/);
   if (mCompact) return mCompact[1] + '-' + mCompact[2];
   var cleaned = s
-    .replace(/(?:주간\s*시간표|학급\s*시간표|반별\s*시간표|교사\s*그룹|선택\s*과목\s*[23]\s*학년)$/g, '')
+    .replace(
+      /(?:주간\s*시간표|학급\s*시간표|반별\s*시간표|교사\s*그룹|선택\s*과목\s*[23]\s*학년|학생\s*명렬(?:\s*[23]\s*학년)?|학생\s*선택\s*과목(?:\s*[23]\s*학년)?)$/g,
+      ''
+    )
     .replace(/[-_.\s]+$/g, '')
     .trim();
   return cleaned || '2025-2';
@@ -2123,39 +2181,48 @@ function formatSemesterDisplayName_(prefix) {
  * 이전 버전의 '*교사그룹' 시트명 및 헤더를 표준 '20XX-X교사그룹'('그룹명')으로 정규화
  */
 function ensureDefaultSemesterSheetNames_(ss) {
-  if (!ss) return;
+  if (!ss) return { sheets: [], names: [] };
+  var sheets = [];
+  var names = [];
   try {
+    sheets = ss.getSheets();
+    names = sheets.map(function (s) {
+      return String(s.getName() || '').trim();
+    });
+
     var targetWeeklyName = '2025-2주간시간표';
     var targetClassName = '2025-2학급시간표';
 
-    if (!ss.getSheetByName(targetWeeklyName)) {
-      var legacyWeekly = ss.getSheetByName('주간시간표') || ss.getSheetByName('주간 시간표');
-      if (legacyWeekly) {
-        legacyWeekly.setName(targetWeeklyName);
+    if (names.indexOf(targetWeeklyName) === -1) {
+      var lwIdx = names.indexOf('주간시간표');
+      if (lwIdx === -1) lwIdx = names.indexOf('주간 시간표');
+      if (lwIdx !== -1 && sheets[lwIdx]) {
+        sheets[lwIdx].setName(targetWeeklyName);
+        names[lwIdx] = targetWeeklyName;
       }
     }
 
-    if (!ss.getSheetByName(targetClassName)) {
-      var legacyClass =
-        ss.getSheetByName('학급시간표') ||
-        ss.getSheetByName('학급 시간표') ||
-        ss.getSheetByName('반별시간표');
-      if (legacyClass) {
-        legacyClass.setName(targetClassName);
+    if (names.indexOf(targetClassName) === -1) {
+      var lcIdx = names.indexOf('학급시간표');
+      if (lcIdx === -1) lcIdx = names.indexOf('학급 시간표');
+      if (lcIdx === -1) lcIdx = names.indexOf('반별시간표');
+      if (lcIdx !== -1 && sheets[lcIdx]) {
+        sheets[lcIdx].setName(targetClassName);
+        names[lcIdx] = targetClassName;
       }
     }
 
     // 기존 스프레드시트에 이전 명칭('*교사\uBB36\uC74C') 시트가 존재하면 '*교사그룹'으로 시트명과 헤더 내용을 자동 변경
     var legacySuffix = '교사\uBB36\uC74C';
     var legacyHeader = '\uBB36\uC74C명';
-    var sheets = ss.getSheets();
     for (var i = 0; i < sheets.length; i++) {
-      var sh = sheets[i];
-      var sName = String(sh.getName() || '').trim();
+      var sName = names[i];
       if (sName.indexOf(legacySuffix) !== -1) {
+        var sh = sheets[i];
         var newGroupSheetName = sName.replace(legacySuffix, '교사그룹');
-        if (!ss.getSheetByName(newGroupSheetName)) {
+        if (names.indexOf(newGroupSheetName) === -1) {
           sh.setName(newGroupSheetName);
+          names[i] = newGroupSheetName;
         }
         try {
           var a1Val = String(sh.getRange(1, 1).getDisplayValue() || '').trim();
@@ -2166,24 +2233,28 @@ function ensureDefaultSemesterSheetNames_(ss) {
       }
     }
   } catch (e) {}
+  return { sheets: sheets, names: names };
 }
 
 /**
  * 스프레드시트 내 모든 '20XX-X주간시간표' 및 '20XX-X학급시간표' 시트 세트를 스캔하여 반환
  */
-function discoverSemesterSheetSets_(ss) {
-  if (!ss) return [];
-  var sheets = ss.getSheets();
+function discoverSemesterSheetSets_(ss, optSheets, optSheetNames) {
+  if (!ss && (!optSheets || optSheets.length === 0)) return [];
+  var sheets = Array.isArray(optSheets) && optSheets.length > 0 ? optSheets : ss.getSheets();
   var map = {};
   var order = [];
 
   for (var i = 0; i < sheets.length; i++) {
     var sh = sheets[i];
-    var sName = String(sh.getName() || '').trim();
+    var sName =
+      Array.isArray(optSheetNames) && optSheetNames[i] !== undefined
+        ? String(optSheetNames[i] || '').trim()
+        : String(sh.getName() || '').trim();
     if (!sName || sName.charAt(0) === '_') continue;
 
     var m = sName.match(
-      /^(.+?)[-_ ]?(주간\s*시간표|학급\s*시간표|반별\s*시간표|선택\s*과목\s*2\s*학년|선택\s*과목\s*3\s*학년)$/
+      /^(.+?)[-_ ]?(주간\s*시간표|학급\s*시간표|반별\s*시간표|선택\s*과목\s*2\s*학년|선택\s*과목\s*3\s*학년|학생\s*명렬\s*2\s*학년|학생\s*명렬\s*3\s*학년|학생\s*선택\s*과목\s*2\s*학년|학생\s*선택\s*과목\s*3\s*학년)$/
     );
     if (!m) continue;
 
@@ -2199,10 +2270,14 @@ function discoverSemesterSheetSets_(ss) {
         classSheet: null,
         elective2Sheet: null,
         elective3Sheet: null,
+        student2Sheet: null,
+        student3Sheet: null,
         weeklySheetName: prefix + '주간시간표',
         classSheetName: prefix + '학급시간표',
         elective2SheetName: prefix + '선택과목2학년',
-        elective3SheetName: prefix + '선택과목3학년'
+        elective3SheetName: prefix + '선택과목3학년',
+        student2SheetName: prefix + '학생명렬2학년',
+        student3SheetName: prefix + '학생명렬3학년'
       };
       order.push(prefix);
     }
@@ -2219,6 +2294,12 @@ function discoverSemesterSheetSets_(ss) {
     } else if (roleText === '선택과목3학년') {
       map[prefix].elective3Sheet = sh;
       map[prefix].elective3SheetName = sName;
+    } else if (roleText === '학생명렬2학년' || roleText === '학생선택과목2학년') {
+      map[prefix].student2Sheet = sh;
+      map[prefix].student2SheetName = sName;
+    } else if (roleText === '학생명렬3학년' || roleText === '학생선택과목3학년') {
+      map[prefix].student3Sheet = sh;
+      map[prefix].student3SheetName = sName;
     }
   }
 
@@ -2269,8 +2350,8 @@ function writeRowsToSheet_(ss, sheetName, rows) {
 }
 
 /**
- * 업로드된 주간시간표 + 학급시간표 (+ 선택과목2학년 + 선택과목3학년) 2차원 배열 데이터를
- * 스프레드시트에 '20XX-X주간시간표', '20XX-X학급시간표', '20XX-X선택과목2학년', '20XX-X선택과목3학년' 시트로 추가·저장하고 파싱 결과 반환
+ * 업로드된 주간시간표 + 학급시간표 (+ 선택과목2학년 + 선택과목3학년 + 학생명렬2학년 + 학생명렬3학년) 2차원 배열 데이터를
+ * 스프레드시트에 '20XX-X...' 시트로 추가·저장하고 파싱 결과 반환
  */
 function saveSemesterSheetsToSpreadsheet(requestJson) {
   var req = typeof requestJson === 'string' ? JSON.parse(requestJson) : requestJson;
@@ -2290,6 +2371,8 @@ function saveSemesterSheetsToSpreadsheet(requestJson) {
   var classSheetName = prefix + '학급시간표';
   var elective2SheetName = prefix + '선택과목2학년';
   var elective3SheetName = prefix + '선택과목3학년';
+  var student2SheetName = prefix + '학생명렬2학년';
+  var student3SheetName = prefix + '학생명렬3학년';
 
   if (Array.isArray(req.weeklyRows) && req.weeklyRows.length > 0) {
     writeRowsToSheet_(ss, weeklySheetName, req.weeklyRows);
@@ -2303,6 +2386,12 @@ function saveSemesterSheetsToSpreadsheet(requestJson) {
   if (Array.isArray(req.elective3Rows) && req.elective3Rows.length > 0) {
     writeRowsToSheet_(ss, elective3SheetName, req.elective3Rows);
   }
+  if (Array.isArray(req.student2Rows) && req.student2Rows.length > 0) {
+    writeRowsToSheet_(ss, student2SheetName, req.student2Rows);
+  }
+  if (Array.isArray(req.student3Rows) && req.student3Rows.length > 0) {
+    writeRowsToSheet_(ss, student3SheetName, req.student3Rows);
+  }
 
   PropertiesService.getScriptProperties().setProperty(PROP_ACTIVE_PROJECT_KEY, prefix);
   clearTimetableCache_();
@@ -2310,7 +2399,7 @@ function saveSemesterSheetsToSpreadsheet(requestJson) {
   var payload = buildTimetablePayloadFromRealSheets_();
   var serialized = JSON.stringify(payload);
   if (payload && payload.ok) {
-    putCachedJson_(serialized);
+    putCachedJson_(serialized, payload.sig);
   }
   return serialized;
 }
@@ -2326,13 +2415,13 @@ function switchActiveSemesterOnServer(prefixInput) {
   var payload = buildTimetablePayloadFromRealSheets_();
   var serialized = JSON.stringify(payload);
   if (payload && payload.ok) {
-    putCachedJson_(serialized);
+    putCachedJson_(serialized, payload.sig);
   }
   return serialized;
 }
 
 /**
- * 특정 학기의 '20XX-X주간시간표', '20XX-X학급시간표', '20XX-X선택과목2학년', '20XX-X선택과목3학년' 시트(탭)를 스프레드시트에서 삭제
+ * 특정 학기의 모든 역할 시트(탭)를 스프레드시트에서 삭제
  */
 function deleteSemesterSheetsOnServer(prefixInput) {
   var prefix = normalizeSemesterPrefix_(prefixInput);
@@ -2347,7 +2436,11 @@ function deleteSemesterSheetsOnServer(prefixInput) {
     prefix + '주간시간표',
     prefix + '학급시간표',
     prefix + '선택과목2학년',
-    prefix + '선택과목3학년'
+    prefix + '선택과목3학년',
+    prefix + '학생명렬2학년',
+    prefix + '학생명렬3학년',
+    prefix + '학생선택과목2학년',
+    prefix + '학생선택과목3학년'
   ];
 
   for (var i = 0; i < targetNames.length; i++) {
@@ -2365,13 +2458,13 @@ function deleteSemesterSheetsOnServer(prefixInput) {
   var payload = buildTimetablePayloadFromRealSheets_();
   var serialized = JSON.stringify(payload);
   if (payload && payload.ok) {
-    putCachedJson_(serialized);
+    putCachedJson_(serialized, payload.sig);
   }
   return serialized;
 }
 
 /**
- * 특정 학기(prefix)의 개별 시트('weekly' | 'class' | 'elective2' | 'elective3')만 스프레드시트에서 삭제
+ * 특정 학기(prefix)의 개별 시트('weekly' | 'class' | 'elective2' | 'elective3' | 'student2' | 'student3')만 스프레드시트에서 삭제
  */
 function deleteSingleRoleSheetOnServer(requestJson) {
   var req = typeof requestJson === 'string' ? JSON.parse(requestJson) : requestJson;
@@ -2392,7 +2485,9 @@ function deleteSingleRoleSheetOnServer(requestJson) {
     weekly: '주간시간표',
     class: '학급시간표',
     elective2: '선택과목2학년',
-    elective3: '선택과목3학년'
+    elective3: '선택과목3학년',
+    student2: '학생명렬2학년',
+    student3: '학생명렬3학년'
   };
   var suffix = roleSuffixMap[slotType];
   if (!suffix) {
@@ -2401,6 +2496,10 @@ function deleteSingleRoleSheetOnServer(requestJson) {
 
   var targetSheetName = prefix + suffix;
   var sh = ss.getSheetByName(targetSheetName);
+  if (!sh && (slotType === 'student2' || slotType === 'student3')) {
+    var altSuffix = slotType === 'student2' ? '학생선택과목2학년' : '학생선택과목3학년';
+    sh = ss.getSheetByName(prefix + altSuffix);
+  }
   if (sh) {
     if (ss.getSheets().length <= 1) {
       sh.clearContents();
@@ -2414,7 +2513,7 @@ function deleteSingleRoleSheetOnServer(requestJson) {
   var payload = buildTimetablePayloadFromRealSheets_();
   var serialized = JSON.stringify(payload);
   if (payload && payload.ok) {
-    putCachedJson_(serialized);
+    putCachedJson_(serialized, payload.sig);
   }
   return serialized;
 }
@@ -2427,8 +2526,8 @@ function getServerProjectsBundle() {
   if (!ss) {
     return JSON.stringify({ ok: false, activeProjectId: '2025-2', semesterSets: [] });
   }
-  ensureDefaultSemesterSheetNames_(ss);
-  var sets = discoverSemesterSheetSets_(ss).map(function (item) {
+  var sheetCatalog = ensureDefaultSemesterSheetNames_(ss);
+  var sets = discoverSemesterSheetSets_(ss, sheetCatalog.sheets, sheetCatalog.names).map(function (item) {
     return {
       id: item.prefix,
       prefix: item.prefix,
@@ -2436,7 +2535,9 @@ function getServerProjectsBundle() {
       weeklySheetName: item.weeklySheet ? item.weeklySheetName : '',
       classSheetName: item.classSheet ? item.classSheetName : '',
       elective2SheetName: item.elective2Sheet ? item.elective2SheetName : '',
-      elective3SheetName: item.elective3Sheet ? item.elective3SheetName : ''
+      elective3SheetName: item.elective3Sheet ? item.elective3SheetName : '',
+      student2SheetName: item.student2Sheet ? item.student2SheetName : '',
+      student3SheetName: item.student3Sheet ? item.student3SheetName : ''
     };
   });
   var props = PropertiesService.getScriptProperties();
@@ -2761,10 +2862,17 @@ function applyElectiveSheetsToStore_(store, elective2Sheet, elective3Sheet) {
   if (!store.gradeSpecialRooms) {
     store.gradeSpecialRooms = { 2: {}, 3: {} };
   }
+  if (!store.electiveGroups) {
+    store.electiveGroups = { 2: {}, 3: {} };
+  }
+  if (!store.electiveGroupSlots) {
+    store.electiveGroupSlots = { 2: {}, 3: {} };
+  }
   if (elective2Sheet) {
     try {
       var rows2 = elective2Sheet.getDataRange().getDisplayValues();
       var groupMap2 = parseElectiveSheetRows_(rows2);
+      store.electiveGroups[2] = groupMap2;
       applyElectiveClassroomMapping_(store, 2, groupMap2);
     } catch (e) {}
   }
@@ -2772,10 +2880,12 @@ function applyElectiveSheetsToStore_(store, elective2Sheet, elective3Sheet) {
     try {
       var rows3 = elective3Sheet.getDataRange().getDisplayValues();
       var groupMap3 = parseElectiveSheetRows_(rows3);
+      store.electiveGroups[3] = groupMap3;
       applyElectiveClassroomMapping_(store, 3, groupMap3);
     } catch (e) {}
   }
   finalizeSpecialRoomsAndCleanupVirtualClasses_(store);
+  populateFallbackElectiveMetadataFromClasses_(store);
 }
 
 /**
@@ -2925,6 +3035,7 @@ function parseElectiveCourseRowEntry_(groupCode, rawSubj, rawTeacher, rawRoom) {
         group: groupCode,
         subject: cleanS,
         rawSubject: rawSubj,
+        fullRowSubject: String(rawSubj || '').trim(),
         teacher: cleanT,
         room: cleanR,
         dayFilter: singleDays,
@@ -2965,6 +3076,7 @@ function parseElectiveCourseRowEntry_(groupCode, rawSubj, rawTeacher, rawRoom) {
         group: groupCode,
         subject: cleanSName,
         rawSubject: sPart,
+        fullRowSubject: String(rawSubj || '').trim(),
         teacher: cleanTName,
         room: cleanRName,
         dayFilter: days,
@@ -3426,6 +3538,14 @@ function applyElectiveClassroomMapping_(store, grade, groupMap) {
       var dayLessons = getElectiveGroupLessonsForDay_(groupMap[detectedGroup], d);
       if (dayLessons.length === 0) continue;
 
+      if (!store.electiveGroupSlots) {
+        store.electiveGroupSlots = { 2: {}, 3: {} };
+      }
+      if (!store.electiveGroupSlots[gNum]) {
+        store.electiveGroupSlots[gNum] = {};
+      }
+      store.electiveGroupSlots[gNum][p + '-' + d] = detectedGroup;
+
       // 1. 해당 학년 기본 학급(2-1~2-9 또는 3-1~3-9) 및 가상 학급(10반 이상)의 (p, d) 슬롯 초기화
       for (var cNum = 1; cNum <= 25; cNum++) {
         var baseKey = gNum + '-' + cNum;
@@ -3707,5 +3827,359 @@ function finalizeSpecialRoomsAndCleanupVirtualClasses_(store) {
     });
   }
 }
+
+/**
+ * 선택과목 시트가 별도로 없거나 일부 슬롯에 명시적 eg 코드가 있는 경우,
+ * store.classes에서 학년별 선택과목 교시(electiveGroupSlots)와 강좌 메타(electiveGroups)를 보완합니다.
+ */
+function populateFallbackElectiveMetadataFromClasses_(store) {
+  if (!store || !store.classes) return;
+  if (!store.electiveGroups) store.electiveGroups = { 2: {}, 3: {} };
+  if (!store.electiveGroupSlots) store.electiveGroupSlots = { 2: {}, 3: {} };
+  var maxP = store.maxPeriod || 7;
+
+  [2, 3].forEach(function (gNum) {
+    if (!store.electiveGroups[gNum]) store.electiveGroups[gNum] = {};
+    if (!store.electiveGroupSlots[gNum]) store.electiveGroupSlots[gNum] = {};
+
+    for (var p = 0; p < maxP; p++) {
+      for (var d = 0; d < 5; d++) {
+        var slotKey = p + '-' + d;
+        var foundGrp = store.electiveGroupSlots[gNum][slotKey] || '';
+        if (!foundGrp) {
+          var counts = {};
+          Object.keys(store.classes).forEach(function (ck) {
+            var cObj = store.classes[ck];
+            if (!cObj || cObj.grade !== gNum) return;
+            var sl = cObj.grid && cObj.grid[p] ? cObj.grid[p][d] : null;
+            var eg = sl && (sl.eg || extractElectiveGroupHint_(sl.s || ''));
+            if (eg) {
+              counts[eg] = (counts[eg] || 0) + 1;
+            }
+          });
+          var bestG = '';
+          var bestCnt = 0;
+          for (var gk in counts) {
+            if (counts[gk] > bestCnt) {
+              bestCnt = counts[gk];
+              bestG = gk;
+            }
+          }
+          if (bestG) {
+            foundGrp = bestG;
+            store.electiveGroupSlots[gNum][slotKey] = bestG;
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ============================================================================
+   학생명렬(2학년 · 3학년) 시트 탐색 및 개인별 선택과목 정밀 파싱 엔진
+   ============================================================================ */
+
+/**
+ * 스프레드시트에서 현재 학기의 2학년/3학년 학생명렬 시트 탐색
+ * ('<prefix>학생명렬2학년', '<prefix>학생선택과목2학년', '2026-2학생명렬2학년', '학생명렬2학년' 등)
+ */
+function findStudentSheetByGrade_(allSheets, allSheetNames, targetPrefix, grade) {
+  var gNum = Number(grade) === 3 ? 3 : 2;
+  var normPrefix = normalizeSemesterPrefix_(targetPrefix || '2026-2');
+  var candidates = [
+    normPrefix + '학생명렬' + gNum + '학년',
+    normPrefix + '학생선택과목' + gNum + '학년',
+    '2026-2학생명렬' + gNum + '학년',
+    '2026-1학생명렬' + gNum + '학년',
+    '학생명렬' + gNum + '학년',
+    '학생선택과목' + gNum + '학년'
+  ];
+
+  for (var i = 0; i < candidates.length; i++) {
+    var exactIdx = allSheetNames.indexOf(candidates[i]);
+    if (exactIdx !== -1) return allSheets[exactIdx];
+  }
+
+  var normCandidates = candidates.map(function (c) {
+    return c.replace(/\s+/g, '');
+  });
+  for (var j = 0; j < allSheets.length; j++) {
+    var sNorm = String(allSheetNames[j] || '').replace(/\s+/g, '');
+    if (normCandidates.indexOf(sNorm) !== -1) {
+      return allSheets[j];
+    }
+  }
+  return null;
+}
+
+/**
+ * 2학년·3학년 학생명렬 시트를 각각 파싱하여 학번 오름차순으로 통합된 학생 배열 반환
+ */
+function parseStudentRosterSheets_(student2Sheet, student3Sheet) {
+  var list = [];
+  var seenIds = {};
+
+  function appendStudents_(arr) {
+    if (!Array.isArray(arr)) return;
+    for (var i = 0; i < arr.length; i++) {
+      var st = arr[i];
+      if (!st || !st.id) continue;
+      if (!seenIds[st.id]) {
+        seenIds[st.id] = st;
+        list.push(st);
+      }
+    }
+  }
+
+  if (student2Sheet) {
+    try {
+      var rows2 = student2Sheet.getDataRange().getDisplayValues();
+      appendStudents_(parseStudentElectiveRows_(rows2, 2));
+    } catch (e) {}
+  }
+  if (student3Sheet) {
+    try {
+      var rows3 = student3Sheet.getDataRange().getDisplayValues();
+      appendStudents_(parseStudentElectiveRows_(rows3, 3));
+    } catch (e) {}
+  }
+
+  list.sort(function (a, b) {
+    return String(a.id).localeCompare(String(b.id), 'ko');
+  });
+
+  return list;
+}
+
+/**
+ * 2차원 배열 형태의 학생명렬(2학년 또는 3학년) 데이터를 파싱하여 학생 객체 배열 반환
+ * - 2행 헤더(1행 영역분류 + 2행 실제 컬럼명) 및 1행 헤더 모두 자동 탐지
+ * - 3학년: 순번 | 반 | 번호 | 신학번 | 이름 | 구학번 | 성적 | 사회반 | [과목열...] | A | B | C | D | E | F | 음악/미술
+ * - 2학년: 순번 | 반 | 신학번 | 이름 | 구학번 | 성적 | 위탁 | [과목열...] | A | B | C | D | E (번호 열 없음)
+ * - 개인정보(구학번, 성적)는 서버 파싱 시 즉시 제거하여 브라우저로 전송하지 않음
+ */
+function parseStudentElectiveRows_(rows, defaultGrade) {
+  var result = [];
+  if (!Array.isArray(rows) || rows.length < 2) return result;
+
+  var headerRowIdx = -1;
+  var studentIdCol = -1;
+  var nameCol = -1;
+  var gradeCol = -1;
+  var classCol = -1;
+  var numCol = -1;
+
+  for (var r = 0; r < Math.min(rows.length, 10); r++) {
+    var row = rows[r] || [];
+    var candIdCol = -1;
+    var candNameCol = -1;
+    var candGradeCol = -1;
+    var candClassCol = -1;
+    var candNumCol = -1;
+
+    for (var c = 0; c < row.length; c++) {
+      var h = String(row[c] || '').replace(/\s+/g, '');
+      if (!h) continue;
+      if (h === '신학번' || (h === '학번' && candIdCol === -1)) {
+        candIdCol = c;
+      } else if (h === '이름' || h === '성명' || h === '학생명' || h === '학생성명') {
+        if (candNameCol === -1) candNameCol = c;
+      } else if (h === '학년') {
+        candGradeCol = c;
+      } else if (h === '반' || h === '학급') {
+        if (candClassCol === -1) candClassCol = c;
+      } else if (h === '번호' || h === '출석번호') {
+        if (candNumCol === -1) candNumCol = c;
+      }
+    }
+
+    if (candNameCol !== -1 && (candIdCol !== -1 || candClassCol !== -1)) {
+      headerRowIdx = r;
+      studentIdCol = candIdCol;
+      nameCol = candNameCol;
+      gradeCol = candGradeCol;
+      classCol = candClassCol;
+      numCol = candNumCol;
+      break;
+    }
+  }
+
+  if (headerRowIdx === -1 || nameCol === -1) return result;
+
+  var headerRow = rows[headerRowIdx] || [];
+  var groupSummaryCols = {};
+  var artCols = [];
+  var firstGroupSummaryCol = headerRow.length;
+
+  for (var col = 0; col < headerRow.length; col++) {
+    var rawH = String(headerRow[col] || '').trim();
+    var cleanH = rawH.replace(/\s+/g, '');
+    if (!cleanH) continue;
+
+    var mGrp = cleanH.match(/^([A-H])(?:_?선택|군|그룹)?$/i);
+    if (mGrp && col > nameCol) {
+      var grpLetter = mGrp[1].toUpperCase();
+      if (groupSummaryCols[grpLetter] === undefined) {
+        groupSummaryCols[grpLetter] = col;
+        if (col < firstGroupSummaryCol) {
+          firstGroupSummaryCol = col;
+        }
+      }
+      continue;
+    }
+
+    if (cleanH.indexOf('음악/미술') !== -1 || cleanH === '예술' || cleanH === '음미') {
+      artCols.push(col);
+    }
+  }
+
+  var ignoredMetaHeaders = {
+    '순번': true,
+    '연번': true,
+    '학년': true,
+    '반': true,
+    '학급': true,
+    '번호': true,
+    '출석번호': true,
+    '신학번': true,
+    '학번': true,
+    '구학번': true,
+    '이름': true,
+    '성명': true,
+    '학생명': true,
+    '성적': true,
+    '석차': true,
+    '총점': true,
+    '평균': true,
+    '사회반': true,
+    '위탁': true,
+    '비고': true,
+    '전입': true
+  };
+
+  var subjectMatrixCols = [];
+  var matrixStartCol = Math.max(studentIdCol, nameCol) + 1;
+  for (var mCol = matrixStartCol; mCol < firstGroupSummaryCol; mCol++) {
+    var subjHeader = String(headerRow[mCol] || '').trim();
+    var cleanSubjH = subjHeader.replace(/\s+/g, '');
+    if (!cleanSubjH || ignoredMetaHeaders[cleanSubjH]) continue;
+    subjectMatrixCols.push({
+      colIdx: mCol,
+      subjectName: subjHeader
+    });
+  }
+
+  for (var rIdx = headerRowIdx + 1; rIdx < rows.length; rIdx++) {
+    var dRow = rows[rIdx] || [];
+    var rawName = String(dRow[nameCol] || '').trim();
+    if (!rawName) continue;
+    // 성적 숫자('504.44')나 기호만 들어간 깨진 행(예: 3학년 232행)은 즉시 건너뜀
+    if (/^[\d.,\s+-]+$/.test(rawName) || rawName === '이름' || rawName === '성명' || rawName === '합계' || rawName === '계') {
+      continue;
+    }
+
+    var rawId =
+      studentIdCol !== -1
+        ? String(dRow[studentIdCol] || '')
+            .replace(/\.0+$/, '')
+            .replace(/[,\s]+/g, '')
+        : '';
+    var grade = Number(defaultGrade) === 3 ? 3 : Number(defaultGrade) === 2 ? 2 : 0;
+    var classNo = 0;
+    var studentNo = 0;
+    var studentId = '';
+
+    var m5 = rawId.match(/^([123])(\d{2})(\d{2})$/);
+    var m4 = !m5 ? rawId.match(/^([123])([1-9])(\d{2})$/) : null;
+
+    if (m5) {
+      grade = parseInt(m5[1], 10);
+      classNo = parseInt(m5[2], 10);
+      studentNo = parseInt(m5[3], 10);
+      studentId =
+        grade +
+        (classNo < 10 ? '0' + classNo : String(classNo)) +
+        (studentNo < 10 ? '0' + studentNo : String(studentNo));
+    } else if (m4) {
+      grade = parseInt(m4[1], 10);
+      classNo = parseInt(m4[2], 10);
+      studentNo = parseInt(m4[3], 10);
+      studentId = grade + '0' + classNo + (studentNo < 10 ? '0' + studentNo : String(studentNo));
+    } else if (classCol !== -1 && numCol !== -1) {
+      var cVal = parseInt(String(dRow[classCol] || '').trim(), 10);
+      var nVal = parseInt(String(dRow[numCol] || '').trim(), 10);
+      var gVal = gradeCol !== -1 ? parseInt(String(dRow[gradeCol] || '').trim(), 10) : grade;
+      if (gVal >= 1 && gVal <= 3 && cVal >= 1 && cVal <= 15 && nVal >= 1 && nVal <= 50) {
+        grade = gVal;
+        classNo = cVal;
+        studentNo = nVal;
+        studentId =
+          grade +
+          (classNo < 10 ? '0' + classNo : String(classNo)) +
+          (studentNo < 10 ? '0' + studentNo : String(studentNo));
+      }
+    }
+
+    // 유효한 5자리 학번이 없는 행(깨진 요약행 등)은 건너뜀
+    if (!studentId || !grade || !classNo || !studentNo) continue;
+
+    var choices = {};
+    var grpKeys = Object.keys(groupSummaryCols);
+    for (var gi = 0; gi < grpKeys.length; gi++) {
+      var gk = grpKeys[gi];
+      var sVal = String(dRow[groupSummaryCols[gk]] || '').trim();
+      if (sVal && sVal !== '-' && sVal !== '—') {
+        choices[gk] = sVal;
+      }
+    }
+
+    var artChoice = '';
+    for (var ai = 0; ai < artCols.length; ai++) {
+      var aVal = String(dRow[artCols[ai]] || '').trim();
+      if (aVal && aVal !== '-' && aVal !== '—') {
+        artChoice = aVal;
+        break;
+      }
+    }
+
+    // 우측 A~F 요약 열이 비어 있거나 누락된 양식인 경우 좌측 과목 매트릭스 열에서 알파벳(A~F) 역추출
+    for (var mi = 0; mi < subjectMatrixCols.length; mi++) {
+      var mItem = subjectMatrixCols[mi];
+      var marker = String(dRow[mItem.colIdx] || '').trim().toUpperCase();
+      if (!marker) continue;
+      if (/^[A-H]$/.test(marker)) {
+        if (!choices[marker]) {
+          choices[marker] = mItem.subjectName;
+        }
+      } else if (marker === '1' && !artChoice) {
+        if (mItem.subjectName.indexOf('음악') !== -1 || mItem.subjectName.indexOf('미술') !== -1) {
+          artChoice = mItem.subjectName;
+        }
+      }
+    }
+
+    if (artChoice) {
+      choices['음/미'] = artChoice;
+    }
+
+    var classKeyStr = grade + '-' + classNo;
+    var compactStudent = {
+      id: studentId,
+      n: rawName,
+      g: grade,
+      c: classNo,
+      no: studentNo,
+      ck: classKeyStr,
+      ch: choices
+    };
+    if (artChoice) {
+      compactStudent.art = artChoice;
+    }
+    result.push(compactStudent);
+  }
+
+  return result;
+}
+
 
 

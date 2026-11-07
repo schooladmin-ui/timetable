@@ -14,7 +14,7 @@
         "role": "neutral",
         "displayName": "Stone Gray",
         "canonical": "#313339",
-        "tonalRamp": ["#F4F6F8", "#E5E7EB", "#D1D5DB", "#9CA3AF", "#52525B", "#313339", "#111827"]
+        "tonalRamp": ["#F4F6F8", "#F3F4F6", "#E5E7EB", "#D1D5DB", "#9CA3AF", "#52525B", "#4B5563", "#313339", "#1F2024", "#111827"]
       },
       "elective-highlighter": {
         "role": "accent",

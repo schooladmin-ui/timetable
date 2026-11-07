@@ -1,6 +1,6 @@
-# ⚡ 초고속 학급·교사 시간표 검색 웹앱 (25-Timetable)
+# ⚡ 초고속 교사·학생 시간표 검색 웹앱 (25-Timetable)
 
-Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간표]`** 시트 데이터를 기반으로, 학교 현장의 **학급별 시간표**, **교사별 주간 시간표**, **요일·교시별 공강 교사**를 지연 시간(0ms 체감) 없이 즉시 검색·조회하고 **편집 가능한 한글(`HWPX`)·엑셀(`XLSX`) 및 `PDF`**로 내려받을 수 있는 Google Apps Script(GAS) 웹 애플리케이션입니다.
+Google 스프레드시트의 학기별 6종 시트(**`[주간시간표]` · `[학급시간표]` · `[선택과목2학년]` · `[선택과목3학년]` · `[학생명렬2학년]` · `[학생명렬3학년]`**)를 기반으로, 학교 현장의 **교사 시간표 포털**(교사 시간표 · 수업 교사 찾기 · 공강 교사 찾기 · 공유 공강 확인 · 학급 시간표)과 **학생 시간표 포털**(2·3학년 학생 개인별 맞춤형 시간표 · 복수 학급/학생 일괄 선택 및 다운로드)을 지연 시간(0ms 체감) 없이 즉시 검색·조회하고 **편집 가능한 한글(`HWPX`)·엑셀(`XLSX`) 및 `PDF`**로 내려받을 수 있는 Google Apps Script(GAS) 웹 애플리케이션입니다.
 
 ---
 
@@ -8,12 +8,12 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
 
 ### 1. Zero-Latency (0ms) 초고속 인메모리 검색 & 즉시 페이지 오픈
 - **3단계 초고속 로딩 & 캐싱 아키텍처**:
-  1. **멀티 청크 `CacheService` & 페이로드 60% 경량화 (`getCachedJsonFast_` / `putCachedJson_` / `compactStoreForTransport_`)**: 셀 객체의 빈 기본값(`r:""`, `m:0`, `cc:0`, `st:""`)과 중복 키를 제거하여 전송 용량을 약 60% 축소하고, 80KB 단위 멀티 청크 분할 저장으로 Apps Script 단일 키 100KB 제한을 완전히 우회하여 100% 서버 메모리 캐싱(6시간 유지)을 보장합니다. 캐시 적중 시 `JSON.parse`/`JSON.stringify` 없이 **~5ms** 만에 인라인 주입됩니다.
-  2. **논블로킹(Non-Blocking) 콜드 스타트 & `localStorage` 0ms 즉시 렌더링**: 서버 캐시가 만료된 상태에서도 `doGet()`이 스프레드시트 I/O를 기다리지 않고 **즉시 HTML을 반환(< 50ms)** 하며, 브라우저는 `localStorage` 캐시 데이터로 **0ms 만에 화면을 먼저 표시**한 뒤 백그라운드(`getTimetableJsonString`)에서 비동기로 서버 캐시를 워밍업합니다.
-  3. **백그라운드 시트 변경 자동 감지 (Stale-While-Revalidate, `checkAndRefreshIfChanged`)**: 첫 화면을 캐시로 0ms 만에 즉시 표시한 직후 백그라운드에서 스프레드시트 데이터의 MD5 해시값(`computePayloadSignature_`)을 대조하여, 시트 수정(셀 편집·복사·교체 등)이 감지되면 화면을 자동으로 최신 시간표로 갱신합니다.
-  4. **인메모리 초성·단축어 인덱스**: 브라우저 메모리에 한글 초성 및 단축어 인덱스를 구축하여 검색·탭 전환 시 서버 호출이 전혀 발생하지 않습니다.
-- **초성 & 단축어 즉시 검색**:
-  - 상단 중앙의 고가시성 검색창(단축키 `/`)에서 **교사 성명 초성**(예: `ㄱㄷㅈ`), **담당 과목 초성**(예: `ㅎㅅ`), **학급 단축 숫자**(예: `1-1`, `101`)만 입력해도 일치하는 시간표로 즉시 전환됩니다.
+  1. **UTF-8 안전 멀티 청크 `CacheService` & 페이로드 경량화 (`getCachedJsonFast_` / `putCachedJson_` / `compactStoreForTransport_`)**: 셀 객체의 빈 기본값(`r:""`, `m:0`, `cc:0`, `st:""`)과 학생명렬의 중복 키를 제거하여 전송 용량을 대폭 축소하고, 3만 글자(~45~60KB UTF-8) 단위 멀티 청크 분할 저장(`TT_FAST_V7_`)으로 한글 데이터 포함 시에도 Apps Script 단일 키 100KB 제한을 100% 안전하게 통과하여 서버 메모리 캐싱(6시간 유지)을 보장합니다. 캐시 적중 시 `doGet()` 단계에서 **~5ms** 만에 HTML에 인라인 주입됩니다.
+  2. **논블로킹(Non-Blocking) 콜드 스타트 & `localStorage` 0ms 즉시 렌더링**: 외부 엑셀 라이브러리(`xlsx.full.min.js`)에 `defer`를 적용하고, 서버 캐시가 만료된 상태에서도 `doGet()`이 스프레드시트 I/O를 기다리지 않고 **즉시 HTML을 반환(< 50ms)** 하여 브라우저 `localStorage` 캐시로 **0ms 만에 화면을 먼저 표시**합니다.
+  3. **백그라운드 시트 변경 자동 감지 (Stale-While-Revalidate, `checkAndRefreshIfChanged`)**: 캐시 시그니처(`SIG`) 및 검증 타임스탬프(`TS`)를 대조하여 불필요한 전체 시트 재파싱을 방지하면서도, 시트 수정 시 자동으로 최신 시간표로 갱신합니다.
+  4. **인메모리 초성·단축어·학번 인덱스**: 브라우저 메모리에 교사·학급·학생(5자리 학번 및 이름·초성) 인덱스를 구축하여 검색·탭 전환 시 서버 호출이 전혀 발생하지 않습니다.
+- **초성 & 단축어 & 학번 즉시 검색**:
+  - 상단 중앙의 고가시성 검색창(단축키 `/`)에서 **교사 성명/초성**(예: `ㄱㄷㅈ`), **학급 단축 숫자**(예: `2-1`, `201`), **학생 5자리 학번·이름·초성**(예: `20101`, `강태인`, `ㄱㅌㅇ`)만 입력해도 일치하는 시간표로 즉시 전환되며, 학생 검색 시 해당 학생 소속 학급 필터와 학생 명단이 자동으로 함께 선택됩니다.
 
 ### 2. 스프레드시트 실데이터 전용 4종 레이아웃 자동 파서
 하드코딩된 더미 데이터 없이 오직 스프레드시트의 **`[주간시간표]`** 및 **`[학급시간표]`** 시트 정보만 파싱합니다. 학교마다 다른 시트 표 구조를 4단계로 자동 판별합니다.
@@ -359,6 +359,26 @@ Google 스프레드시트의 **`[주간시간표]`** 시트와 **`[학급시간�
     - 검색창 포커스/패널 비활성 시 `renderQuickChips` 및 `setQuickChipsVisible_`에서 `#quickChipsBarWrap`의 `.is-hidden` 상태를 동기화하고, `@media print` 인쇄 시에도 자동 숨김 처리
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
+
+### [2026-11-07 13:40] 업데이트 이력 (Commit ID: `PENDING`)
+- **날짜 및 시간 (KST)**: `2026-11-07 13:40`
+- **커밋 ID (Commit Hash)**: `PENDING`
+- **수정 내용 (Modification Details)**:
+  - **최상단 `1 × 2` 포털 전환 바(`👨‍🏫 교사 시간표 | 🎓 학생 시간표`) 및 학생 개인별 맞춤형 시간표 포털 구축 (`Code.gs`, `index.html`)**:
+    - 최상단에 `교사 시간표`(시그니처 녹색 `#027046` 테마)와 `학생 시간표`(스톤 그레이 `#313339` 테마) 전환 바(`.portal-switch-bar`, `switchPortal`)를 추가하고, 학기별 업로드 모달(`#projectManagerModal`)을 `3 × 2` 6슬롯 구조(`[파일 1] 주간시간표`, `[파일 2] 학급시간표`, `[파일 3] 선택과목2학년`, `[파일 4] 선택과목3학년`, `[파일 5] 학생명렬2학년`, `[파일 6] 학생명렬3학년`)로 확장(교사 시간표 포털 전용 노출)
+    - `parseStudentRosterSheets_`, `parseStudentElectiveRows_`, `buildStudentPersonalTimetable_`, `resolveStudentElectiveCourse_`를 구현하여 학생의 원반 공통 수업(예: `영2 / 2학년 1반 · 교사명`), 선택과목 그룹(`A_선택 ~ F_선택` 파스텔 라임 하이라이트 + 실제 수강 과목명 + 실제 이동교실·담당교사), 음악/미술 선택 수업을 정밀 합성(학생 시간표 포털에서는 교사 성명 마스킹 미적용 및 마스킹 버튼 숨김, 상단 연동 시트 배너 제거)
+  - **학생 시간표 UI/UX 정밀 개선 및 복수 학급·학생 일괄 선택 다운로드(`HWPX` · `XLSX` · `PDF`) 고도화 (`index.html`, `PRODUCT.md`, `DESIGN.md`, `.impeccable/design.json`)**:
+    - 학생 시간표 포털 상단 검색창·학기 드롭다운·`🔄 동기화` 버튼(`#btnStudentTopSync`)을 1행(`.control-row-search`, `flex-wrap: nowrap`)으로 배치하고, 학번/이름 검색 시 해당 학생 소속 학급이 자동으로 선택되도록(`syncStudentClassFilterByStudentId_`) 연동
+    - 학급 필터 버튼(`2-1반 ~ 3-9반`)에 복수 선택 및 토글(클릭 시 선택 추가, 재클릭 시 선택 해제 및 해당 학급 학생 선택 해제, `state.selectedStudentClasses`)을 적용하고, 하단 학생 버튼을 교사 시간표 버튼과 동일한 디자인 규격(`.q-chip.student-chip`, `n × 10` 그리드, `height: 36px`, `border-radius: 999px`, 1행 동적 텍스트 축소 `autoFitSingleLineCells_`, 선택 시 스톤 그레이 `#313339` 솔리드 반전)으로 통일
+    - 학생 일괄 선택 툴바(`.student-batch-toolbar`)에 `flex-wrap: nowrap`을 적용하여 `✓ 현재 목록 전원 선택` 클릭 시 `✕ 선택 초기화` 버튼이 나타나도 항상 1행을 유지하도록 고정하고, 선택된 복수 학생의 시간표를 단일 파일(페이지/시트 구분)로 일괄 생성하는 `downloadStudentBatchHwpx`, `downloadStudentBatchXlsx`, `printStudentBatchPdf` 구현
+    - 전체화면 확대 모달창(`#timetableZoomModal`)의 셀 높이·패딩을 최적화하여 3줄 구조의 학생 개인 시간표도 스크롤이나 잘림 없이 **1교시~7교시 전체**가 한눈에 표시되도록 개선
+  - **초기 창 열림 및 첫 데이터 로딩 속도 대폭 최적화 (`Code.gs`, `index.html`)**:
+    - 한글(UTF-8 3바이트/글자)이 포함된 학생명렬 추가로 인해 기존 8만 글자 청크가 `CacheService` 단일 키 한도(100KB)를 초과하여 캐시 저장이 실패하던 문제를 해결하기 위해 `CACHE_CHUNK_SIZE = 30000`(3만 글자, ~45~60KB UTF-8) 및 `TT_FAST_V7_` 멀티청크 캐시로 개편하여 `doGet()` 단계에서 **~5ms** 인라인 캐시 주입 보장
+    - 학생 객체 중복 키 제거(`{ id, n, g, c, no, ck, ch, art }` 축약 전송), `ss.getSheets()` 1회 스캔 통합(`ensureDefaultSemesterSheetNames_`, `discoverSemesterSheetSets_`), `<script defer src="...xlsx.full.min.js">` 렌더 블로킹 제거, 부팅 시 중복 RPC(`syncProjectsFromServerInBackground_`) 및 `localStorage` 파생 데이터 이중 직렬화 제거
+- **검증 결과 (Verification Results)**:
+  - `Code.gs` 및 `index.html` 인라인 스크립트(2개) Node.js `vm.Script` 정적 구문 검사 통과 (`Syntax check OK, scripts verified: 2`)
+  - Impeccable 정적 스캐너 `detect` 안티패턴 0건 및 `doctor` 드리프트 0건 통과 (`0 anti-patterns`, `0 drift`)
+
 
 
 
