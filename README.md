@@ -360,9 +360,9 @@ Google 스프레드시트의 학기별 6종 시트(**`[주간시간표]` · `[�
 - **검증 결과 (Verification Results)**:
   - `Code.gs` 및 `index.html` 인라인 스크립트(3개) Node.js `vm.Script` 정적 구문 검사 통과 (`Code.gs syntax OK`, `index.html inline scripts (3) syntax OK`)
 
-### [2026-11-07 13:40] 업데이트 이력 (Commit ID: `PENDING`)
+### [2026-11-07 13:40] 업데이트 이력 (Commit ID: `ab11485`)
 - **날짜 및 시간 (KST)**: `2026-11-07 13:40`
-- **커밋 ID (Commit Hash)**: `PENDING`
+- **커밋 ID (Commit Hash)**: `ab11485`
 - **수정 내용 (Modification Details)**:
   - **최상단 `1 × 2` 포털 전환 바(`👨‍🏫 교사 시간표 | 🎓 학생 시간표`) 및 학생 개인별 맞춤형 시간표 포털 구축 (`Code.gs`, `index.html`)**:
     - 최상단에 `교사 시간표`(시그니처 녹색 `#027046` 테마)와 `학생 시간표`(스톤 그레이 `#313339` 테마) 전환 바(`.portal-switch-bar`, `switchPortal`)를 추가하고, 학기별 업로드 모달(`#projectManagerModal`)을 `3 × 2` 6슬롯 구조(`[파일 1] 주간시간표`, `[파일 2] 학급시간표`, `[파일 3] 선택과목2학년`, `[파일 4] 선택과목3학년`, `[파일 5] 학생명렬2학년`, `[파일 6] 학생명렬3학년`)로 확장(교사 시간표 포털 전용 노출)
